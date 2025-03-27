@@ -265,7 +265,7 @@
 
     <!-- Welcome Banner -->
     <div class="highlight-card mb-4">
-        <h2>Selamat Datang di Risk Management</h2>
+        <h2>Manajemen dan Pemantauan Risiko</h2>
         <p>Kelola dan pantau risiko dengan efektif untuk meningkatkan keamanan dan kualitas layanan.</p>
         <div class="d-flex gap-3">
             <a href="{{ route('modules.risk-management.risk-reports.create') }}" class="btn btn-light">
