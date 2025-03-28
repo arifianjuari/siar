@@ -31,6 +31,27 @@
                     
                     <div class="col-md-6">
                         <div class="mb-3">
+                            <label for="slug" class="form-label">Slug Role <span class="text-danger">*</span></label>
+                            <select class="form-select @error('slug') is-invalid @enderror" id="slug" name="slug" required>
+                                <option value="">Pilih Slug Role</option>
+                                <option value="superadmin" {{ old('slug') == 'superadmin' ? 'selected' : '' }}>superadmin</option>
+                                <option value="tenant-admin" {{ old('slug') == 'tenant-admin' ? 'selected' : '' }}>tenant-admin</option>
+                                <option value="manajemen-strategis" {{ old('slug') == 'manajemen-strategis' ? 'selected' : '' }}>manajemen-strategis</option>
+                                <option value="manajemen-eksekutif" {{ old('slug') == 'manajemen-eksekutif' ? 'selected' : '' }}>manajemen-eksekutif</option>
+                                <option value="manajemen-operasional" {{ old('slug') == 'manajemen-operasional' ? 'selected' : '' }}>manajemen-operasional</option>
+                                <option value="staf" {{ old('slug') == 'staf' ? 'selected' : '' }}>staf</option>
+                            </select>
+                            <div class="form-text">Pilih slug yang paling mendekati dengan peran pengguna</div>
+                            @error('slug')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
                             <label for="description" class="form-label">Deskripsi</label>
                             <input type="text" class="form-control @error('description') is-invalid @enderror" id="description" name="description" value="{{ old('description') }}">
                             @error('description')

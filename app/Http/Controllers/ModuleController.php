@@ -11,6 +11,22 @@ use Illuminate\Support\Str;
 
 class ModuleController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            // Cek apakah user adalah tenant admin
+            if (!auth()->user()->role || auth()->user()->role->slug !== 'tenant-admin') {
+                \Illuminate\Support\Facades\Log::warning('Akses ditolak: User bukan tenant admin mencoba mengakses manajemen modul', [
+                    'user_id' => auth()->id(),
+                    'role' => auth()->user()->role ? auth()->user()->role->name : 'No Role',
+                    'url' => $request->fullUrl()
+                ]);
+                return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki izin untuk mengakses manajemen modul');
+            }
+            return $next($request);
+        });
+    }
+
     /**
      * Menampilkan daftar modul yang tersedia untuk tenant
      */

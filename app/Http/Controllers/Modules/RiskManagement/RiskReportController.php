@@ -169,12 +169,13 @@ class RiskReportController extends Controller
         $validator = Validator::make($request->all(), [
             'risk_title' => 'required|string|max:255',
             'chronology' => 'required|string',
+            'immediate_action' => 'nullable|string',
             'reporter_unit' => ['required', 'string', function ($attribute, $value, $fail) use ($validWorkUnitNames) {
                 if (!in_array($value, $validWorkUnitNames)) {
                     $fail('Unit pelapor yang dipilih tidak valid.');
                 }
             }],
-            'risk_type' => 'nullable|in:KTD,KNC,KTC,KPC',
+            'risk_type' => 'nullable|in:KTD,KNC,KTC,KPC,Sentinel',
             'risk_category' => 'required|string',
             'occurred_at' => 'required|date',
             'impact' => 'required|string',
@@ -264,13 +265,15 @@ class RiskReportController extends Controller
         // Validasi input
         $validator = Validator::make($request->all(), [
             'risk_title' => 'required|string|max:255',
-            'chronology' => 'required|string',
+            'chronology' => 'nullable|string',
+            'description' => 'required|string',
+            'immediate_action' => 'required|string',
             'reporter_unit' => ['required', 'string', function ($attribute, $value, $fail) use ($validWorkUnitNames) {
                 if (!in_array($value, $validWorkUnitNames)) {
                     $fail('Unit pelapor yang dipilih tidak valid.');
                 }
             }],
-            'risk_type' => 'nullable|in:KTD,KNC,KTC,KPC',
+            'risk_type' => 'nullable|in:KTD,KNC,KTC,KPC,Sentinel',
             'risk_category' => 'required|string',
             'occurred_at' => 'required|date',
             'impact' => 'required|string',
@@ -288,6 +291,8 @@ class RiskReportController extends Controller
         // Update data laporan
         $riskReport->risk_title = $request->risk_title;
         $riskReport->chronology = $request->chronology;
+        $riskReport->description = $request->description;
+        $riskReport->immediate_action = $request->immediate_action;
         $riskReport->reporter_unit = $request->reporter_unit;
         $riskReport->risk_type = $request->risk_type;
         $riskReport->risk_category = $request->risk_category;

@@ -14,7 +14,7 @@ class RiskAnalysisPolicy
     use HandlesAuthorization;
 
     /**
-     * Memberikan izin langsung untuk superadmin atau tenant_admin
+     * Memberikan izin langsung untuk superadmin atau tenant-admin
      */
     public function before(User $user, $ability)
     {
@@ -33,7 +33,7 @@ class RiskAnalysisPolicy
         }
 
         // Jika tenant admin, izinkan juga semua
-        if ($user->role && (strtolower($user->role->slug) === 'tenant_admin' || strtolower($user->role->slug) === 'tenant admin')) {
+        if ($user->role && strtolower($user->role->slug) === 'tenant-admin') {
             return true;
         }
 
@@ -104,9 +104,8 @@ class RiskAnalysisPolicy
 
         // Hanya analis yang membuat analisis atau admin yang dapat mengedit
         $isAnalyst = $analysis->analyzed_by === $user->id;
-        $isAdmin = $user->hasRole('tenant_admin') ||
-            $user->hasRole('Tenant_Admin') ||
-            strtolower($user->role->slug ?? '') === 'tenant_admin';
+        $isAdmin = $user->hasRole('tenant-admin') ||
+            strtolower($user->role->slug ?? '') === 'tenant-admin';
 
         return $isAnalyst || $isAdmin;
     }
@@ -117,9 +116,8 @@ class RiskAnalysisPolicy
     public function delete(User $user, RiskAnalysis $analysis)
     {
         // Hanya tenant admin yang dapat menghapus analisis
-        $isAdmin = $user->hasRole('tenant_admin') ||
-            $user->hasRole('Tenant_Admin') ||
-            strtolower($user->role->slug ?? '') === 'tenant_admin';
+        $isAdmin = $user->hasRole('tenant-admin') ||
+            strtolower($user->role->slug ?? '') === 'tenant-admin';
 
         return $isAdmin && $this->hasAnalysisPermission($user, 'can_delete');
     }
@@ -169,7 +167,7 @@ class RiskAnalysisPolicy
         }
 
         // Untuk tenant admin, izinkan selalu
-        if ($user->role && (strtolower($user->role->slug) === 'tenant_admin' || strtolower($user->role->slug) === 'tenant admin')) {
+        if ($user->role && strtolower($user->role->slug) === 'tenant-admin') {
             return true;
         }
 
@@ -181,7 +179,7 @@ class RiskAnalysisPolicy
 
         if (!$config) {
             // Jika tidak ada konfigurasi khusus, tentukan peran default yang diizinkan
-            $defaultAllowedRoles = ['tenant_admin', 'Tenant_Admin', 'risk_manager', 'quality_manager'];
+            $defaultAllowedRoles = ['tenant-admin', 'risk_manager', 'quality_manager'];
             $userRoleSlug = strtolower($user->role->slug ?? '');
             return in_array($userRoleSlug, array_map('strtolower', $defaultAllowedRoles));
         }

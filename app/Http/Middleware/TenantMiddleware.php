@@ -36,6 +36,15 @@ class TenantMiddleware
                 // Share tenant data ke semua view
                 view()->share('current_tenant', $tenant);
 
+                // Ambil modul aktif untuk tenant
+                $activeModules = $tenant->modules()
+                    ->where('tenant_modules.is_active', true)
+                    ->orderBy('name')
+                    ->get();
+
+                // Share modul aktif ke semua view
+                view()->share('activeModules', $activeModules);
+
                 // Simpan tenant ke request untuk digunakan di controller
                 $request->merge(['tenant' => $tenant]);
 
@@ -70,6 +79,15 @@ class TenantMiddleware
 
         // Share tenant data ke semua view
         view()->share('current_tenant', $tenant);
+
+        // Ambil modul aktif untuk tenant
+        $activeModules = $tenant->modules()
+            ->where('tenant_modules.is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        // Share modul aktif ke semua view
+        view()->share('activeModules', $activeModules);
 
         // Simpan tenant ke request untuk digunakan di controller
         $request->merge(['tenant' => $tenant]);

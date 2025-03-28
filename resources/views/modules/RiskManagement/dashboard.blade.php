@@ -277,7 +277,7 @@
             <a href="{{ route('modules.risk-management.risk-reports.index') }}" class="btn btn-primary">
                 <i class="fas fa-list me-1"></i> Daftar Laporan
             </a>
-            @if(auth()->user()->role && auth()->user()->role->slug === 'tenant_admin')
+            @if(auth()->user()->role && auth()->user()->role->slug === 'tenant-admin')
             <a href="{{ route('modules.risk-management.analysis-config') }}" class="btn btn-secondary ms-2">
                 <i class="fas fa-cog me-1"></i> Konfigurasi Akses Analisis
             </a>

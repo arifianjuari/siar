@@ -58,8 +58,7 @@ class RiskAnalysisController extends Controller
         if (
             $user->role &&
             $user->role->slug !== 'superadmin' &&
-            strtolower($user->role->slug) !== 'tenant_admin' &&
-            strtolower($user->role->slug) !== 'tenant admin'
+            strtolower($user->role->slug) !== 'tenant-admin'
         ) {
             $this->authorize('create', [RiskAnalysis::class, $report]);
         }

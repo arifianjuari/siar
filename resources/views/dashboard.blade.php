@@ -41,10 +41,16 @@
             return null;
         }
     }
+
+    if (!function_exists('hasModulePermission')) {
+        function hasModulePermission($moduleCode, $permission = 'can_view') {
+            return auth()->user()->hasPermission($moduleCode, $permission);
+        }
+    }
     
     $userRole = auth()->user()->role->slug ?? '';
     $isSuperAdmin = $userRole === 'superadmin';
-    $isTenantAdmin = $userRole === 'tenant_admin';
+    $isTenantAdmin = $userRole === 'tenant-admin';
 @endphp
 
 @section('header')
@@ -107,14 +113,25 @@
     @if($isSuperAdmin)
         <!-- Superadmin Dashboard -->
         <div class="row">
+            @if(hasModulePermission('tenant_management'))
             <div class="col-lg-3 col-md-6 mb-4">
                 <div class="card dashboard-stat-card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-muted text-uppercase small fw-semibold">Total Tenant</h6>
-                                <h3 class="mb-0 fw-bold">{{ \App\Models\Tenant::count() }}</h3>
-                                <p class="mb-0 small text-success"><i class="fas fa-arrow-up me-1"></i> {{ \App\Models\Tenant::where('created_at', '>=', now()->subDays(30))->count() }} baru</p>
+                                @php
+                                    $totalTenants = \App\Models\Tenant::count();
+                                    $newTenants = \App\Models\Tenant::where('created_at', '>=', now()->subDays(30))->count();
+                                @endphp
+                                <h3 class="mb-0 fw-bold">{{ $totalTenants }}</h3>
+                                <p class="mb-0 small {{ $newTenants > 0 ? 'text-success' : 'text-muted' }}">
+                                    @if($newTenants > 0)
+                                        <i class="fas fa-arrow-up me-1"></i> {{ $newTenants }} baru
+                                    @else
+                                        <i class="fas fa-minus me-1"></i> Tidak ada tenant baru
+                                    @endif
+                                </p>
                             </div>
                             <div class="stat-icon bg-primary text-white">
                                 <i class="fas fa-building"></i>
@@ -128,15 +145,27 @@
                     </div>
                 </div>
             </div>
+            @endif
 
+            @if(hasModulePermission('module_management'))
             <div class="col-lg-3 col-md-6 mb-4">
                 <div class="card dashboard-stat-card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-muted text-uppercase small fw-semibold">Total Modul</h6>
-                                <h3 class="mb-0 fw-bold">{{ \App\Models\Module::count() }}</h3>
-                                <p class="mb-0 small text-success"><i class="fas fa-arrow-up me-1"></i> {{ \App\Models\Module::where('created_at', '>=', now()->subDays(30))->count() }} baru</p>
+                                @php
+                                    $totalModules = \App\Models\Module::count();
+                                    $newModules = \App\Models\Module::where('created_at', '>=', now()->subDays(30))->count();
+                                @endphp
+                                <h3 class="mb-0 fw-bold">{{ $totalModules }}</h3>
+                                <p class="mb-0 small {{ $newModules > 0 ? 'text-success' : 'text-muted' }}">
+                                    @if($newModules > 0)
+                                        <i class="fas fa-arrow-up me-1"></i> {{ $newModules }} baru
+                                    @else
+                                        <i class="fas fa-cube me-1"></i> Tersedia
+                                    @endif
+                                </p>
                             </div>
                             <div class="stat-icon bg-success text-white">
                                 <i class="fas fa-cube"></i>
@@ -150,15 +179,23 @@
                     </div>
                 </div>
             </div>
+            @endif
 
+            @if(hasModulePermission('tenant_management'))
             <div class="col-lg-3 col-md-6 mb-4">
                 <div class="card dashboard-stat-card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-muted text-uppercase small fw-semibold">Tenant Aktif</h6>
-                                <h3 class="mb-0 fw-bold">{{ \App\Models\Tenant::where('is_active', true)->count() }}</h3>
-                                <p class="mb-0 small text-success"><i class="fas fa-percentage me-1"></i> {{ round((\App\Models\Tenant::where('is_active', true)->count() / \App\Models\Tenant::count()) * 100) }}% aktif</p>
+                                @php
+                                    $activeTenants = \App\Models\Tenant::where('is_active', true)->count();
+                                    $percentage = $totalTenants > 0 ? round(($activeTenants / $totalTenants) * 100) : 0;
+                                @endphp
+                                <h3 class="mb-0 fw-bold">{{ $activeTenants }}</h3>
+                                <p class="mb-0 small text-muted">
+                                    <i class="fas fa-percentage me-1"></i> {{ $percentage }}% aktif
+                                </p>
                             </div>
                             <div class="stat-icon bg-info text-white">
                                 <i class="fas fa-check-circle"></i>
@@ -172,14 +209,21 @@
                     </div>
                 </div>
             </div>
+            @endif
 
+            @if(hasModulePermission('user_management'))
             <div class="col-lg-3 col-md-6 mb-4">
                 <div class="card dashboard-stat-card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-muted text-uppercase small fw-semibold">Total Admin</h6>
-                                <h3 class="mb-0 fw-bold">{{ \App\Models\User::whereHas('role', function($q) { $q->where('slug', 'tenant_admin'); })->count() }}</h3>
+                                @php
+                                    $tenantAdmins = \App\Models\User::whereHas('role', function($q) {
+                                        $q->where('slug', 'tenant-admin');
+                                    })->count();
+                                @endphp
+                                <h3 class="mb-0 fw-bold">{{ $tenantAdmins }}</h3>
                                 <p class="mb-0 small text-muted"><i class="fas fa-user-shield me-1"></i> Tenant Admins</p>
                             </div>
                             <div class="stat-icon bg-warning text-white">
@@ -194,10 +238,12 @@
                     </div>
                 </div>
             </div>
+            @endif
         </div>
 
         <!-- Charts & Visualisasi Data -->
         <div class="row mt-2">
+            @if(hasModulePermission('tenant_management'))
             <!-- Chart Tenant Growth -->
             <div class="col-lg-8 mb-4">
                 <div class="card border-0 shadow-sm">
@@ -211,11 +257,26 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <canvas id="tenantGrowthChart" height="300"></canvas>
+                        @php
+                            $hasData = \App\Models\Tenant::count() > 0;
+                        @endphp
+                        @if($hasData)
+                            <canvas id="tenantGrowthChart" height="300"></canvas>
+                        @else
+                            <div class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="fas fa-chart-line fa-3x text-muted"></i>
+                                </div>
+                                <h6 class="text-muted">Belum ada data pertumbuhan tenant</h6>
+                                <p class="small text-muted mb-0">Data akan muncul saat tenant mulai terdaftar dalam sistem</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
+            @endif
             
+            @if(hasModulePermission('module_management'))
             <!-- Chart Module Popularity -->
             <div class="col-lg-4 mb-4">
                 <div class="card border-0 shadow-sm">
@@ -223,14 +284,29 @@
                         <h5 class="mb-0">Popularitas Modul</h5>
                     </div>
                     <div class="card-body">
-                        <canvas id="modulePopularityChart" height="300"></canvas>
+                        @php
+                            $hasModuleData = \App\Models\TenantModule::count() > 0;
+                        @endphp
+                        @if($hasModuleData)
+                            <canvas id="modulePopularityChart" height="300"></canvas>
+                        @else
+                            <div class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="fas fa-chart-pie fa-3x text-muted"></i>
+                                </div>
+                                <h6 class="text-muted">Belum ada data popularitas modul</h6>
+                                <p class="small text-muted mb-0">Data akan muncul saat modul diaktifkan oleh tenant</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
+            @endif
         </div>
 
         <!-- Superadmin Activity & Stats -->
         <div class="row">
+            @if(hasModulePermission('tenant_management'))
             <div class="col-lg-8 mb-4">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-transparent border-0">
@@ -240,43 +316,54 @@
                         </div>
                     </div>
                     <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th class="border-0">Nama</th>
-                                        <th class="border-0">Domain</th>
-                                        <th class="border-0">Status</th>
-                                        <th class="border-0">Dibuat</th>
-                                        <th class="border-0">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach(\App\Models\Tenant::latest()->take(5)->get() as $tenant)
-                                    <tr>
-                                        <td class="align-middle">
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-sm me-3 bg-primary text-white d-flex align-items-center justify-content-center rounded" style="width:36px;height:36px;">
-                                                    {{ strtoupper(substr($tenant->name, 0, 1)) }}
-                                                </div>
-                                                <span class="fw-medium">{{ $tenant->name }}</span>
-                                            </div>
-                                        </td>
-                                        <td class="align-middle">{{ $tenant->domain }}</td>
-                                        <td class="align-middle">{!! $tenant->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-danger">Nonaktif</span>' !!}</td>
-                                        <td class="align-middle">{{ $tenant->created_at->format('d M Y') }}</td>
-                                        <td class="align-middle">
-                                            <a href="{{ route('superadmin.tenants.show', $tenant->id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+                        @php
+                            $recentTenants = \App\Models\Tenant::orderBy('created_at', 'desc')->take(5)->get();
+                        @endphp
+                        
+                        @if($recentTenants->count() > 0)
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th class="border-0">Nama</th>
+                                            <th class="border-0">Domain</th>
+                                            <th class="border-0">Status</th>
+                                            <th class="border-0">Dibuat</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($recentTenants as $tenant)
+                                        <tr>
+                                            <td>{{ $tenant->name }}</td>
+                                            <td>{{ $tenant->domain }}</td>
+                                            <td>
+                                                @if($tenant->is_active)
+                                                    <span class="badge bg-success">Aktif</span>
+                                                @else
+                                                    <span class="badge bg-secondary">Nonaktif</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $tenant->created_at->format('d/m/Y') }}</td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="fas fa-building fa-3x text-muted"></i>
+                                </div>
+                                <h6 class="text-muted">Belum ada tenant dalam sistem</h6>
+                                <p class="small text-muted mb-0">Tenant yang Anda buat akan muncul di sini</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
+            @endif
             
+            @if(hasModulePermission('module_management'))
             <div class="col-lg-4 mb-4">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-transparent border-0">
@@ -302,6 +389,7 @@
                     </div>
                 </div>
             </div>
+            @endif
         </div>
         
         <!-- Other Superadmin widgets can be included here -->
@@ -323,6 +411,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize Superadmin Charts
         @if($isSuperAdmin)
+        @if(hasModulePermission('tenant_management'))
         // Tenant Growth Chart
         const tenantGrowthCtx = document.getElementById('tenantGrowthChart').getContext('2d');
         new Chart(tenantGrowthCtx, {
@@ -357,12 +446,14 @@
                     x: {
                         grid: {
                             display: false
-                                                }
+                        }
                     }
-                                        }
-                                    }
+                }
+            }
         });
+        @endif
         
+        @if(hasModulePermission('module_management'))
         // Module Popularity Chart
         const modulePopularityCtx = document.getElementById('modulePopularityChart').getContext('2d');
         new Chart(modulePopularityCtx, {
@@ -396,7 +487,8 @@
                 cutout: '70%'
             }
         });
-                            @endif
+        @endif
+        @endif
     });
 </script>
 @endpush 

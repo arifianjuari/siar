@@ -41,21 +41,21 @@ class UserSeeder extends Seeder
         $this->command->info('User super admin berhasil dibuat.');
 
         // Buat admin
-        $adminRole = Role::where('slug', 'admin-rs')->first();
+        $adminRole = Role::where('slug', 'tenant-admin')->first();
         if ($adminRole) {
             User::firstOrCreate(
                 ['email' => 'admin@siar.com'],
                 [
                     'tenant_id' => $tenant->id,
                     'role_id' => $adminRole->id,
-                    'name' => 'Admin RS',
+                    'name' => 'Tenant Admin',
                     'password' => Hash::make('asdfasdf'),
                     'is_active' => true,
                 ]
             );
-            $this->command->info('User admin RS berhasil dibuat.');
+            $this->command->info('User tenant admin berhasil dibuat.');
         } else {
-            $this->command->info('Role admin-rs tidak ditemukan.');
+            $this->command->info('Role tenant-admin tidak ditemukan.');
         }
 
         // Buat user manajemen strategis

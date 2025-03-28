@@ -60,7 +60,7 @@ class UserFactory extends Factory
      */
     public function adminRS(): Factory
     {
-        return $this->withRole('admin-rs');
+        return $this->withRole('tenant-admin');
     }
 
     /**

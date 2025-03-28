@@ -17,6 +17,9 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         TenantProvisionCommand::class,
         DatabaseBackup::class,
+        Commands\CreateTenant::class,
+        Commands\FixRolePermissions::class,
+        Commands\FixRoleSlugs::class,
     ];
 
     /**

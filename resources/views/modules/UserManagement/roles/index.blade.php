@@ -6,11 +6,11 @@
     <div class="d-flex justify-content-between align-items-center">
         <h2 class="mb-0">Manajemen Role</h2>
         
-        @if(\App\Helpers\PermissionHelper::hasPermission('user-management', 'can_create'))
+        @canCreate('user-management')
             <a href="{{ route('modules.user-management.roles.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus-circle me-1"></i> Tambah Role
             </a>
-        @endif
+        @endcanCreate
     </div>
 @endsection
 

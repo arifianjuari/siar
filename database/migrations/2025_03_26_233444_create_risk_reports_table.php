@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('risk_title');
             $table->text('chronology');
             $table->string('reporter_unit');
-            $table->enum('risk_type', ['KTD', 'KNC', 'KTC', 'KPC'])->nullable();
+            $table->enum('risk_type', ['KTD', 'KNC', 'KTC', 'KPC', 'Sentinel'])->nullable();
             $table->string('risk_category');
             $table->date('occurred_at');
             $table->string('impact');

@@ -1,3 +1,44 @@
+@php
+    // Mendapatkan modul aktif untuk tenant
+    $activeModules = [];
+    try {
+        if (auth()->check()) {
+            $tenant_id = session('tenant_id');
+            if ($tenant_id) {
+                $tenant = \App\Models\Tenant::find($tenant_id);
+                if ($tenant) {
+                    $activeModules = $tenant->modules()
+                        ->where('tenant_modules.is_active', true)
+                        ->orderBy('name')
+                        ->get();
+                }
+            }
+        }
+    } catch (\Exception $e) {
+        // Jika terjadi error, biarkan $activeModules kosong
+    }
+
+    // Cek role tenant admin
+    $isTenantAdmin = false;
+    try {
+        if (auth()->check() && auth()->user()->role && auth()->user()->role->slug === 'tenant-admin') {
+            $isTenantAdmin = true;
+        }
+    } catch (\Exception $e) {
+        // Abaikan error
+    }
+
+    // Cek role superadmin
+    $isSuperAdmin = false;
+    try {
+        if (auth()->check() && auth()->user()->role && auth()->user()->role->slug === 'superadmin') {
+            $isSuperAdmin = true;
+        }
+    } catch (\Exception $e) {
+        // Abaikan error
+    }
+@endphp
+
 <aside class="sidebar rounded-end p-0" x-data="{ activeDropdown: null }">
     <!-- Tenant Information -->
     <div class="p-4 border-bottom border-secondary">
@@ -67,17 +108,6 @@
         </a>
 
         <!-- Tenant Management - untuk tenant admin -->
-        @php
-            $isTenantAdmin = false;
-            try {
-                if (auth()->check() && auth()->user()->role && auth()->user()->role->slug === 'tenant_admin') {
-                    $isTenantAdmin = true;
-                }
-            } catch (\Exception $e) {
-                // Abaikan error
-            }
-        @endphp
-        
         @if($isTenantAdmin)
             <div class="nav-item dropdown mb-2">
                 <button type="button" class="nav-link text-start w-100 {{ request()->is('tenant*') ? 'active' : '' }}" 
@@ -124,6 +154,7 @@
         @endif
 
         <!-- Modules Management -->
+        @if($isTenantAdmin)
         <a href="{{ route('modules.index') }}" class="nav-link {{ request()->routeIs('modules.index') ? 'active' : '' }} mb-2">
             <div class="d-flex align-items-center">
                 <div class="icon-sidebar">
@@ -132,40 +163,9 @@
                 <span>Manajemen Modul</span>
             </div>
         </a>
-
-        @php
-            // Mendapatkan modul aktif untuk tenant
-            $activeModules = [];
-            try {
-                if (auth()->check()) {
-                    $tenant_id = session('tenant_id');
-                    if ($tenant_id) {
-                        $tenant = \App\Models\Tenant::find($tenant_id);
-                        if ($tenant) {
-                            $activeModules = $tenant->modules()
-                                ->where('tenant_modules.is_active', true)
-                                ->orderBy('name')
-                                ->get();
-                        }
-                    }
-                }
-            } catch (\Exception $e) {
-                // Jika terjadi error, biarkan $activeModules kosong
-            }
-        @endphp
+        @endif
 
         <!-- Superadmin section -->
-        @php
-            $isSuperAdmin = false;
-            try {
-                if (auth()->check() && auth()->user()->role && auth()->user()->role->slug === 'superadmin') {
-                    $isSuperAdmin = true;
-                }
-            } catch (\Exception $e) {
-                // Abaikan error
-            }
-        @endphp
-        
         @if($isSuperAdmin)
             <div class="sidebar-heading text-uppercase text-white-50 small px-3 mt-4 mb-2">
                 Superadmin

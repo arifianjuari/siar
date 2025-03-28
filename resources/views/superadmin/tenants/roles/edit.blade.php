@@ -67,7 +67,7 @@
                         
                         <div class="mb-4">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {{ $role->is_active ? 'checked' : '' }}>
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', $role->is_active) ? 'checked' : '' }}>
                                 <label class="form-check-label" for="is_active">
                                     Role Aktif
                                 </label>
@@ -87,7 +87,7 @@
                 </div>
             </div>
             
-            @if($role->slug === 'tenant_admin')
+            @if($role->slug === 'tenant-admin')
                 <div class="alert alert-info mt-4">
                     <i class="fas fa-info-circle me-2"></i>
                     <strong>Catatan:</strong> Role Tenant Admin adalah role default yang diperlukan sistem. Role ini tidak dapat dihapus, hanya dapat dimodifikasi namanya dan deskripsinya.

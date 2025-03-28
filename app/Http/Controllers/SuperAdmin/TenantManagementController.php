@@ -81,7 +81,7 @@ class TenantManagementController extends Controller
             $role = Role::create([
                 'tenant_id' => $tenant->id,
                 'name' => 'Tenant Admin',
-                'slug' => 'tenant_admin',
+                'slug' => 'tenant-admin',
                 'description' => 'Administrator untuk tenant ' . $tenant->name,
                 'is_active' => true,
             ]);
@@ -120,7 +120,7 @@ class TenantManagementController extends Controller
         $userCount = $tenant->users()->count();
         $activeModules = $tenant->activeModules()->count();
         $adminUsers = $tenant->users()->whereHas('role', function ($q) {
-            $q->where('slug', 'tenant_admin');
+            $q->where('slug', 'tenant-admin');
         })->get();
 
         return view('superadmin.tenants.show', compact('tenant', 'userCount', 'activeModules', 'adminUsers'));
@@ -280,7 +280,7 @@ class TenantManagementController extends Controller
                 ->firstOrFail();
 
             // Cek apakah user adalah admin tenant
-            if (!$user->hasRole('tenant_admin')) {
+            if (!$user->hasRole('tenant-admin')) {
                 return redirect()->back()
                     ->with('error', 'User bukan merupakan Admin Tenant.');
             }
@@ -407,7 +407,7 @@ class TenantManagementController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100',
             'description' => 'nullable|string|max:255',
-            'is_active' => 'boolean',
+            'is_active' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -417,10 +417,11 @@ class TenantManagementController extends Controller
         }
 
         try {
+            // Update role
             $role->update([
                 'name' => $request->name,
                 'description' => $request->description,
-                'is_active' => $request->has('is_active'),
+                'is_active' => $request->boolean('is_active', true),
             ]);
 
             return redirect()->route('superadmin.tenants.show', $tenant)
@@ -451,8 +452,8 @@ class TenantManagementController extends Controller
                     ->with('error', 'Role tidak dapat dihapus karena masih digunakan oleh ' . $userCount . ' pengguna.');
             }
 
-            // Cek apakah role adalah tenant_admin
-            if ($role->slug === 'tenant_admin') {
+            // Cek apakah role adalah tenant-admin
+            if ($role->slug === 'tenant-admin') {
                 return redirect()->route('superadmin.tenants.show', $tenant)
                     ->with('error', 'Role Admin Tenant tidak dapat dihapus.');
             }

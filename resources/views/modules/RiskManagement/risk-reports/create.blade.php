@@ -410,49 +410,6 @@
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div class="alert alert-info mt-4">
-                                <div class="d-flex">
-                                    <div class="flex-shrink-0">
-                                        <i class="fas fa-info-circle fa-2x me-3"></i>
-                                    </div>
-                                    <div>
-                                        <h5 class="alert-heading">Matriks Penilaian Risiko</h5>
-                                        <div class="risk-matrix-table mt-2">
-                                            <table class="table table-bordered table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="text-center" style="width: 20%">Dampak / Probabilitas</th>
-                                                        <th class="text-center" style="width: 20%">Jarang</th>
-                                                        <th class="text-center" style="width: 20%">Kadang</th>
-                                                        <th class="text-center" style="width: 20%">Sering</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                        <th class="text-center">Ringan</th>
-                                                        <td class="text-center bg-success bg-opacity-10 text-success fw-bold">Rendah</td>
-                                                        <td class="text-center bg-success bg-opacity-10 text-success fw-bold">Rendah</td>
-                                                        <td class="text-center bg-warning bg-opacity-10 text-warning fw-bold">Sedang</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <th class="text-center">Sedang</th>
-                                                        <td class="text-center bg-success bg-opacity-10 text-success fw-bold">Rendah</td>
-                                                        <td class="text-center bg-warning bg-opacity-10 text-warning fw-bold">Sedang</td>
-                                                        <td class="text-center bg-danger bg-opacity-10 text-danger fw-bold">Tinggi</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <th class="text-center">Berat</th>
-                                                        <td class="text-center bg-warning bg-opacity-10 text-warning fw-bold">Sedang</td>
-                                                        <td class="text-center bg-danger bg-opacity-10 text-danger fw-bold">Tinggi</td>
-                                                        <td class="text-center bg-danger bg-opacity-25 text-danger fw-bolder">Ekstrem</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                     
@@ -584,13 +541,8 @@
         }
         
         function highlightMatrixCell(row, col) {
-            const tbody = document.querySelector('.risk-matrix-table tbody');
-            if (!tbody) return;
-            
-            const cell = tbody.rows[row].cells[col + 1]; // +1 karena kolom pertama adalah header
-            if (cell) {
-                cell.classList.add('active-cell');
-            }
+            // Matriks sudah dihapus, jadi fungsi ini tidak melakukan apa-apa
+            return;
         }
         
         // Initialize marker position

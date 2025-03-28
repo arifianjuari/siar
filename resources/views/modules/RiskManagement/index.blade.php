@@ -269,9 +269,8 @@
             
             @php
                 $userRole = auth()->user()->role->slug ?? '';
-                $isTenantAdmin = $userRole === 'tenant_admin' || 
-                                  $userRole === 'Tenant_Admin' || 
-                                  strtolower($userRole) === 'tenant_admin';
+                $isTenantAdmin = $userRole === 'tenant-admin' || 
+                                  strtolower($userRole) === 'tenant-admin';
             @endphp
             
             @if(auth()->user()->role && $isTenantAdmin)

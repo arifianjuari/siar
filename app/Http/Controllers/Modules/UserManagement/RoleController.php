@@ -20,7 +20,7 @@ class RoleController extends Controller
         $this->middleware('module:user-management');
         $this->middleware(function ($request, $next) {
             // Cek apakah user adalah tenant admin
-            if (!auth()->user()->role || auth()->user()->role->slug !== 'tenant_admin') {
+            if (!auth()->user()->role || auth()->user()->role->slug !== 'tenant-admin') {
                 \Illuminate\Support\Facades\Log::warning('Akses ditolak: User bukan tenant admin mencoba mengakses role management', [
                     'user_id' => auth()->id(),
                     'role' => auth()->user()->role ? auth()->user()->role->name : 'No Role',
@@ -79,6 +79,7 @@ class RoleController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|regex:/^[a-z0-9-]+$/|unique:roles,slug,NULL,id,tenant_id,' . $tenantId,
             'description' => 'nullable|string',
             'permissions' => 'required|array',
             'permissions.*.module_id' => 'required|exists:modules,id',
@@ -90,14 +91,11 @@ class RoleController extends Controller
             'permissions.*.can_import' => 'boolean',
         ]);
 
-        // Tambahkan slug dari nama
-        $slug = Str::slug($validated['name']);
-
         // Buat role baru
         $role = Role::create([
             'tenant_id' => $tenantId,
             'name' => $validated['name'],
-            'slug' => $slug,
+            'slug' => $validated['slug'],
             'description' => $validated['description'],
             'is_active' => true,
         ]);
@@ -190,6 +188,7 @@ class RoleController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|regex:/^[a-z0-9-]+$/|unique:roles,slug,' . $id . ',id,tenant_id,' . $tenantId,
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'permissions' => 'required|array',
@@ -203,10 +202,12 @@ class RoleController extends Controller
         ]);
 
         // Update role
-        $role->name = $validated['name'];
-        $role->description = $validated['description'];
-        $role->is_active = $validated['is_active'] ?? true;
-        $role->save();
+        $role->update([
+            'name' => $validated['name'],
+            'slug' => $validated['slug'],
+            'description' => $validated['description'],
+            'is_active' => $validated['is_active'] ?? true,
+        ]);
 
         // Hapus semua permission yang ada dan buat ulang
         RoleModulePermission::where('role_id', $role->id)->delete();

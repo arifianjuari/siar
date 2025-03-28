@@ -4,7 +4,7 @@
     <div class="d-flex justify-content-between align-items-center">
         <h2 class="mb-0">Manajemen Role</h2>
         
-        <?php if(\App\Helpers\PermissionHelper::hasPermission('user-management', 'can_create')): ?>
+        <?php if(hasModulePermission('user-management', auth()->user(), 'can_create')): ?>
             <a href="<?php echo e(route('modules.user-management.roles.create')); ?>" class="btn btn-primary">
                 <i class="fas fa-plus-circle me-1"></i> Tambah Role
             </a>

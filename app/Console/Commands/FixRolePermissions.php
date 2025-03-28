@@ -24,7 +24,7 @@ class FixRolePermissions extends Command
      *
      * @var string
      */
-    protected $description = 'Memperbaiki izin untuk role tenant_admin';
+    protected $description = 'Memperbaiki izin untuk role tenant-admin';
 
     /**
      * Execute the console command.
@@ -49,12 +49,12 @@ class FixRolePermissions extends Command
             // Temukan role tenant_admin
             $adminRole = Role::where('tenant_id', $tenant->id)
                 ->where(function ($query) {
-                    $query->where('slug', 'tenant_admin')
-                        ->orWhere('slug', 'Tenant_Admin');
+                    $query->where('slug', 'tenant-admin')
+                        ->orWhere('slug', 'tenant-admin');
                 })->first();
 
             if (!$adminRole) {
-                $this->warn("  - Role tenant_admin tidak ditemukan untuk tenant ini. Melewati...");
+                $this->warn("  - Role tenant-admin tidak ditemukan untuk tenant ini. Melewati...");
                 continue;
             }
 

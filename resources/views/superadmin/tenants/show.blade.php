@@ -259,7 +259,7 @@
                                                     <i class="fas fa-key"></i>
                                                 </a>
                                                 
-                                                @if($role->slug !== 'tenant_admin')
+                                                @if($role->slug !== 'tenant-admin')
                                                     <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteRoleModal{{ $role->id }}">
                                                         <i class="fas fa-trash"></i>
                                                     </button>

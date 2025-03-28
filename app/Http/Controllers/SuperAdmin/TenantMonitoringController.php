@@ -44,8 +44,8 @@ class TenantMonitoringController extends Controller
             // Dapatkan admin tenant
             $adminUsers = User::where('tenant_id', $tenant->id)
                 ->whereHas('role', function ($q) {
-                    $q->where('slug', 'tenant_admin')
-                        ->orWhere('code', 'tenant_admin');
+                    $q->where('slug', 'tenant-admin')
+                        ->orWhere('code', 'tenant-admin');
                 })
                 ->get();
 
@@ -92,8 +92,8 @@ class TenantMonitoringController extends Controller
         // Dapatkan admin tenant
         $adminUsers = User::where('tenant_id', $tenant->id)
             ->whereHas('role', function ($q) {
-                $q->where('slug', 'tenant_admin')
-                    ->orWhere('code', 'tenant_admin');
+                $q->where('slug', 'tenant-admin')
+                    ->orWhere('code', 'tenant-admin');
             })
             ->get();
 

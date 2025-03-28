@@ -92,7 +92,7 @@ class PermissionHelper
 
         $user = Auth::user();
 
-        // Cek apakah user memiliki role dengan slug 'admin'
-        return $user->role && $user->role->slug === 'admin';
+        // Cek apakah user memiliki role dengan slug 'tenant-admin'
+        return $user->role && $user->role->slug === 'tenant-admin';
     }
 }

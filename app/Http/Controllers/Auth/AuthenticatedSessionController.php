@@ -28,6 +28,13 @@ class AuthenticatedSessionController extends Controller
 
             // Cek apakah user memiliki role superadmin
             $user = Auth::user();
+
+            // Set tenant ke session jika user bukan superadmin
+            if ($user->role && $user->role->slug !== 'superadmin' && $user->tenant) {
+                session(['tenant_id' => $user->tenant->id]);
+                view()->share('current_tenant', $user->tenant);
+            }
+
             if ($user->role && $user->role->slug === 'superadmin') {
                 Log::info('User superadmin, mengarahkan ke dashboard superadmin');
                 return redirect()->intended(route('superadmin.dashboard'));

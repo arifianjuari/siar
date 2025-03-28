@@ -25,9 +25,8 @@ class RiskManagementController extends Controller
     {
         // Hanya tenant admin yang bisa mengakses konfigurasi
         $userRole = auth()->user()->role->slug ?? '';
-        $isTenantAdmin = $userRole === 'tenant_admin' ||
-            $userRole === 'Tenant_Admin' ||
-            strtolower($userRole) === 'tenant_admin';
+        $isTenantAdmin = $userRole === 'tenant-admin' ||
+            strtolower($userRole) === 'tenant-admin';
 
         if (!auth()->user()->role || !$isTenantAdmin) {
             return redirect()->route('modules.risk-management.index')
@@ -56,9 +55,8 @@ class RiskManagementController extends Controller
     {
         // Hanya tenant admin yang bisa mengakses konfigurasi
         $userRole = auth()->user()->role->slug ?? '';
-        $isTenantAdmin = $userRole === 'tenant_admin' ||
-            $userRole === 'Tenant_Admin' ||
-            strtolower($userRole) === 'tenant_admin';
+        $isTenantAdmin = $userRole === 'tenant-admin' ||
+            strtolower($userRole) === 'tenant-admin';
 
         if (!auth()->user()->role || !$isTenantAdmin) {
             return redirect()->route('modules.risk-management.index')

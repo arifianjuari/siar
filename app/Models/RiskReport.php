@@ -15,6 +15,8 @@ class RiskReport extends Model
         'tenant_id',
         'risk_title',
         'chronology',
+        'description',
+        'immediate_action',
         'reporter_unit',
         'risk_type',
         'risk_category',

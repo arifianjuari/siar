@@ -24,6 +24,9 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             UserSeeder::class,
             RiskManagementModuleSeeder::class,
+            UserManagementModuleSeeder::class,
+            SystemTenantAdminSeeder::class,
+            RSBBatuTenantSeeder::class,
         ]);
     }
 }

@@ -64,7 +64,7 @@
                                     {{ in_array($role->id, $currentConfig->allowed_roles ?? []) ? 'checked' : '' }}>
                                 <label class="form-check-label" for="role_{{ $role->id }}">
                                     {{ $role->name }}
-                                    @if($role->slug == 'tenant_admin')
+                                    @if($role->slug == 'tenant-admin')
                                     <span class="badge bg-info ms-1">Admin</span>
                                     @endif
                                 </label>

@@ -62,9 +62,9 @@ class CreateTenant extends Command
         // Buat role admin
         $adminRole = Role::create([
             'tenant_id' => $tenant->id,
-            'name' => 'Admin',
-            'slug' => 'admin',
-            'description' => 'Administrator Tenant',
+            'name' => "Admin {$name}",
+            'slug' => 'tenant-admin',
+            'description' => "Role admin untuk {$name}",
             'is_active' => true,
         ]);
         $this->info("Role admin berhasil dibuat!");

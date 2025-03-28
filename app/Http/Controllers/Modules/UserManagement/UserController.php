@@ -23,7 +23,7 @@ class UserController extends Controller
         $this->middleware('module:user-management');
         $this->middleware(function ($request, $next) {
             // Cek apakah user adalah tenant admin
-            if (!auth()->user()->role || auth()->user()->role->slug !== 'tenant_admin') {
+            if (!auth()->user()->role || auth()->user()->role->slug !== 'tenant-admin') {
                 Log::warning('Akses ditolak: User bukan tenant admin mencoba mengakses user management', [
                     'user_id' => auth()->id(),
                     'role' => auth()->user()->role ? auth()->user()->role->name : 'No Role',
