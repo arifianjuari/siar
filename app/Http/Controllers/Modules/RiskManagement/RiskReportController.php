@@ -69,20 +69,42 @@ class RiskReportController extends Controller
      */
     public function dashboard()
     {
-        // Ambil statistik aktual dari database
+        $tenantId = auth()->user()->tenant_id;
+
+        // Ambil statistik aktual dari database (risk_analysis)
         $stats = [
-            'total' => RiskReport::where('tenant_id', auth()->user()->tenant_id)->count(),
-            'open' => RiskReport::where('tenant_id', auth()->user()->tenant_id)->where('status', 'open')->count(),
-            'in_review' => RiskReport::where('tenant_id', auth()->user()->tenant_id)->where('status', 'in_review')->count(),
-            'resolved' => RiskReport::where('tenant_id', auth()->user()->tenant_id)->where('status', 'resolved')->count(),
-            'low_risk' => RiskReport::where('tenant_id', auth()->user()->tenant_id)
-                ->whereIn('risk_level', ['Rendah', 'Low', 'rendah', 'low'])
+            'total' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
+                ->where('risk_reports.tenant_id', $tenantId)
                 ->count(),
-            'medium_risk' => RiskReport::where('tenant_id', auth()->user()->tenant_id)
-                ->whereIn('risk_level', ['Sedang', 'Medium', 'sedang', 'medium'])
+
+            'draft' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
+                ->where('risk_reports.tenant_id', $tenantId)
+                ->where('risk_analysis.analysis_status', 'draft')
                 ->count(),
-            'high_risk' => RiskReport::where('tenant_id', auth()->user()->tenant_id)
-                ->whereIn('risk_level', ['Tinggi', 'High', 'tinggi', 'high'])
+
+            'review' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
+                ->where('risk_reports.tenant_id', $tenantId)
+                ->whereIn('risk_analysis.analysis_status', ['in_progress', 'reviewed'])
+                ->count(),
+
+            'completed' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
+                ->where('risk_reports.tenant_id', $tenantId)
+                ->where('risk_analysis.analysis_status', 'completed')
+                ->count(),
+
+            'low_risk' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
+                ->where('risk_reports.tenant_id', $tenantId)
+                ->whereIn('risk_reports.risk_level', ['Rendah', 'Low', 'rendah', 'low'])
+                ->count(),
+
+            'medium_risk' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
+                ->where('risk_reports.tenant_id', $tenantId)
+                ->whereIn('risk_reports.risk_level', ['Sedang', 'Medium', 'sedang', 'medium'])
+                ->count(),
+
+            'high_risk' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
+                ->where('risk_reports.tenant_id', $tenantId)
+                ->whereIn('risk_reports.risk_level', ['Tinggi', 'High', 'tinggi', 'high'])
                 ->count(),
         ];
 
@@ -90,39 +112,41 @@ class RiskReportController extends Controller
         $monthlyData = [];
         $monthLabels = [];
 
-        for ($i = 11; $i >= 0; $i--) {
-            $date = Carbon::now()->subMonths($i);
-            $monthLabels[] = $date->format('M');
+        // Gunakan startOfMonth untuk memastikan konsistensi
+        $startDate = Carbon::now()->startOfMonth()->subMonths(11);
 
-            $count = RiskReport::where('tenant_id', auth()->user()->tenant_id)
-                ->whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
+        // Log informasi tanggal untuk debugging
+        Log::info('Dashboard Chart Data Parameters', [
+            'start_date' => $startDate->format('Y-m-d'),
+            'end_date' => Carbon::now()->format('Y-m-d'),
+        ]);
+
+        for ($i = 0; $i < 12; $i++) {
+            $currentDate = (clone $startDate)->addMonths($i);
+            $monthName = $currentDate->translatedFormat('M'); // Gunakan format yang tepat
+            $monthLabels[] = $monthName;
+
+            $count = \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
+                ->where('risk_reports.tenant_id', $tenantId)
+                ->whereYear('risk_analysis.created_at', $currentDate->year)
+                ->whereMonth('risk_analysis.created_at', $currentDate->month)
                 ->count();
 
             $monthlyData[] = $count;
-        }
 
-        // Ambil 5 laporan terbaru dari database
-        $recentReports = RiskReport::where('tenant_id', auth()->user()->tenant_id)
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get()
-            ->map(function ($report) {
-                return [
-                    'id' => $report->id,
-                    'title' => $report->risk_title,
-                    'category' => $report->risk_category,
-                    'risk_level' => strtolower($report->risk_level),
-                    'status' => $report->status,
-                    'created_at' => $report->created_at,
-                ];
-            });
+            // Log informasi data per bulan
+            Log::info('Dashboard Chart Monthly Data', [
+                'month' => $monthName,
+                'year' => $currentDate->year,
+                'count' => $count,
+                'index' => $i,
+            ]);
+        }
 
         return view('modules.RiskManagement.dashboard', compact(
             'stats',
             'monthlyData',
-            'monthLabels',
-            'recentReports'
+            'monthLabels'
         ));
     }
 

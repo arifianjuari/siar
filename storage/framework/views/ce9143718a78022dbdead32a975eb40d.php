@@ -51,7 +51,7 @@
                                 <div class="mb-4 pb-3 border-bottom">
                                     <?php echo $__env->yieldContent('header'); ?>
                                 </div>
-                            <?php elseif(!isset($hideDefaultHeader) && !Route::is('*.risk-analysis.*')): ?>
+                            <?php elseif(!isset($hideDefaultHeader) && !Route::is('*.risk-analysis.*') && !Route::is('modules.risk-management.dashboard')): ?>
                                 <div class="mb-4 pb-3 border-bottom">
                                     <h1 class="h3 mb-0"><?php echo $__env->yieldContent('title', 'Dashboard'); ?></h1>
                                 </div>

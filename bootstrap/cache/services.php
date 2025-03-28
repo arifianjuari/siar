@@ -41,6 +41,7 @@
     37 => 'App\\Providers\\TelescopeServiceProvider',
     38 => 'App\\Providers\\ModuleServiceProvider',
     39 => 'App\\Providers\\SafetyHookServiceProvider',
+    40 => 'App\\Providers\\ArtisanServiceProvider',
   ),
   'eager' => 
   array (
@@ -70,6 +71,7 @@
     23 => 'App\\Providers\\TelescopeServiceProvider',
     24 => 'App\\Providers\\ModuleServiceProvider',
     25 => 'App\\Providers\\SafetyHookServiceProvider',
+    26 => 'App\\Providers\\ArtisanServiceProvider',
   ),
   'deferred' => 
   array (

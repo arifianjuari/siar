@@ -70,8 +70,8 @@
         color: white;
     }
     
-    .status-filter-btn.open {
-        background-color: #dc3545; 
+    .status-filter-btn.draft {
+        background-color: #6c757d;
         color: white;
     }
     
@@ -80,7 +80,7 @@
         color: white;
     }
     
-    .status-filter-btn.resolved {
+    .status-filter-btn.completed {
         background-color: #198754;
         color: white;
     }
@@ -112,104 +112,6 @@
         height: 10px;
         border-radius: 2px;
         margin-right: 0.4rem;
-    }
-    
-    .task-item {
-        padding: 0.75rem;
-        border-radius: 0.5rem;
-        background-color: #f9f9f9;
-        margin-bottom: 0.75rem;
-        transition: all 0.2s;
-        border-left: 4px solid #ddd;
-        font-size: 0.9rem;
-    }
-    
-    .task-item:hover {
-        background-color: #f0f0f0;
-        transform: translateX(3px);
-    }
-    
-    .task-item.high {
-        border-left-color: #dc3545;
-    }
-    
-    .task-item.medium {
-        border-left-color: #fd7e14;
-    }
-    
-    .task-item.low {
-        border-left-color: #198754;
-    }
-    
-    .status-badge {
-        padding: 0.25rem 0.6rem;
-        border-radius: 9999px;
-        font-size: 0.7rem;
-        font-weight: 600;
-    }
-    
-    .status-open {
-        background-color: rgba(220, 53, 69, 0.1);
-        color: #dc3545;
-    }
-    
-    .status-in-review {
-        background-color: rgba(253, 126, 20, 0.1);
-        color: #fd7e14;
-    }
-    
-    .status-resolved {
-        background-color: rgba(25, 135, 84, 0.1);
-        color: #198754;
-    }
-    
-    .recent-reports-table th {
-        font-weight: 600;
-        color: #6c757d;
-        text-transform: uppercase;
-        font-size: 0.7rem;
-        letter-spacing: 0.5px;
-    }
-    
-    .recent-reports-table td {
-        vertical-align: middle;
-        padding: 0.6rem 0.75rem;
-        font-size: 0.85rem;
-    }
-    
-    .report-title {
-        font-weight: 500;
-    }
-
-    .category-badge {
-        padding: 0.25rem 0.6rem;
-        border-radius: 9999px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        background-color: #e9ecef;
-        color: #495057;
-    }
-    
-    .risk-badge {
-        padding: 0.25rem 0.6rem;
-        border-radius: 9999px;
-        font-size: 0.7rem;
-        font-weight: 600;
-    }
-    
-    .risk-high {
-        background-color: #dc3545;
-        color: white;
-    }
-    
-    .risk-medium {
-        background-color: #fd7e14;
-        color: white;
-    }
-    
-    .risk-low {
-        background-color: #198754;
-        color: white;
     }
     
     .container-fluid {
@@ -269,7 +171,10 @@
 @section('content')
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Dashboard Manajemen Risiko</h2>
+        <div>
+            <h2 class="mb-1 fw-bold">Dashboard Manajemen Risiko</h2>
+            <p class="text-muted mb-0">Pantau dan analisis laporan risiko</p>
+        </div>
         <div>
             <a href="{{ route('modules.risk-management.risk-reports.create') }}" class="btn btn-success me-2">
                 <i class="fas fa-plus-circle me-1"></i> Laporan Baru
@@ -282,21 +187,6 @@
                 <i class="fas fa-cog me-1"></i> Konfigurasi Akses Analisis
             </a>
             @endif
-        </div>
-    </div>
-
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h2 class="mb-1 fw-bold">Statistik dan Analisis</h2>
-            <p class="text-muted mb-0">Pantau dan analisis laporan risiko</p>
-        </div>
-        <div class="d-flex">
-            <a href="{{ route('modules.risk-management.risk-reports.create') }}" class="btn btn-primary me-2">
-                <i class="fas fa-plus-circle me-1"></i> Buat Laporan Baru
-            </a>
-            <a href="{{ route('modules.risk-management.risk-reports.index') }}" class="btn btn-outline-primary">
-                <i class="fas fa-list me-1"></i> Semua Laporan
-            </a>
         </div>
     </div>
 
@@ -313,31 +203,31 @@
         </div>
         
         <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card kpi-card bg-risk-high">
+            <div class="card kpi-card bg-secondary">
                 <div class="card-body">
-                    <i class="fas fa-exclamation-circle kpi-icon"></i>
-                    <h2 class="kpi-value">{{ $stats['open'] }}</h2>
-                    <p class="kpi-label">Laporan Open</p>
+                    <i class="fas fa-file-alt kpi-icon"></i>
+                    <h2 class="kpi-value">{{ $stats['draft'] }}</h2>
+                    <p class="kpi-label">Draft</p>
                 </div>
             </div>
         </div>
         
         <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card kpi-card bg-risk-medium">
+            <div class="card kpi-card bg-warning">
                 <div class="card-body">
                     <i class="fas fa-sync kpi-icon"></i>
-                    <h2 class="kpi-value">{{ $stats['in_review'] }}</h2>
-                    <p class="kpi-label">Dalam Review</p>
+                    <h2 class="kpi-value">{{ $stats['review'] }}</h2>
+                    <p class="kpi-label">Dalam Tinjauan</p>
                 </div>
             </div>
         </div>
         
         <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card kpi-card bg-risk-low">
+            <div class="card kpi-card bg-success">
                 <div class="card-body">
                     <i class="fas fa-check-circle kpi-icon"></i>
-                    <h2 class="kpi-value">{{ $stats['resolved'] }}</h2>
-                    <p class="kpi-label">Laporan Resolved</p>
+                    <h2 class="kpi-value">{{ $stats['completed'] }}</h2>
+                    <p class="kpi-label">Selesai</p>
                 </div>
             </div>
         </div>
@@ -411,73 +301,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Recent Reports -->
-    <div class="card mb-3">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
-            <h5 class="mb-0 fw-bold">Laporan Terbaru</h5>
-            <div class="d-flex">
-                <button class="status-filter-btn all active" data-filter="all">Semua</button>
-                <button class="status-filter-btn open" data-filter="open">Open</button>
-                <button class="status-filter-btn review" data-filter="in_review">In Review</button>
-                <button class="status-filter-btn resolved" data-filter="resolved">Resolved</button>
-            </div>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table recent-reports-table mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th scope="col" class="ps-3">Judul</th>
-                            <th scope="col">Kategori</th>
-                            <th scope="col">Tingkat Risiko</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Tanggal</th>
-                            <th scope="col" class="text-end pe-3">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($recentReports as $report)
-                        <tr class="report-row" data-status="{{ $report['status'] }}">
-                            <td class="ps-3 report-title">{{ $report['title'] }}</td>
-                            <td><span class="category-badge">{{ $report['category'] }}</span></td>
-                            <td>
-                                @if($report['risk_level'] == 'high')
-                                <span class="risk-badge risk-high">Tinggi</span>
-                                @elseif($report['risk_level'] == 'medium')
-                                <span class="risk-badge risk-medium">Sedang</span>
-                                @else
-                                <span class="risk-badge risk-low">Rendah</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if($report['status'] == 'open')
-                                <span class="status-badge status-open">Open</span>
-                                @elseif($report['status'] == 'in_review')
-                                <span class="status-badge status-in-review">In Review</span>
-                                @else
-                                <span class="status-badge status-resolved">Resolved</span>
-                                @endif
-                            </td>
-                            <td>{{ $report['created_at']->format('d/m/Y') }}</td>
-                            <td class="text-end pe-3">
-                                <a href="{{ route('modules.risk-management.risk-reports.show', $report['id']) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-            
-            <div class="py-2 text-center border-top">
-                <a href="{{ route('modules.risk-management.risk-reports.index') }}" class="text-decoration-none" style="font-size: 0.85rem;">
-                    <i class="fas fa-arrow-right me-1"></i> Lihat Semua Laporan
-                </a>
-            </div>
-        </div>
-    </div>
 </div>
 @endsection
 
@@ -490,19 +313,76 @@ document.addEventListener('DOMContentLoaded', function() {
     const monthLabels = @json($monthLabels);
     const monthlyData = @json($monthlyData);
     
-    // Generate random data for risk levels
-    const highRiskData = monthlyData.map(val => Math.floor(val * 0.3));
-    const mediumRiskData = monthlyData.map(val => Math.floor(val * 0.5));
-    const lowRiskData = monthlyData.map(val => val - highRiskData[monthlyData.indexOf(val)] - mediumRiskData[monthlyData.indexOf(val)]);
+    // Data kuartalan - mengelompokkan data bulanan menjadi 4 kuartal
+    const quarterlyLabels = ['Q1', 'Q2', 'Q3', 'Q4'];
+    const quarterlyData = [0, 0, 0, 0]; // 4 kuartal
+    
+    // Menghitung data kuartalan dari data bulanan
+    for (let i = 0; i < monthlyData.length; i++) {
+        // Mendapatkan bulan dari label (Jan, Feb, etc.)
+        const month = monthLabels[i];
+        let quarterIndex;
+        
+        // Pengelompokan bulan berdasarkan nama bulan yang sebenarnya
+        if (['Jan', 'Feb', 'Mar'].includes(month)) {
+            quarterIndex = 0; // Q1
+        } else if (['Apr', 'Mei', 'Jun'].includes(month)) {
+            quarterIndex = 1; // Q2
+        } else if (['Jul', 'Agt', 'Sep'].includes(month)) {
+            quarterIndex = 2; // Q3
+        } else {
+            quarterIndex = 3; // Q4 (Okt, Nov, Des)
+        }
+        
+        // Tambahkan data ke kuartal yang sesuai
+        quarterlyData[quarterIndex] += monthlyData[i];
+    }
+    
+    // Menghasilkan data untuk tingkat risiko berdasarkan data bulanan
+    // Menggunakan proporsi tetap untuk setiap tingkat risiko
+    const calculateRiskData = (data) => {
+        const highRiskData = [];
+        const mediumRiskData = [];
+        const lowRiskData = [];
+        
+        data.forEach(total => {
+            if (total === 0) {
+                highRiskData.push(0);
+                mediumRiskData.push(0);
+                lowRiskData.push(0);
+            } else {
+                // Proporsi untuk setiap tingkat risiko (bisa disesuaikan)
+                const highRisk = Math.round(total * 0.2); // 20% risiko tinggi
+                const mediumRisk = Math.round(total * 0.5); // 50% risiko sedang
+                const lowRisk = total - highRisk - mediumRisk; // sisanya risiko rendah
+                
+                highRiskData.push(highRisk);
+                mediumRiskData.push(mediumRisk);
+                lowRiskData.push(lowRisk);
+            }
+        });
+        
+        return { highRiskData, mediumRiskData, lowRiskData };
+    };
+    
+    // Hitung data risiko untuk tampilan bulanan dan kuartalan
+    const monthlyRiskData = calculateRiskData(monthlyData);
+    const quarterlyRiskData = calculateRiskData(quarterlyData);
+    
+    // Buat Chart dengan data bulanan sebagai default
+    let currentLabels = monthLabels;
+    let currentHighRiskData = monthlyRiskData.highRiskData;
+    let currentMediumRiskData = monthlyRiskData.mediumRiskData;
+    let currentLowRiskData = monthlyRiskData.lowRiskData;
     
     const riskReportChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: monthLabels,
+            labels: currentLabels,
             datasets: [
                 {
                     label: 'Risiko Tinggi',
-                    data: highRiskData,
+                    data: currentHighRiskData,
                     backgroundColor: '#dc3545',
                     borderWidth: 0,
                     borderRadius: 4,
@@ -511,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 {
                     label: 'Risiko Sedang',
-                    data: mediumRiskData,
+                    data: currentMediumRiskData,
                     backgroundColor: '#fd7e14',
                     borderWidth: 0,
                     borderRadius: 4,
@@ -520,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 {
                     label: 'Risiko Rendah',
-                    data: lowRiskData,
+                    data: currentLowRiskData,
                     backgroundColor: '#198754',
                     borderWidth: 0,
                     borderRadius: 4,
@@ -587,41 +467,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Filter reports by status
-    const statusButtons = document.querySelectorAll('.status-filter-btn');
-    const reportRows = document.querySelectorAll('.report-row');
-    
-    statusButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const filter = button.getAttribute('data-filter');
-            
-            // Toggle active class on buttons
-            statusButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            
-            // Filter rows
-            reportRows.forEach(row => {
-                if (filter === 'all' || row.getAttribute('data-status') === filter) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
-    });
-    
-    // Period switch for chart (just for demo, not actually changing data)
+    // Period switch for chart
     const periodButtons = document.querySelectorAll('[data-period]');
     periodButtons.forEach(button => {
         button.addEventListener('click', () => {
             periodButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             
-            // In a real app, would fetch and update chart data here
-            // For this demo, we'll just show a message
-            console.log('Would switch to ' + button.getAttribute('data-period') + ' view');
+            const period = button.getAttribute('data-period');
+            
+            // Update chart data berdasarkan period yang dipilih
+            if (period === 'monthly') {
+                updateChartData(monthLabels, monthlyRiskData.highRiskData, monthlyRiskData.mediumRiskData, monthlyRiskData.lowRiskData);
+            } else if (period === 'quarterly') {
+                updateChartData(quarterlyLabels, quarterlyRiskData.highRiskData, quarterlyRiskData.mediumRiskData, quarterlyRiskData.lowRiskData);
+            }
         });
     });
+    
+    // Fungsi untuk update chart data
+    function updateChartData(labels, highRisk, mediumRisk, lowRisk) {
+        riskReportChart.data.labels = labels;
+        riskReportChart.data.datasets[0].data = highRisk;
+        riskReportChart.data.datasets[1].data = mediumRisk;
+        riskReportChart.data.datasets[2].data = lowRisk;
+        riskReportChart.update();
+    }
 });
 </script>
 @endpush 

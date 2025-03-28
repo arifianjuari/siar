@@ -187,6 +187,9 @@ return [
 
         // Safety Hook Service Provider
         App\Providers\SafetyHookServiceProvider::class,
+
+        // Artisan Command Protection
+        App\Providers\ArtisanServiceProvider::class,
     ])->toArray(),
 
     /*
