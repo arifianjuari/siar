@@ -113,40 +113,177 @@
                         <i class="fas fa-file-alt me-2"></i> Detail Laporan Risiko
                     </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Judul Risiko</label>
-                            <div class="form-control-plaintext fw-bold">{{ $report->risk_title }}</div>
+                        <!-- Informasi Utama -->
+                        <div class="border-bottom pb-3 mb-3">
+                            <div class="mb-3">
+                                <label class="form-label text-muted small mb-1">Nomor Laporan</label>
+                                <div class="form-control-plaintext fw-bold">{{ $report->riskreport_number }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted small mb-1">Judul Risiko</label>
+                                <div class="form-control-plaintext fw-bold">{{ $report->risk_title }}</div>
+                            </div>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Kronologi</label>
-                            <div class="form-control-plaintext">{{ $report->chronology }}</div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Tingkat Risiko</label>
-                                <div>
-                                    @if($report->risk_level == 'high')
-                                    <span class="risk-badge risk-high">Tinggi</span>
-                                    @elseif($report->risk_level == 'medium')
-                                    <span class="risk-badge risk-medium">Sedang</span>
-                                    @else
-                                    <span class="risk-badge risk-low">Rendah</span>
-                                    @endif
+
+                        <!-- Informasi Risiko -->
+                        <div class="border-bottom pb-3 mb-3">
+                            <h6 class="text-muted mb-3">INFORMASI RISIKO</h6>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Tipe Risiko</label>
+                                    <div class="form-control-plaintext">{{ $report->risk_type ?? '-' }}</div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Kategori</label>
+                                    <div class="form-control-plaintext">{{ $report->risk_category }}</div>
                                 </div>
                             </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Kategori</label>
-                                <div class="form-control-plaintext">{{ $report->risk_category }}</div>
-                            </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Unit Pelapor</label>
-                                <div class="form-control-plaintext">{{ $report->reporter_unit }}</div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small mb-1">Tingkat Risiko</label>
+                                    <div>
+                                        @if($report->risk_level == 'high')
+                                        <span class="risk-badge risk-high">Tinggi</span>
+                                        @elseif($report->risk_level == 'medium')
+                                        <span class="risk-badge risk-medium">Sedang</span>
+                                        @else
+                                        <span class="risk-badge risk-low">Rendah</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small mb-1">Dampak</label>
+                                    <div class="form-control-plaintext">{{ $report->impact }}</div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small mb-1">Probabilitas</label>
+                                    <div class="form-control-plaintext">{{ $report->probability }}</div>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- Detail Kejadian -->
+                        <div class="border-bottom pb-3 mb-3">
+                            <h6 class="text-muted mb-3">DETAIL KEJADIAN</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted small mb-1">Kronologi</label>
+                                <div class="form-control-plaintext">{{ $report->chronology }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted small mb-1">Deskripsi</label>
+                                <div class="form-control-plaintext">{{ $report->description }}</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-muted small mb-1">Tanggal Kejadian</label>
+                                    <div class="form-control-plaintext">{{ $report->occurred_at ? $report->occurred_at->format('d M Y') : '-' }}</div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-muted small mb-1">Unit Pelapor</label>
+                                    <div class="form-control-plaintext">{{ $report->reporter_unit }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tindakan dan Rekomendasi -->
+                        <div class="border-bottom pb-3 mb-3">
+                            <h6 class="text-muted mb-3">TINDAKAN & REKOMENDASI</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted small mb-1">Tindakan Segera</label>
+                                <div class="form-control-plaintext">{{ $report->immediate_action ?? '-' }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted small mb-1">Rekomendasi</label>
+                                <div class="form-control-plaintext">{{ $report->recommendation ?? '-' }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Status dan Tracking -->
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-3">STATUS & TRACKING</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted small mb-1">Status Laporan</label>
+                                <div>
+                                    @switch($report->status)
+                                        @case('open')
+                                            <span class="badge bg-info">Terbuka</span>
+                                            @break
+                                        @case('in_review')
+                                            <span class="badge bg-warning">Dalam Peninjauan</span>
+                                            @break
+                                        @case('resolved')
+                                            <span class="badge bg-success">Selesai</span>
+                                            @break
+                                        @default
+                                            <span class="badge bg-secondary">{{ $report->status }}</span>
+                                    @endswitch
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label text-muted small mb-1">Dibuat Oleh</label>
+                                    <div class="form-control-plaintext">
+                                        {{ $report->creator ? $report->creator->name : '-' }}
+                                        @if($report->created_at)
+                                            <small class="text-muted d-block">{{ $report->created_at->format('d M Y H:i') }}</small>
+                                        @endif
+                                    </div>
+                                </div>
+                                
+                                @if($report->reviewer)
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label text-muted small mb-1">Ditinjau Oleh</label>
+                                    <div class="form-control-plaintext">
+                                        {{ $report->reviewer->name }}
+                                        @if($report->reviewed_at)
+                                            <small class="text-muted d-block">{{ $report->reviewed_at->format('d M Y H:i') }}</small>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endif
+
+                                @if($report->approver)
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label text-muted small mb-1">Disetujui Oleh</label>
+                                    <div class="form-control-plaintext">
+                                        {{ $report->approver->name }}
+                                        @if($report->approved_at)
+                                            <small class="text-muted d-block">{{ $report->approved_at->format('d M Y H:i') }}</small>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Lampiran -->
+                        @if($report->attachments && count($report->attachments) > 0)
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-3">LAMPIRAN</h6>
+                            <div class="list-group">
+                                @foreach($report->attachments as $attachment)
+                                <a href="{{ route('modules.risk-management.risk-reports.download-attachment', [$report->id, $attachment->id]) }}" 
+                                   class="list-group-item list-group-item-action">
+                                    <i class="fas fa-paperclip me-2"></i>{{ $attachment->original_name }}
+                                </a>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
                 

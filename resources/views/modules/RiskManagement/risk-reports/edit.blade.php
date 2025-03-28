@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app', ['hideDefaultHeader' => true])
 
 @section('title', ' | Edit Laporan Risiko')
 
@@ -161,24 +161,29 @@
 
 @section('content')
     <div class="container-fluid py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="mb-0"><i class="fas fa-edit me-2"></i> Edit Laporan Risiko</h2>
-            <div>
-                <a href="{{ route('modules.risk-management.risk-reports.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Kembali ke Daftar
-                </a>
-            </div>
-        </div>
-
         <!-- Form Card -->
         <form method="POST" action="{{ route('modules.risk-management.risk-reports.update', $riskReport->id) }}" class="needs-validation" id="riskReportForm" novalidate>
             @csrf
             @method('PUT')
             
+            <!-- Header dan Tombol Kembali -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-edit me-2"></i>
+                    <h1 class="h3 mb-0">Edit Laporan Risiko</h1>
+                </div>
+                <a href="{{ route('modules.risk-management.risk-reports.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Kembali ke Daftar
+                </a>
+            </div>
+            
             <!-- Intro Section -->
             <div class="card form-section">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle text-warning me-2"></i> Informasi Laporan</h5>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        <h5 class="mb-0">Informasi Laporan</h5>
+                    </div>
                     <span class="badge bg-primary">ID: {{ $riskReport->id }}</span>
                 </div>
                 <div class="card-body">
@@ -208,12 +213,12 @@
                             <div>
                                 <h5 class="alert-heading">Status Laporan</h5>
                                 <p class="mb-0">
-                                    @if($riskReport->status == 'open')
-                                        <span class="badge bg-danger">Open</span>
-                                    @elseif($riskReport->status == 'in_review')
-                                        <span class="badge bg-warning text-dark">In Review</span>
+                                    @if($riskReport->status == 'Draft')
+                                        <span class="badge bg-danger">Draft</span>
+                                    @elseif($riskReport->status == 'Ditinjau')
+                                        <span class="badge bg-warning text-dark">Ditinjau</span>
                                     @else
-                                        <span class="badge bg-success">Resolved</span>
+                                        <span class="badge bg-success">Selesai</span>
                                     @endif
                                     &nbsp; Dibuat pada: {{ $riskReport->created_at->format('d/m/Y H:i') }}
                                 </p>
@@ -289,9 +294,9 @@
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label for="incident_date" class="form-label required-field">Tanggal Kejadian</label>
-                            <input type="date" name="incident_date" id="incident_date" class="form-control @error('incident_date') is-invalid @enderror" value="{{ old('incident_date', $riskReport->incident_date ? date('Y-m-d', strtotime($riskReport->incident_date)) : '') }}" required>
-                            @error('incident_date')
+                            <label for="occurred_at" class="form-label required-field">Tanggal Kejadian</label>
+                            <input type="date" name="occurred_at" id="occurred_at" class="form-control @error('occurred_at') is-invalid @enderror" value="{{ old('occurred_at', $riskReport->occurred_at ? date('Y-m-d', strtotime($riskReport->occurred_at)) : '') }}" required>
+                            @error('occurred_at')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -306,6 +311,32 @@
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
+                        <div class="col-md-6 mb-3">
+                            <label for="impact" class="form-label required-field">Dampak</label>
+                            <select name="impact" id="impact" class="form-select @error('impact') is-invalid @enderror" required>
+                                <option value="">-- Pilih Dampak --</option>
+                                <option value="ringan" {{ old('impact', $riskReport->impact) == 'ringan' ? 'selected' : '' }}>Ringan</option>
+                                <option value="sedang" {{ old('impact', $riskReport->impact) == 'sedang' ? 'selected' : '' }}>Sedang</option>
+                                <option value="berat" {{ old('impact', $riskReport->impact) == 'berat' ? 'selected' : '' }}>Berat</option>
+                            </select>
+                            @error('impact')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="probability" class="form-label required-field">Probabilitas</label>
+                            <select name="probability" id="probability" class="form-select @error('probability') is-invalid @enderror" required>
+                                <option value="">-- Pilih Probabilitas --</option>
+                                <option value="jarang" {{ old('probability', $riskReport->probability) == 'jarang' ? 'selected' : '' }}>Jarang</option>
+                                <option value="kadang" {{ old('probability', $riskReport->probability) == 'kadang' ? 'selected' : '' }}>Kadang</option>
+                                <option value="sering" {{ old('probability', $riskReport->probability) == 'sering' ? 'selected' : '' }}>Sering</option>
+                            </select>
+                            @error('probability')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <div class="col-md-6">
                             <label for="risk_level" class="form-label required-field">Tingkat Risiko</label>
                             <select name="risk_level" id="risk_level" class="form-select @error('risk_level') is-invalid @enderror" required>
@@ -335,9 +366,9 @@
                         <div class="col-md-6">
                             <label for="status" class="form-label required-field">Status</label>
                             <select name="status" id="status" class="form-select @error('status') is-invalid @enderror" required>
-                                <option value="open" {{ old('status', $riskReport->status) == 'open' ? 'selected' : '' }}>Open</option>
-                                <option value="in_review" {{ old('status', $riskReport->status) == 'in_review' ? 'selected' : '' }}>In Review</option>
-                                <option value="resolved" {{ old('status', $riskReport->status) == 'resolved' ? 'selected' : '' }}>Resolved</option>
+                                <option value="Draft" {{ old('status', $riskReport->status) == 'Draft' ? 'selected' : '' }}>Draft</option>
+                                <option value="Ditinjau" {{ old('status', $riskReport->status) == 'Ditinjau' ? 'selected' : '' }}>Ditinjau</option>
+                                <option value="Selesai" {{ old('status', $riskReport->status) == 'Selesai' ? 'selected' : '' }}>Selesai</option>
                             </select>
                             @error('status')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -354,8 +385,17 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label for="description" class="form-label required-field">Deskripsi Lengkap Insiden</label>
-                        <textarea name="description" id="description" rows="5" class="form-control @error('description') is-invalid @enderror" required>{{ old('description', $riskReport->description) }}</textarea>
+                        <label for="chronology" class="form-label required-field">Kronologi Singkat</label>
+                        <textarea name="chronology" id="chronology" rows="3" class="form-control @error('chronology') is-invalid @enderror" required placeholder="Jelaskan secara singkat gambaran kejadian...">{{ old('chronology', $riskReport->chronology) }}</textarea>
+                        @error('chronology')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <div class="form-text">Jelaskan secara singkat gambaran kejadian.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label required-field">Detil Kejadian</label>
+                        <textarea name="description" id="description" rows="5" class="form-control @error('description') is-invalid @enderror" required placeholder="Jelaskan secara detail kronologi kejadian, lokasi, dan pihak yang terlibat...">{{ old('description', $riskReport->description) }}</textarea>
                         @error('description')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -369,6 +409,15 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                         <div class="form-text">Jelaskan tindakan apa yang segera diambil saat kejadian berlangsung.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="recommendation" class="form-label">Rekomendasi</label>
+                        <textarea name="recommendation" id="recommendation" rows="3" class="form-control @error('recommendation') is-invalid @enderror" placeholder="Berikan rekomendasi untuk mencegah kejadian serupa...">{{ old('recommendation', $riskReport->recommendation) }}</textarea>
+                        @error('recommendation')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <div class="form-text">Berikan rekomendasi untuk mencegah kejadian serupa di masa mendatang.</div>
                     </div>
                 </div>
             </div>
@@ -392,6 +441,8 @@
         // Update risk level marker position
         const riskLevelSelect = document.getElementById('risk_level');
         const riskLevelMarker = document.getElementById('riskLevelMarker');
+        const impactSelect = document.getElementById('impact');
+        const probabilitySelect = document.getElementById('probability');
         
         function updateRiskMarker() {
             const level = riskLevelSelect.value;
@@ -414,11 +465,55 @@
             }
         }
         
+        function calculateRiskLevel() {
+            const impact = impactSelect.value;
+            const probability = probabilitySelect.value;
+            
+            if (!impact || !probability) {
+                return;
+            }
+            
+            let riskLevel = '';
+            
+            // Matriks risiko
+            if (impact === 'ringan' && probability === 'jarang') {
+                riskLevel = 'rendah';
+            } else if (impact === 'ringan' && probability === 'kadang') {
+                riskLevel = 'rendah';
+            } else if (impact === 'ringan' && probability === 'sering') {
+                riskLevel = 'sedang';
+            } else if (impact === 'sedang' && probability === 'jarang') {
+                riskLevel = 'rendah';
+            } else if (impact === 'sedang' && probability === 'kadang') {
+                riskLevel = 'sedang';
+            } else if (impact === 'sedang' && probability === 'sering') {
+                riskLevel = 'tinggi';
+            } else if (impact === 'berat' && probability === 'jarang') {
+                riskLevel = 'sedang';
+            } else if (impact === 'berat' && probability === 'kadang') {
+                riskLevel = 'tinggi';
+            } else if (impact === 'berat' && probability === 'sering') {
+                riskLevel = 'ekstrem';
+            }
+            
+            // Set the risk level select value
+            riskLevelSelect.value = riskLevel;
+            
+            // Update the marker
+            updateRiskMarker();
+        }
+        
         // Initialize marker position
         updateRiskMarker();
         
-        // Update marker on risk level change
-        riskLevelSelect.addEventListener('change', updateRiskMarker);
+        // Update risk level when impact or probability changes
+        impactSelect.addEventListener('change', calculateRiskLevel);
+        probabilitySelect.addEventListener('change', calculateRiskLevel);
+        
+        // Calculate initial risk level if impact and probability have values
+        if (impactSelect.value && probabilitySelect.value) {
+            calculateRiskLevel();
+        }
         
         // Form validation
         const form = document.getElementById('riskReportForm');

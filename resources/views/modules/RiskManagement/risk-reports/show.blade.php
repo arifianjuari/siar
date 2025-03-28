@@ -123,13 +123,6 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
-            <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
     <div class="row">
         <div class="col-md-8">
             <!-- Informasi Utama -->
@@ -170,13 +163,23 @@
                     </div>
 
                     <div class="mb-4">
-                        <div class="info-label">Kronologi</div>
-                        <div class="info-value">{{ $riskReport->chronology }}</div>
+                        <div class="info-label">Kronologi Singkat</div>
+                        <div class="info-value" style="white-space: pre-line">{{ $riskReport->chronology }}</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="info-label">Detil Kejadian</div>
+                        <div class="info-value" style="white-space: pre-line">{{ $riskReport->description }}</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="info-label">Tindakan Segera</div>
+                        <div class="info-value" style="white-space: pre-line">{{ $riskReport->immediate_action }}</div>
                     </div>
 
                     <div class="mb-4">
                         <div class="info-label">Rekomendasi</div>
-                        <div class="info-value mb-0">{{ $riskReport->recommendation }}</div>
+                        <div class="info-value mb-0" style="white-space: pre-line">{{ $riskReport->recommendation }}</div>
                     </div>
                 </div>
             </div>
@@ -186,11 +189,18 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Analisis Risiko</h5>
-                    @can('view', [$riskReport->analysis])
-                    <a href="{{ route('modules.risk-management.risk-analysis.show', ['reportId' => $riskReport->id, 'id' => $riskReport->analysis->id]) }}" class="btn btn-sm btn-primary">
-                        <i class="fas fa-external-link-alt me-1"></i> Lihat Detail
-                    </a>
-                    @endcan
+                    <div>
+                        @can('view', [$riskReport->analysis])
+                        <a href="{{ route('modules.risk-management.risk-analysis.show', ['reportId' => $riskReport->id, 'id' => $riskReport->analysis->id]) }}" class="btn btn-sm btn-primary me-2">
+                            <i class="fas fa-external-link-alt me-1"></i> Lihat Detail
+                        </a>
+                        @endcan
+                        @can('update', [$riskReport->analysis])
+                        <a href="{{ route('modules.risk-management.risk-analysis.edit', ['reportId' => $riskReport->id, 'id' => $riskReport->analysis->id]) }}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit me-1"></i> Edit Analisis
+                        </a>
+                        @endcan
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info mb-4">
@@ -206,12 +216,12 @@
 
                     <div class="mb-4">
                         <div class="info-label">Penyebab Langsung</div>
-                        <div class="info-value">{{ $riskReport->analysis->direct_cause }}</div>
+                        <div class="info-value" style="white-space: pre-line">{{ $riskReport->analysis->direct_cause }}</div>
                     </div>
 
                     <div class="mb-4">
                         <div class="info-label">Akar Masalah</div>
-                        <div class="info-value">{{ $riskReport->analysis->root_cause }}</div>
+                        <div class="info-value" style="white-space: pre-line">{{ $riskReport->analysis->root_cause }}</div>
                     </div>
 
                     <h6 class="section-heading mb-3">Faktor Kontributor</h6>
@@ -220,10 +230,24 @@
                             <div class="info-label">Faktor Manusia</div>
                             <div class="info-value">
                                 @if(isset($riskReport->analysis->contributor_factors['human_factors']))
+                                    @php
+                                        $humanFactors = [
+                                            'knowledge' => 'Pengetahuan',
+                                            'fatigue' => 'Kelelahan',
+                                            'stress' => 'Stres',
+                                            'communication' => 'Komunikasi',
+                                            'teamwork' => 'Kerja Tim',
+                                            'supervision' => 'Pengawasan',
+                                            'experience' => 'Pengalaman',
+                                            'attitude' => 'Sikap'
+                                        ];
+                                    @endphp
                                     @if(is_array($riskReport->analysis->contributor_factors['human_factors']))
-                                        {{ implode(', ', $riskReport->analysis->contributor_factors['human_factors']) }}
+                                        {{ implode(', ', array_map(function($item) use ($humanFactors) { 
+                                            return $humanFactors[$item] ?? $item; 
+                                        }, $riskReport->analysis->contributor_factors['human_factors'])) }}
                                     @else
-                                        {{ $riskReport->analysis->contributor_factors['human_factors'] }}
+                                        {{ $humanFactors[$riskReport->analysis->contributor_factors['human_factors']] ?? $riskReport->analysis->contributor_factors['human_factors'] }}
                                     @endif
                                 @else
                                     -
@@ -233,10 +257,23 @@
                             <div class="info-label">Faktor Lingkungan</div>
                             <div class="info-value">
                                 @if(isset($riskReport->analysis->contributor_factors['environmental']))
+                                    @php
+                                        $environmentalFactors = [
+                                            'temperature' => 'Suhu',
+                                            'lighting' => 'Pencahayaan',
+                                            'noise' => 'Kebisingan',
+                                            'space_constraints' => 'Keterbatasan Ruang',
+                                            'cleanliness' => 'Kebersihan',
+                                            'ventilation' => 'Ventilasi',
+                                            'workplace_layout' => 'Tata Letak Tempat Kerja'
+                                        ];
+                                    @endphp
                                     @if(is_array($riskReport->analysis->contributor_factors['environmental']))
-                                        {{ implode(', ', $riskReport->analysis->contributor_factors['environmental']) }}
+                                        {{ implode(', ', array_map(function($item) use ($environmentalFactors) { 
+                                            return $environmentalFactors[$item] ?? $item; 
+                                        }, $riskReport->analysis->contributor_factors['environmental'])) }}
                                     @else
-                                        {{ $riskReport->analysis->contributor_factors['environmental'] }}
+                                        {{ $environmentalFactors[$riskReport->analysis->contributor_factors['environmental']] ?? $riskReport->analysis->contributor_factors['environmental'] }}
                                     @endif
                                 @else
                                     -
@@ -247,10 +284,23 @@
                             <div class="info-label">Faktor Teknis</div>
                             <div class="info-value">
                                 @if(isset($riskReport->analysis->contributor_factors['technical']))
+                                    @php
+                                        $technicalFactors = [
+                                            'equipment_failure' => 'Kegagalan Peralatan',
+                                            'software_issues' => 'Masalah Perangkat Lunak',
+                                            'maintenance' => 'Pemeliharaan',
+                                            'design_issues' => 'Masalah Desain',
+                                            'technical_documentation' => 'Dokumentasi Teknis',
+                                            'calibration' => 'Kalibrasi',
+                                            'compatibility' => 'Kompatibilitas'
+                                        ];
+                                    @endphp
                                     @if(is_array($riskReport->analysis->contributor_factors['technical']))
-                                        {{ implode(', ', $riskReport->analysis->contributor_factors['technical']) }}
+                                        {{ implode(', ', array_map(function($item) use ($technicalFactors) { 
+                                            return $technicalFactors[$item] ?? $item; 
+                                        }, $riskReport->analysis->contributor_factors['technical'])) }}
                                     @else
-                                        {{ $riskReport->analysis->contributor_factors['technical'] }}
+                                        {{ $technicalFactors[$riskReport->analysis->contributor_factors['technical']] ?? $riskReport->analysis->contributor_factors['technical'] }}
                                     @endif
                                 @else
                                     -
@@ -260,10 +310,23 @@
                             <div class="info-label">Faktor Organisasi</div>
                             <div class="info-value">
                                 @if(isset($riskReport->analysis->contributor_factors['organizational']))
+                                    @php
+                                        $organizationalFactors = [
+                                            'policies_procedures' => 'Kebijakan & Prosedur',
+                                            'staffing' => 'Kepegawaian',
+                                            'training' => 'Pelatihan',
+                                            'leadership' => 'Kepemimpinan',
+                                            'resource_allocation' => 'Alokasi Sumber Daya',
+                                            'organizational_culture' => 'Budaya Organisasi',
+                                            'communication_systems' => 'Sistem Komunikasi'
+                                        ];
+                                    @endphp
                                     @if(is_array($riskReport->analysis->contributor_factors['organizational']))
-                                        {{ implode(', ', $riskReport->analysis->contributor_factors['organizational']) }}
+                                        {{ implode(', ', array_map(function($item) use ($organizationalFactors) { 
+                                            return $organizationalFactors[$item] ?? $item; 
+                                        }, $riskReport->analysis->contributor_factors['organizational'])) }}
                                     @else
-                                        {{ $riskReport->analysis->contributor_factors['organizational'] }}
+                                        {{ $organizationalFactors[$riskReport->analysis->contributor_factors['organizational']] ?? $riskReport->analysis->contributor_factors['organizational'] }}
                                     @endif
                                 @else
                                     -
@@ -275,26 +338,18 @@
                     <h6 class="section-heading mb-3">Rekomendasi</h6>
                     <div class="mb-4">
                         <div class="info-label">Rekomendasi Jangka Pendek (0-3 bulan)</div>
-                        <div class="info-value">{{ $riskReport->analysis->recommendation_short }}</div>
+                        <div class="info-value" style="white-space: pre-line">{{ $riskReport->analysis->recommendation_short }}</div>
                     </div>
 
                     <div class="mb-4">
                         <div class="info-label">Rekomendasi Jangka Menengah (3-6 bulan)</div>
-                        <div class="info-value">{{ $riskReport->analysis->recommendation_medium ?: '-' }}</div>
+                        <div class="info-value" style="white-space: pre-line">{{ $riskReport->analysis->recommendation_medium ?: '-' }}</div>
                     </div>
 
                     <div class="mb-4">
                         <div class="info-label">Rekomendasi Jangka Panjang (6+ bulan)</div>
-                        <div class="info-value mb-0">{{ $riskReport->analysis->recommendation_long ?: '-' }}</div>
+                        <div class="info-value mb-0" style="white-space: pre-line">{{ $riskReport->analysis->recommendation_long ?: '-' }}</div>
                     </div>
-                    
-                    @can('update', [$riskReport->analysis])
-                    <div class="d-flex justify-content-end mt-3">
-                        <a href="{{ route('modules.risk-management.risk-analysis.edit', ['reportId' => $riskReport->id, 'id' => $riskReport->analysis->id]) }}" class="btn btn-warning btn-sm">
-                            <i class="fas fa-edit me-1"></i> Edit Analisis
-                        </a>
-                    </div>
-                    @endcan
                 </div>
             </div>
             @else

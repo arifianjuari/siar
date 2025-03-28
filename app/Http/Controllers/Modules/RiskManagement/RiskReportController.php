@@ -194,7 +194,14 @@ class RiskReportController extends Controller
         $riskReport = new RiskReport($request->all());
         $riskReport->tenant_id = auth()->user()->tenant_id;
         $riskReport->created_by = auth()->id();
-        $riskReport->status = 'open'; // Selalu dimulai dengan status open
+        $riskReport->status = 'Draft'; // Status default saat pembuatan
+
+        // Generate nomor laporan
+        $yearCount = RiskReport::where('tenant_id', auth()->user()->tenant_id)
+            ->whereYear('created_at', date('Y'))
+            ->count() + 1;
+        $riskReport->riskreport_number = 'RIR-' . date('Ymd') . '-' . str_pad($yearCount, 3, '0', STR_PAD_LEFT);
+
         $riskReport->save();
 
         // Mencatat ke log
@@ -348,13 +355,13 @@ class RiskReportController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk mengubah status laporan risiko.');
         }
 
-        $riskReport->status = 'in_review';
+        $riskReport->status = 'Ditinjau';
         $riskReport->reviewed_by = auth()->id();
         $riskReport->reviewed_at = now();
         $riskReport->save();
 
         return redirect()->route('modules.risk-management.risk-reports.index')
-            ->with('success', 'Status laporan risiko berhasil diubah menjadi In Review');
+            ->with('success', 'Status laporan risiko berhasil diubah menjadi Ditinjau');
     }
 
     /**
@@ -374,7 +381,7 @@ class RiskReportController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk menyetujui laporan risiko.');
         }
 
-        $riskReport->status = 'resolved';
+        $riskReport->status = 'Selesai';
         $riskReport->approved_by = auth()->id();
         $riskReport->approved_at = now();
         $riskReport->save();

@@ -37,9 +37,9 @@
                         <label for="status" class="form-label small mb-1">Status:</label>
                         <select name="status" id="status" class="form-select form-select-sm">
                             <option value="">-- Semua Status --</option>
-                            <option value="open" {{ request('status') == 'open' ? 'selected' : '' }}>Open</option>
-                            <option value="in_review" {{ request('status') == 'in_review' ? 'selected' : '' }}>In Review</option>
-                            <option value="resolved" {{ request('status') == 'resolved' ? 'selected' : '' }}>Resolved</option>
+                            <option value="Draft" {{ request('status') == 'Draft' ? 'selected' : '' }}>Draft</option>
+                            <option value="Ditinjau" {{ request('status') == 'Ditinjau' ? 'selected' : '' }}>Ditinjau</option>
+                            <option value="Selesai" {{ request('status') == 'Selesai' ? 'selected' : '' }}>Selesai</option>
                         </select>
                     </div>
                     
@@ -112,19 +112,19 @@
                                     <td>
                                         @if($report->analysis)
                                             @if($report->analysis->analysis_status == 'draft')
-                                                <span class="badge bg-secondary">Draft</span>
+                                                <span class="badge bg-danger">Draft</span>
                                             @elseif($report->analysis->analysis_status == 'in_progress' || $report->analysis->analysis_status == 'reviewed')
                                                 <span class="badge bg-warning text-dark">Ditinjau</span>
                                             @else
                                                 <span class="badge bg-success">Selesai</span>
                                             @endif
                                         @else
-                                            @if($report->status == 'open')
-                                                <span class="badge bg-danger">Open</span>
-                                            @elseif($report->status == 'in_review')
-                                                <span class="badge bg-warning text-dark">In Review</span>
+                                            @if($report->status == 'Draft')
+                                                <span class="badge bg-danger">Draft</span>
+                                            @elseif($report->status == 'Ditinjau')
+                                                <span class="badge bg-warning text-dark">Ditinjau</span>
                                             @else
-                                                <span class="badge bg-success">Resolved</span>
+                                                <span class="badge bg-success">Selesai</span>
                                             @endif
                                         @endif
                                     </td>
@@ -146,14 +146,14 @@
                                             </form>
                                             
                                             <!-- Tombol Analisis -->
-                                            @if($report->status === 'open')
+                                            @if($report->status === 'Draft')
                                                 <a href="{{ route('modules.risk-management.risk-analysis.create', $report->id) }}" class="btn btn-sm btn-primary" title="Analisis">
                                                     <i class="fas fa-chart-line"></i>
                                                 </a>
                                             @endif
                                             
                                             <!-- Tombol Setujui -->
-                                            @if($report->status === 'in_review')
+                                            @if($report->status === 'Ditinjau')
                                                 <form method="POST" action="{{ route('modules.risk-management.risk-reports.approve', $report->id) }}" style="display: inline;">
                                                     @csrf
                                                     @method('PUT')
@@ -167,12 +167,9 @@
                                             <a href="{{ route('modules.risk-management.risk-reports.export-awal', $report->id) }}" class="btn btn-sm btn-secondary" title="Export Awal">
                                                 <i class="fas fa-file-word"></i>
                                             </a>
-                                            <a href="{{ route('modules.risk-management.risk-reports.qr-code', $report->id) }}" class="btn btn-sm btn-dark" title="QR Code">
-                                                <i class="fas fa-qrcode"></i>
-                                            </a>
                                             
                                             <!-- Export Akhir -->
-                                            @if($report->status === 'resolved')
+                                            @if($report->status === 'Selesai')
                                                 <a href="{{ route('modules.risk-management.risk-reports.export-akhir', $report->id) }}" class="btn btn-sm btn-primary" title="Export PDF Akhir">
                                                     <i class="fas fa-file-pdf"></i>
                                                 </a>

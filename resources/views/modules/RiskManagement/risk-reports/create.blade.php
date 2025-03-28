@@ -5,7 +5,7 @@
 @section('header')
 <div class="d-flex justify-content-between align-items-center">
     <h1 class="h3 mb-0">Buat Laporan Risiko dan Insiden</h1>
-    <span class="badge bg-primary px-3 py-2" style="font-size: 1rem;">Form RIR-{{ date('Ymd') }}-{{ \App\Models\RiskReport::where('tenant_id', auth()->user()->tenant_id)->whereYear('created_at', date('Y'))->count() + 1 }}</span>
+    <span class="badge bg-primary px-3 py-2" style="font-size: 1rem;">Form RIR-{{ date('Ymd') }}-{{ str_pad(\App\Models\RiskReport::where('tenant_id', auth()->user()->tenant_id)->whereYear('created_at', date('Y'))->count() + 1, 3, '0', STR_PAD_LEFT) }}</span>
 </div>
 @endsection
 
@@ -325,9 +325,17 @@
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
-                                <label for="chronology" class="form-label required-field">Kronologi Kejadian</label>
-                                <textarea name="chronology" id="chronology" rows="5" class="form-control @error('chronology') is-invalid @enderror" required placeholder="Jelaskan secara detail kronologi kejadian, lokasi, dan pihak yang terlibat...">{{ old('chronology') }}</textarea>
+                                <label for="chronology" class="form-label required-field">Kronologi Singkat</label>
+                                <textarea name="chronology" id="chronology" rows="3" class="form-control @error('chronology') is-invalid @enderror" required placeholder="Jelaskan secara singkat gambaran kejadian...">{{ old('chronology') }}</textarea>
                                 @error('chronology')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label required-field">Detil Kejadian</label>
+                                <textarea name="description" id="description" rows="5" class="form-control @error('description') is-invalid @enderror" required placeholder="Jelaskan secara detail kronologi kejadian, lokasi, dan pihak yang terlibat...">{{ old('description') }}</textarea>
+                                @error('description')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -336,6 +344,14 @@
                                 <label for="immediate_action" class="form-label required-field">Tindakan Segera yang Dilakukan</label>
                                 <textarea name="immediate_action" id="immediate_action" rows="3" class="form-control @error('immediate_action') is-invalid @enderror" required placeholder="Jelaskan tindakan apa yang segera diambil saat kejadian berlangsung...">{{ old('immediate_action') }}</textarea>
                                 @error('immediate_action')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="recommendation" class="form-label">Rekomendasi</label>
+                                <textarea name="recommendation" id="recommendation" rows="3" class="form-control @error('recommendation') is-invalid @enderror" placeholder="Berikan rekomendasi untuk mencegah kejadian serupa...">{{ old('recommendation') }}</textarea>
+                                @error('recommendation')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>

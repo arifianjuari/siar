@@ -13,6 +13,7 @@ class RiskReport extends Model
 
     protected $fillable = [
         'tenant_id',
+        'riskreport_number',
         'risk_title',
         'chronology',
         'description',
@@ -43,6 +44,32 @@ class RiskReport extends Model
         'reviewed_at' => 'datetime',
         'approved_at' => 'datetime',
     ];
+
+    /**
+     * Status yang tersedia untuk laporan risiko.
+     *
+     * @var array
+     */
+    public static $statuses = [
+        'Draft' => 'Draft',
+        'Ditinjau' => 'Ditinjau',
+        'Selesai' => 'Selesai'
+    ];
+
+    /**
+     * Mendapatkan warna badge untuk status.
+     *
+     * @return string
+     */
+    public function getStatusColorAttribute(): string
+    {
+        return match ($this->status) {
+            'Draft' => 'danger',
+            'Ditinjau' => 'warning',
+            'Selesai' => 'success',
+            default => 'secondary'
+        };
+    }
 
     public function creator()
     {

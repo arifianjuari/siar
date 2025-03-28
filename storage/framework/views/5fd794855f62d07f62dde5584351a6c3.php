@@ -3,7 +3,7 @@
 <?php $__env->startSection('header'); ?>
 <div class="d-flex justify-content-between align-items-center">
     <h1 class="h3 mb-0">Buat Laporan Risiko dan Insiden</h1>
-    <span class="badge bg-primary px-3 py-2" style="font-size: 1rem;">Form RIR-<?php echo e(date('Ymd')); ?>-<?php echo e(\App\Models\RiskReport::where('tenant_id', auth()->user()->tenant_id)->whereYear('created_at', date('Y'))->count() + 1); ?></span>
+    <span class="badge bg-primary px-3 py-2" style="font-size: 1rem;">Form RIR-<?php echo e(date('Ymd')); ?>-<?php echo e(str_pad(\App\Models\RiskReport::where('tenant_id', auth()->user()->tenant_id)->whereYear('created_at', date('Y'))->count() + 1, 3, '0', STR_PAD_LEFT)); ?></span>
 </div>
 <?php $__env->stopSection(); ?>
 
@@ -394,16 +394,38 @@ unset($__errorArgs, $__bag); ?>
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
-                                <label for="chronology" class="form-label required-field">Kronologi Kejadian</label>
-                                <textarea name="chronology" id="chronology" rows="5" class="form-control <?php $__errorArgs = ['chronology'];
+                                <label for="chronology" class="form-label required-field">Kronologi Singkat</label>
+                                <textarea name="chronology" id="chronology" rows="3" class="form-control <?php $__errorArgs = ['chronology'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
-unset($__errorArgs, $__bag); ?>" required placeholder="Jelaskan secara detail kronologi kejadian, lokasi, dan pihak yang terlibat..."><?php echo e(old('chronology')); ?></textarea>
+unset($__errorArgs, $__bag); ?>" required placeholder="Jelaskan secara singkat gambaran kejadian..."><?php echo e(old('chronology')); ?></textarea>
                                 <?php $__errorArgs = ['chronology'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label required-field">Detil Kejadian</label>
+                                <textarea name="description" id="description" rows="5" class="form-control <?php $__errorArgs = ['description'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" required placeholder="Jelaskan secara detail kronologi kejadian, lokasi, dan pihak yang terlibat..."><?php echo e(old('description')); ?></textarea>
+                                <?php $__errorArgs = ['description'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -426,6 +448,28 @@ if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>" required placeholder="Jelaskan tindakan apa yang segera diambil saat kejadian berlangsung..."><?php echo e(old('immediate_action')); ?></textarea>
                                 <?php $__errorArgs = ['immediate_action'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="recommendation" class="form-label">Rekomendasi</label>
+                                <textarea name="recommendation" id="recommendation" rows="3" class="form-control <?php $__errorArgs = ['recommendation'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" placeholder="Berikan rekomendasi untuk mencegah kejadian serupa..."><?php echo e(old('recommendation')); ?></textarea>
+                                <?php $__errorArgs = ['recommendation'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }

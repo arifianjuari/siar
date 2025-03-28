@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Laporan Awal Risiko #{{ $riskReport->id }}</title>
+    <title>Laporan Awal Risiko #{{ $riskReport->riskreport_number }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -26,8 +26,8 @@
             padding-top: 3pt;
         }
         h3 {
-            margin-top: 0;
-            margin-bottom: 0;
+            margin-top: 10pt;
+            margin-bottom: 5pt;
             font-size: 12pt;
         }
         .header {
@@ -55,47 +55,74 @@
             width: 30%;
             font-weight: bold;
         }
+        table.info td.separator {
+            width: 5%;
+            text-align: center;
+            padding: 0 5pt;
+        }
+        table.info td.value {
+            width: 65%;
+        }
         .section {
             margin-top: 0;
             margin-bottom: 0;
         }
         .pre {
-            white-space: pre-wrap;
-            margin-top: 0;
-            margin-bottom: 0;
+            white-space: pre-line;
+            margin: 5pt 0;
+            line-height: 1;
+            text-align: justify;
         }
         .footer {
             margin-top: 30pt;
             text-align: right;
+            line-height: 1;
         }
         p {
-            margin-top: 0;
-            margin-bottom: 0;
+            margin: 5pt 0;
+        }
+        .status {
+            font-weight: bold;
+            padding: 0;
+            display: inline-block;
+        }
+        .status-open {
+            color: red;
+        }
+        .status-in-review {
+            color: orange;
+        }
+        .status-resolved {
+            color: green;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>LAPORAN INSIDEN DAN MANAJEMEN RISIKO</h1>
+        <h1>LAPORAN AWAL INSIDEN DAN MANAJEMEN RISIKO</h1>
     </div>
     
     <h2>A. IDENTITAS LAPORAN</h2>
     <table class="info">
         <tr>
             <td>Nomor Laporan</td>
-            <td>: {{ $riskReport->id }}</td>
+            <td class="separator">:</td>
+            <td class="value">{{ $riskReport->riskreport_number }}</td>
         </tr>
         <tr>
             <td>Tanggal Laporan</td>
-            <td>: {{ $riskReport->created_at->format('d/m/Y') }}</td>
+            <td class="separator">:</td>
+            <td class="value">{{ $riskReport->created_at->format('d/m/Y') }}</td>
         </tr>
         <tr>
             <td>Unit Pelapor</td>
-            <td>: {{ $riskReport->reporter_unit }}</td>
+            <td class="separator">:</td>
+            <td class="value">{{ $riskReport->reporter_unit }}</td>
         </tr>
         <tr>
             <td>Judul Risiko</td>
-            <td>: {{ $riskReport->risk_title }}</td>
+            <td class="separator">:</td>
+            <td class="value">{{ $riskReport->risk_title }}</td>
         </tr>
     </table>
     
@@ -103,36 +130,52 @@
     <table class="info">
         <tr>
             <td>Tanggal Kejadian</td>
-            <td>: {{ $riskReport->occurred_at->format('d/m/Y') }}</td>
+            <td class="separator">:</td>
+            <td class="value">{{ $riskReport->occurred_at->format('d/m/Y') }}</td>
         </tr>
         <tr>
             <td>Kategori Risiko</td>
-            <td>: {{ $riskReport->risk_category }}</td>
+            <td class="separator">:</td>
+            <td class="value">{{ $riskReport->risk_category }}</td>
         </tr>
         <tr>
             <td>Tipe Risiko</td>
-            <td>: {{ $riskReport->risk_type ?: 'Tidak Ditentukan' }}</td>
+            <td class="separator">:</td>
+            <td class="value">{{ $riskReport->risk_type ?: 'Tidak Ditentukan' }}</td>
         </tr>
     </table>
     
     <div class="section">
-        <h3>Kronologi Kejadian:</h3>
+        <h3>Kronologi Singkat:</h3>
         <div class="pre">{{ $riskReport->chronology }}</div>
+    </div>
+
+    <div class="section">
+        <h3>Detil Kejadian:</h3>
+        <div class="pre">{{ $riskReport->description }}</div>
+    </div>
+
+    <div class="section">
+        <h3>Tindakan Segera:</h3>
+        <div class="pre">{{ $riskReport->immediate_action ?: '-' }}</div>
     </div>
     
     <h2>C. ANALISIS RISIKO</h2>
     <table class="info">
         <tr>
             <td>Dampak</td>
-            <td>: {{ $riskReport->impact }}</td>
+            <td class="separator">:</td>
+            <td class="value">{{ $riskReport->impact }}</td>
         </tr>
         <tr>
             <td>Probabilitas</td>
-            <td>: {{ $riskReport->probability }}</td>
+            <td class="separator">:</td>
+            <td class="value">{{ $riskReport->probability }}</td>
         </tr>
         <tr>
             <td>Tingkat Risiko</td>
-            <td>: {{ $riskReport->risk_level }}</td>
+            <td class="separator">:</td>
+            <td class="value">{{ $riskReport->risk_level }}</td>
         </tr>
     </table>
     
@@ -144,8 +187,8 @@
     @endif
     
     <div class="footer">
-        <p>Dibuat oleh: {{ $riskReport->creator->name ?? 'Unknown' }}<br>
-        Tanggal: {{ $riskReport->created_at->format('d/m/Y H:i') }}</p>
+        <p>Dibuat oleh: {{ $riskReport->creator->name }}</p>
+        <p>Tanggal: {{ $riskReport->created_at->format('d/m/Y H:i') }}</p>
     </div>
 </body>
 </html> 
