@@ -49,7 +49,7 @@
                                 <div class="mb-4 pb-3 border-bottom">
                                     @yield('header')
                                 </div>
-                            @else
+                            @elseif(!isset($hideDefaultHeader) && !Route::is('*.risk-analysis.*'))
                                 <div class="mb-4 pb-3 border-bottom">
                                     <h1 class="h3 mb-0">@yield('title', 'Dashboard')</h1>
                                 </div>

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Dompdf\Dompdf;
 
 class RiskReportController extends Controller
 {
@@ -39,8 +40,8 @@ class RiskReportController extends Controller
             'tenant_id' => auth()->user()->tenant_id ?? null
         ]);
 
-        // Query untuk mengambil data asli dari database
-        $query = RiskReport::where('tenant_id', auth()->user()->tenant_id);
+        // Query untuk mengambil data asli dari database dengan relasi analysis
+        $query = RiskReport::with('analysis')->where('tenant_id', auth()->user()->tenant_id);
 
         // Filter berdasarkan status
         if ($request->filled('status')) {
@@ -60,7 +61,7 @@ class RiskReportController extends Controller
         // Dapatkan hasil query
         $riskReports = $query->orderBy('created_at', 'desc')->get();
 
-        return view('risk_reports.index', compact('riskReports'));
+        return view('modules.RiskManagement.risk-reports.index', compact('riskReports'));
     }
 
     /**
@@ -143,7 +144,7 @@ class RiskReportController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('risk_reports.create', compact('workUnits'));
+        return view('modules.RiskManagement.risk-reports.create', compact('workUnits'));
     }
 
     /**
@@ -218,7 +219,7 @@ class RiskReportController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk melihat laporan dari tenant lain.');
         }
 
-        return view('risk_reports.show', compact('riskReport'));
+        return view('modules.RiskManagement.risk-reports.show', compact('riskReport'));
     }
 
     /**
@@ -239,7 +240,7 @@ class RiskReportController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('risk_reports.edit', compact('riskReport', 'workUnits'));
+        return view('modules.RiskManagement.risk-reports.edit', compact('riskReport', 'workUnits'));
     }
 
     /**
@@ -375,5 +376,174 @@ class RiskReportController extends Controller
 
         return redirect()->route('modules.risk-management.risk-reports.index')
             ->with('success', 'Laporan risiko berhasil disetujui');
+    }
+
+    /**
+     * Generate QR code for risk report.
+     */
+    public function generateQr($id)
+    {
+        // Log aktivitas
+        Log::info('User mencoba mengakses QR code', [
+            'user_id' => auth()->id(),
+            'role' => auth()->user()->role->slug ?? null,
+            'tenant_id' => auth()->user()->tenant_id ?? null,
+            'report_id' => $id
+        ]);
+
+        $riskReport = RiskReport::findOrFail($id);
+
+        // Pastikan laporan berada dalam tenant yang sama
+        if ($riskReport->tenant_id !== auth()->user()->tenant_id) {
+            abort(403, 'Anda tidak memiliki izin untuk mengakses QR code ini.');
+        }
+
+        // Dapatkan informasi penandatangan
+        $signerName = auth()->user()->name ?? 'Unknown';
+        $signerRole = auth()->user()->role->name ?? 'Unknown';
+        $signerDate = now()->format('d-m-Y H:i');
+
+        // Buat informasi QR yang lebih jelas dan terstruktur
+        $qrContent = "=== TANDA TANGAN DIGITAL ===\n\n";
+        $qrContent .= "LAPORAN RISIKO #{$riskReport->id}\n\n";
+        $qrContent .= "Judul: {$riskReport->risk_title}\n";
+        $qrContent .= "Unit: {$riskReport->reporter_unit}\n";
+        $qrContent .= "Tanggal Kejadian: {$riskReport->occurred_at->format('d-m-Y')}\n";
+        $qrContent .= "Level Risiko: {$riskReport->risk_level}\n\n";
+        $qrContent .= "PENANDATANGAN:\n";
+        $qrContent .= "Nama: {$signerName}\n";
+        $qrContent .= "Jabatan: {$signerRole}\n";
+        $qrContent .= "Tanggal: {$signerDate}";
+
+        // Generate QR code as SVG (tidak membutuhkan imagick)
+        $qrCode = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+            ->size(300)
+            ->errorCorrection('H')
+            ->generate($qrContent);
+
+        return response($qrCode)
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Content-Disposition', 'inline; filename="qr-code-' . $id . '.svg"');
+    }
+
+    /**
+     * Export risk report to Word format (Laporan Awal).
+     */
+    public function exportWordAwal($id)
+    {
+        // Log aktivitas
+        Log::info('User mengekspor laporan awal ke Word', [
+            'user_id' => auth()->id(),
+            'role' => auth()->user()->role->slug ?? null,
+            'tenant_id' => auth()->user()->tenant_id ?? null,
+            'report_id' => $id
+        ]);
+
+        $riskReport = RiskReport::findOrFail($id);
+
+        // Pastikan laporan berada dalam tenant yang sama
+        if ($riskReport->tenant_id !== auth()->user()->tenant_id) {
+            abort(403, 'Anda tidak memiliki izin untuk mengekspor laporan dari tenant lain.');
+        }
+
+        return response()->view('risk_reports.laporan_awal', ['riskReport' => $riskReport])
+            ->header('Content-Type', 'application/msword')
+            ->header('Content-Disposition', 'attachment; filename="laporan_awal_' . $id . '.doc"');
+    }
+
+    /**
+     * Export risk report to Word format (Laporan Akhir).
+     */
+    public function exportWordAkhir($id)
+    {
+        // Log aktivitas
+        Log::info('User mengekspor laporan akhir ke PDF', [
+            'user_id' => auth()->id(),
+            'role' => auth()->user()->role->slug ?? null,
+            'tenant_id' => auth()->user()->tenant_id ?? null,
+            'report_id' => $id
+        ]);
+
+        $riskReport = RiskReport::with('analysis.analyst')->findOrFail($id);
+
+        // Pastikan laporan berada dalam tenant yang sama
+        if ($riskReport->tenant_id !== auth()->user()->tenant_id) {
+            abort(403, 'Anda tidak memiliki izin untuk mengekspor laporan dari tenant lain.');
+        }
+
+        // Generate QR code langsung untuk dimasukkan ke PDF
+        $qrCodeData = null;
+        $qrCodeAnalysis = null;
+
+        // QR Code untuk laporan yang sudah disetujui
+        if ($riskReport->status === 'resolved' && $riskReport->approved_by) {
+            // Dapatkan informasi pengguna yang menyetujui
+            $approver = \App\Models\User::find($riskReport->approved_by);
+            $approverName = $approver ? $approver->name : 'Unknown';
+            $approverRole = $approver && $approver->role ? $approver->role->name : 'Unknown';
+
+            // Buat konten QR code yang lebih lengkap
+            $qrContent = "=== TANDA TANGAN DIGITAL ===\n\n";
+            $qrContent .= "LAPORAN RISIKO #{$riskReport->id}\n\n";
+            $qrContent .= "Judul: {$riskReport->risk_title}\n";
+            $qrContent .= "Unit: {$riskReport->reporter_unit}\n";
+            $qrContent .= "Status: DISETUJUI\n\n";
+            $qrContent .= "PENANDATANGAN:\n";
+            $qrContent .= "Nama: {$approverName}\n";
+            $qrContent .= "Jabatan: {$approverRole}\n";
+            $qrContent .= "Tanggal: " . $riskReport->approved_at->format('d/m/Y H:i');
+
+            // Generate QR code sebagai SVG yang tidak memerlukan imagick
+            $qrCode = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+                ->size(300)
+                ->margin(1)
+                ->errorCorrection('H')
+                ->generate($qrContent);
+
+            $qrCodeData = 'data:image/svg+xml;base64,' . base64_encode($qrCode);
+        }
+
+        // QR Code untuk analisis yang sudah selesai
+        if ($riskReport->analysis && $riskReport->analysis->analysis_status === 'completed') {
+            $analystName = $riskReport->analysis->analyst ? $riskReport->analysis->analyst->name : 'Tidak diketahui';
+
+            // Buat konten QR code untuk analisis yang sudah selesai
+            $qrContent = "=== VERIFIKASI ANALISIS RISIKO ===\n\n";
+            $qrContent .= "NO. KASUS: {$riskReport->id}\n";
+            $qrContent .= "JUDUL: {$riskReport->risk_title}\n";
+            $qrContent .= "STATUS: {$riskReport->analysis->status_label}\n\n";
+            $qrContent .= "DIANALISIS OLEH:\n";
+            $qrContent .= "Nama: {$analystName}\n";
+            $qrContent .= "Tanggal: " . ($riskReport->analysis->analyzed_at ? $riskReport->analysis->analyzed_at->format('d-m-Y H:i') : now()->format('d-m-Y H:i'));
+
+            // Generate QR code sebagai SVG yang tidak memerlukan imagick
+            $qrCode = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+                ->size(300)
+                ->margin(1)
+                ->errorCorrection('H')
+                ->generate($qrContent);
+
+            $qrCodeAnalysis = 'data:image/svg+xml;base64,' . base64_encode($qrCode);
+        }
+
+        // Render view ke HTML
+        $html = view('risk_reports.laporan_akhir', [
+            'riskReport' => $riskReport,
+            'qrCodeData' => $qrCodeData,
+            'qrCodeAnalysis' => $qrCodeAnalysis
+        ])->render();
+
+        // Gunakan Dompdf untuk konversi HTML ke PDF
+        $options = new \Dompdf\Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('isHtml5ParserEnabled', true);
+
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        // Stream PDF ke browser
+        return $dompdf->stream("laporan_akhir_{$id}.pdf");
     }
 }

@@ -254,7 +254,37 @@
 @endpush
 
 @section('content')
-<div class="container-fluid pt-0 pb-4">
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Manajemen Risiko</h2>
+        <div>
+            <!-- Debug information -->
+            @if(auth()->check())
+            <div class="alert alert-info mb-2">
+                Role: {{ auth()->user()->role->slug ?? 'Tidak ada role' }} | 
+                UserID: {{ auth()->id() }} |
+                Raw Role Slug: '{{ auth()->user()->role->slug ?? 'none' }}'
+            </div>
+            @endif
+            
+            @php
+                $userRole = auth()->user()->role->slug ?? '';
+                $isTenantAdmin = $userRole === 'tenant_admin' || 
+                                  $userRole === 'Tenant_Admin' || 
+                                  strtolower($userRole) === 'tenant_admin';
+            @endphp
+            
+            @if(auth()->user()->role && $isTenantAdmin)
+            <a href="{{ route('modules.risk-management.analysis-config') }}" class="btn btn-secondary">
+                <i class="fas fa-cog me-1"></i> Konfigurasi Akses Analisis
+            </a>
+            @endif
+            <a href="{{ route('modules.risk-management.risk-reports.create') }}" class="btn btn-primary ms-2">
+                <i class="fas fa-plus-circle me-1"></i> Laporan Baru
+            </a>
+        </div>
+    </div>
+
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="breadcrumb-container">
         <ol class="breadcrumb mb-0">

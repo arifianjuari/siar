@@ -7,28 +7,35 @@
         body {
             font-family: Arial, sans-serif;
             font-size: 12pt;
-            margin: 1cm;
-            line-height: 1.5;
+            margin: 0.5cm;
+            line-height: 1.2;
         }
         h1 {
             font-size: 16pt;
             font-weight: bold;
             text-align: center;
-            margin-bottom: 20pt;
+            margin-top: 0;
+            margin-bottom: 40;
         }
         h2 {
             font-size: 14pt;
             font-weight: bold;
             border-bottom: 1px solid #000;
-            margin-top: 20pt;
-            margin-bottom: 10pt;
+            margin-top: 10;
+            margin-bottom: 0;
+            padding-top: 3pt;
+        }
+        h3 {
+            margin-top: 0;
+            margin-bottom: 0;
+            font-size: 12pt;
         }
         .header {
             text-align: center;
-            margin-bottom: 30pt;
+            margin-bottom: 5pt;
         }
         .header img {
-            max-height: 80pt;
+            max-height: 70pt;
         }
         .logo {
             border: 0;
@@ -36,30 +43,38 @@
         table.info {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20pt;
+            margin-top: 0;
+            margin-bottom: 0;
         }
         table.info td {
-            padding: 5pt;
+            padding: 0;
             vertical-align: top;
+            line-height: 1;
         }
         table.info td:first-child {
             width: 30%;
             font-weight: bold;
         }
         .section {
-            margin-top: 20pt;
-            margin-bottom: 20pt;
+            margin-top: 0;
+            margin-bottom: 0;
         }
         .pre {
             white-space: pre-wrap;
+            margin-top: 0;
+            margin-bottom: 0;
         }
         .footer {
-            margin-top: 50pt;
+            margin-top: 30pt;
             text-align: right;
+        }
+        p {
+            margin-top: 0;
+            margin-bottom: 0;
         }
         .status {
             font-weight: bold;
-            padding: 5pt;
+            padding: 0;
             display: inline-block;
         }
         .status-open {
@@ -73,20 +88,20 @@
         }
         .qrcode {
             text-align: center;
-            margin-top: 30pt;
+            margin-top: 5pt;
         }
         .qrcode img {
-            width: 150pt;
-            height: 150pt;
+            width: 90pt;
+            height: 90pt;
         }
         .signatures {
-            margin-top: 50pt;
+            margin-top: 5pt;
             width: 100%;
         }
         .signatures td {
             width: 50%;
             vertical-align: top;
-            padding-top: 50pt;
+            padding-top: 5pt;
             text-align: center;
         }
     </style>
@@ -102,18 +117,7 @@
             <td>Nomor Laporan</td>
             <td>: {{ $riskReport->id }}</td>
         </tr>
-        <tr>
-            <td>Status</td>
-            <td>: 
-                @if($riskReport->status === 'open')
-                    <span class="status status-open">Open</span>
-                @elseif($riskReport->status === 'in_review')
-                    <span class="status status-in-review">In Review</span>
-                @else
-                    <span class="status status-resolved">Resolved</span>
-                @endif
-            </td>
-        </tr>
+        
         <tr>
             <td>Tanggal Laporan</td>
             <td>: {{ $riskReport->created_at->format('d/m/Y') }}</td>
@@ -209,8 +213,14 @@
     @if($riskReport->status === 'resolved' && $qrCodeData)
         <div class="qrcode">
             <h3>Tanda Tangan Digital</h3>
-            <img src="data:image/png;base64,{{ $qrCodeData }}" alt="QR Code Tanda Tangan Digital">
+            <img src="{{ $qrCodeData }}" alt="QR Code Tanda Tangan Digital">
             <p>Scan QR code ini untuk verifikasi tanda tangan digital</p>
+        </div>
+    @elseif($riskReport->analysis && $riskReport->analysis->analysis_status === 'completed' && $qrCodeAnalysis)
+        <div class="qrcode">
+            <h3>Tanda Tangan Analisis</h3>
+            <img src="{{ $qrCodeAnalysis }}" alt="QR Code Analisis">
+            <p>Scan QR code ini untuk verifikasi analisis</p>
         </div>
     @endif
     
@@ -222,11 +232,11 @@
                 <p>Tanggal: {{ $riskReport->created_at->format('d/m/Y') }}</p>
             </td>
             
-            @if($riskReport->approved_by)
+            @if($riskReport->analysis && $riskReport->analysis->analyst)
             <td>
                 <p>Disetujui oleh:</p>
-                <p>{{ $riskReport->approver->name ?? 'Unknown' }}</p>
-                <p>Tanggal: {{ $riskReport->approved_at->format('d/m/Y') }}</p>
+                <p>{{ $riskReport->analysis->analyst->name }}</p>
+                <p>Tanggal: {{ $riskReport->analysis->analyzed_at ? $riskReport->analysis->analyzed_at->format('d/m/Y') : $riskReport->analysis->updated_at->format('d/m/Y') }}</p>
             </td>
             @else
             <td>

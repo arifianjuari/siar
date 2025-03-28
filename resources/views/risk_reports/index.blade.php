@@ -138,13 +138,9 @@
                                         <div class="mt-2">
                                             <!-- Ubah Status -->
                                             @if($report->status === 'open')
-                                                <form method="POST" action="{{ route('modules.risk-management.risk-reports.mark-in-review', $report->id) }}" style="display: inline;">
-                                                    @csrf
-                                                    @method('PUT')
-                                                    <button type="submit" class="btn btn-sm btn-primary" title="Tindak Lanjut">
-                                                        <i class="fas fa-sync-alt me-1"></i> Tindak Lanjut
-                                                    </button>
-                                                </form>
+                                                <a href="{{ route('modules.risk-management.risk-analysis.create', $report->id) }}" class="btn btn-sm btn-primary" title="Analisis">
+                                                    <i class="fas fa-chart-line me-1"></i> Analisis
+                                                </a>
                                             @endif
                                             
                                             @if($report->status === 'in_review')

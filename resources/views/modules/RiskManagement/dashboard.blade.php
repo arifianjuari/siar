@@ -268,6 +268,23 @@
 
 @section('content')
 <div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Dashboard Manajemen Risiko</h2>
+        <div>
+            <a href="{{ route('modules.risk-management.risk-reports.create') }}" class="btn btn-success me-2">
+                <i class="fas fa-plus-circle me-1"></i> Laporan Baru
+            </a>
+            <a href="{{ route('modules.risk-management.risk-reports.index') }}" class="btn btn-primary">
+                <i class="fas fa-list me-1"></i> Daftar Laporan
+            </a>
+            @if(auth()->user()->role && auth()->user()->role->slug === 'tenant_admin')
+            <a href="{{ route('modules.risk-management.analysis-config') }}" class="btn btn-secondary ms-2">
+                <i class="fas fa-cog me-1"></i> Konfigurasi Akses Analisis
+            </a>
+            @endif
+        </div>
+    </div>
+
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h2 class="mb-1 fw-bold">Statistik dan Analisis</h2>

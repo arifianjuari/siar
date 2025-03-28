@@ -135,7 +135,15 @@ Route::middleware(['auth', 'tenant'])->prefix('modules')->name('modules.')->grou
     // Risk Management Module
     Route::prefix('risk-management')->name('risk-management.')->middleware('module:risk-management')->group(function () {
         // Dashboard route - Dapat dilihat oleh semua pengguna yang memiliki akses ke modul
-        Route::get('/', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'dashboard'])->name('dashboard');
+        Route::get('/', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'dashboard'])->name('index');
+
+        Route::get('/dashboard', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'dashboard'])->name('dashboard');
+
+        // Konfigurasi Akses Analisis Risiko - Khusus untuk tenant admin
+        Route::get('/analysis-config', [App\Http\Controllers\Modules\RiskManagement\RiskManagementController::class, 'showAnalysisConfig'])
+            ->name('analysis-config');
+        Route::post('/analysis-config', [App\Http\Controllers\Modules\RiskManagement\RiskManagementController::class, 'saveAnalysisConfig'])
+            ->name('save-analysis-config');
 
         // Melihat daftar laporan risiko - Memerlukan izin can_view
         Route::get('risk-reports', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'index'])
@@ -188,6 +196,24 @@ Route::middleware(['auth', 'tenant'])->prefix('modules')->name('modules.')->grou
         Route::get('risk-reports/{id}/export-akhir', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'exportWordAkhir'])
             ->middleware('check.permission:risk-management,can_export')
             ->name('risk-reports.export-akhir');
+
+        // Risk Analysis Routes - Memerlukan izin can_create
+        Route::get('risk-reports/{reportId}/risk-analysis/create', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'create'])
+            ->middleware('check.permission:risk-management,can_create')
+            ->name('risk-analysis.create');
+        Route::post('risk-reports/{reportId}/risk-analysis', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'store'])
+            ->middleware('check.permission:risk-management,can_create')
+            ->name('risk-analysis.store');
+        Route::get('risk-reports/{reportId}/risk-analysis/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'show'])
+            ->name('risk-analysis.show');
+        Route::get('risk-reports/{reportId}/risk-analysis/{id}/edit', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'edit'])
+            ->middleware('check.permission:risk-management,can_create')
+            ->name('risk-analysis.edit');
+        Route::put('risk-reports/{reportId}/risk-analysis/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'update'])
+            ->middleware('check.permission:risk-management,can_create')
+            ->name('risk-analysis.update');
+        Route::get('risk-reports/{reportId}/risk-analysis/{id}/qr-code', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'generateQr'])
+            ->name('risk-analysis.qr-code');
     });
 
     // Rute Manajemen Modul - PINDAHKAN KE BAWAH
@@ -230,8 +256,15 @@ Route::domain('{tenant}.localhost')->middleware(['tenant.resolve'])->group(funct
 
             // Risk Management Module
             Route::prefix('risk-management')->name('risk-management.')->middleware('module:risk-management')->group(function () {
-                // Risk Reports
-                // Route::resource('risk-reports', App\Http\Controllers\Modules\RiskManagement\RiskReportController::class);
+                // Dashboard route - Dapat dilihat oleh semua pengguna yang memiliki akses ke modul
+                Route::get('/', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'dashboard'])->name('index');
+                Route::get('/dashboard', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'dashboard'])->name('dashboard');
+
+                // Konfigurasi Akses Analisis Risiko - Khusus untuk tenant admin
+                Route::get('/analysis-config', [App\Http\Controllers\Modules\RiskManagement\RiskManagementController::class, 'showAnalysisConfig'])
+                    ->name('analysis-config');
+                Route::post('/analysis-config', [App\Http\Controllers\Modules\RiskManagement\RiskManagementController::class, 'saveAnalysisConfig'])
+                    ->name('save-analysis-config');
 
                 // Melihat daftar laporan risiko - Memerlukan izin can_view
                 Route::get('risk-reports', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'index'])
@@ -263,7 +296,7 @@ Route::domain('{tenant}.localhost')->middleware(['tenant.resolve'])->group(funct
                     ->name('risk-reports.destroy');
 
                 // Dashboard route
-                Route::get('/', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'dashboard'])->name('dashboard');
+                Route::get('risk-reports/dashboard', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'dashboard'])->name('risk-reports.dashboard');
 
                 // Approval routes - Memerlukan izin can_edit
                 Route::put('risk-reports/{id}/mark-in-review', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'markInReview'])
@@ -284,6 +317,24 @@ Route::domain('{tenant}.localhost')->middleware(['tenant.resolve'])->group(funct
                 Route::get('risk-reports/{id}/export-akhir', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'exportWordAkhir'])
                     ->middleware('check.permission:risk-management,can_export')
                     ->name('risk-reports.export-akhir');
+
+                // Risk Analysis Routes - Memerlukan izin can_create
+                Route::get('risk-reports/{reportId}/risk-analysis/create', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'create'])
+                    ->middleware('check.permission:risk-management,can_create')
+                    ->name('risk-analysis.create');
+                Route::post('risk-reports/{reportId}/risk-analysis', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'store'])
+                    ->middleware('check.permission:risk-management,can_create')
+                    ->name('risk-analysis.store');
+                Route::get('risk-reports/{reportId}/risk-analysis/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'show'])
+                    ->name('risk-analysis.show');
+                Route::get('risk-reports/{reportId}/risk-analysis/{id}/edit', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'edit'])
+                    ->middleware('check.permission:risk-management,can_create')
+                    ->name('risk-analysis.edit');
+                Route::put('risk-reports/{reportId}/risk-analysis/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'update'])
+                    ->middleware('check.permission:risk-management,can_create')
+                    ->name('risk-analysis.update');
+                Route::get('risk-reports/{reportId}/risk-analysis/{id}/qr-code', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'generateQr'])
+                    ->name('risk-analysis.qr-code');
             });
         });
     });

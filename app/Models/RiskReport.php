@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Traits\BelongsToTenant;
 
 class RiskReport extends Model
@@ -60,5 +61,13 @@ class RiskReport extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /**
+     * Get the risk analysis associated with the risk report.
+     */
+    public function analysis(): HasOne
+    {
+        return $this->hasOne(RiskAnalysis::class, 'risk_report_id');
     }
 }

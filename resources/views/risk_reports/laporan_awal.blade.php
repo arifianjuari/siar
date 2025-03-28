@@ -7,55 +7,70 @@
         body {
             font-family: Arial, sans-serif;
             font-size: 12pt;
-            margin: 1cm;
-            line-height: 1.5;
+            margin: 0.5cm;
+            line-height: 1.2;
         }
         h1 {
             font-size: 16pt;
             font-weight: bold;
             text-align: center;
-            margin-bottom: 20pt;
+            margin-top: 0;
+            margin-bottom: 40;
         }
         h2 {
             font-size: 14pt;
             font-weight: bold;
             border-bottom: 1px solid #000;
-            margin-top: 20pt;
-            margin-bottom: 10pt;
+            margin-top: 10;
+            margin-bottom: 0;
+            padding-top: 3pt;
+        }
+        h3 {
+            margin-top: 0;
+            margin-bottom: 0;
+            font-size: 12pt;
         }
         .header {
             text-align: center;
-            margin-bottom: 30pt;
+            margin-bottom: 5pt;
         }
         .header img {
-            max-height: 80pt;
+            max-height: 70pt;
         }
         .logo {
             border: 0;
         }
         table.info {
-            width: 100%;
+            width: 75%;
             border-collapse: collapse;
-            margin-bottom: 20pt;
+            margin-top: 0;
+            margin-bottom: 0;
         }
         table.info td {
-            padding: 5pt;
+            padding: 0;
             vertical-align: top;
+            line-height: 1;
         }
         table.info td:first-child {
             width: 30%;
             font-weight: bold;
         }
         .section {
-            margin-top: 20pt;
-            margin-bottom: 20pt;
+            margin-top: 0;
+            margin-bottom: 0;
         }
         .pre {
             white-space: pre-wrap;
+            margin-top: 0;
+            margin-bottom: 0;
         }
         .footer {
-            margin-top: 50pt;
+            margin-top: 30pt;
             text-align: right;
+        }
+        p {
+            margin-top: 0;
+            margin-bottom: 0;
         }
     </style>
 </head>
