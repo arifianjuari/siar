@@ -29,7 +29,7 @@ class RiskManagementController extends Controller
             strtolower($userRole) === 'tenant-admin';
 
         if (!auth()->user()->role || !$isTenantAdmin) {
-            return redirect()->route('modules.risk-management.index')
+            return redirect()->route('modules.risk-management.dashboard')
                 ->with('error', 'Anda tidak memiliki akses untuk mengatur konfigurasi analisis risiko');
         }
 
@@ -59,7 +59,7 @@ class RiskManagementController extends Controller
             strtolower($userRole) === 'tenant-admin';
 
         if (!auth()->user()->role || !$isTenantAdmin) {
-            return redirect()->route('modules.risk-management.index')
+            return redirect()->route('modules.risk-management.dashboard')
                 ->with('error', 'Anda tidak memiliki akses untuk mengatur konfigurasi analisis risiko');
         }
 

@@ -41,6 +41,11 @@
         margin-bottom: 0;
     }
     
+    .bg-draft {
+        background-color: #fd3714;
+        color: white;
+    }
+    
     .chart-container {
         position: relative;
         height: 280px;
@@ -71,7 +76,7 @@
     }
     
     .status-filter-btn.draft {
-        background-color: #6c757d;
+        background-color: #fd7e14;
         color: white;
     }
     
@@ -191,6 +196,15 @@
     </div>
 
     <!-- KPI Cards -->
+    <div class="row mb-2">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-calendar-alt text-primary me-2"></i>
+                <p class="text-muted mb-0 small">Data laporan untuk tahun berjalan {{ date('Y') }}</p>
+            </div>
+        </div>
+    </div>
+    
     <div class="row mb-3">
         <div class="col-md-3 col-sm-6 mb-3">
             <div class="card kpi-card">
@@ -203,7 +217,7 @@
         </div>
         
         <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card kpi-card bg-secondary">
+            <div class="card kpi-card bg-draft">
                 <div class="card-body">
                     <i class="fas fa-file-alt kpi-icon"></i>
                     <h2 class="kpi-value">{{ $stats['draft'] }}</h2>
@@ -242,16 +256,21 @@
                     <div class="btn-group">
                         <button type="button" class="btn btn-sm btn-outline-secondary active" data-period="monthly">Bulanan</button>
                         <button type="button" class="btn btn-sm btn-outline-secondary" data-period="quarterly">Kuartalan</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-period="yearly">Tahunan</button>
                     </div>
                 </div>
                 <div class="card-body">
                     <div class="d-flex mb-2">
                         <div class="legend-item">
-                            <div class="legend-color" style="background-color: #dc3545;"></div>
+                            <div class="legend-color" style="background-color: #FF0000;"></div>
+                            <span>Risiko Ekstrem</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #FFA500;"></div>
                             <span>Risiko Tinggi</span>
                         </div>
                         <div class="legend-item">
-                            <div class="legend-color" style="background-color: #fd7e14;"></div>
+                            <div class="legend-color" style="background-color: #FFFF00;"></div>
                             <span>Risiko Sedang</span>
                         </div>
                         <div class="legend-item">
@@ -278,22 +297,28 @@
                     </div>
                     
                     <div class="row mt-3 text-center">
-                        <div class="col-4">
+                        <div class="col-3">
                             <div class="p-2 rounded bg-light">
                                 <h6 class="text-success mb-1">Rendah</h6>
-                                <h4>{{ $stats['low_risk'] }}</h4>
+                                <h4>{{ $stats['low_risk'] ?? $stats['rendah'] ?? 0 }}</h4>
                             </div>
                         </div>
-                        <div class="col-4">
+                        <div class="col-3">
                             <div class="p-2 rounded bg-light">
-                                <h6 class="text-warning mb-1">Sedang</h6>
-                                <h4>{{ $stats['medium_risk'] }}</h4>
+                                <h6 class="mb-1" style="color: #FFFF00;">Sedang</h6>
+                                <h4>{{ $stats['medium_risk'] ?? $stats['sedang'] ?? 0 }}</h4>
                             </div>
                         </div>
-                        <div class="col-4">
+                        <div class="col-3">
                             <div class="p-2 rounded bg-light">
-                                <h6 class="text-danger mb-1">Tinggi</h6>
-                                <h4>{{ $stats['high_risk'] }}</h4>
+                                <h6 class="mb-1" style="color: #FFA500;">Tinggi</h6>
+                                <h4>{{ $stats['high_risk'] ?? $stats['tinggi'] ?? 0 }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-2 rounded bg-light">
+                                <h6 class="mb-1" style="color: #FF0000;">Ekstrem</h6>
+                                <h4>{{ $stats['extreme_risk'] ?? $stats['ekstrem'] ?? 0 }}</h4>
                             </div>
                         </div>
                     </div>
@@ -311,19 +336,111 @@ document.addEventListener('DOMContentLoaded', function() {
     // Trend Chart (Monthly Reports)
     const ctx = document.getElementById('riskReportChart').getContext('2d');
     const monthLabels = @json($monthLabels);
-    const monthlyData = @json($monthlyData);
+    
+    // Debugging data yang diterima
+    console.log('Month Labels:', @json($monthLabels));
+    console.log('Stats:', @json($stats));
+    
+    // Periksa data laporan bulanan berdasarkan kategori
+    let extremeRiskMonthlyData = @json($extremeRiskMonthlyData ?? $ekstremRiskMonthlyData ?? []);
+    let highRiskMonthlyData = @json($highRiskMonthlyData ?? $tinggiRiskMonthlyData ?? []);
+    let mediumRiskMonthlyData = @json($mediumRiskMonthlyData ?? $sedangRiskMonthlyData ?? []);
+    let lowRiskMonthlyData = @json($lowRiskMonthlyData ?? $rendahRiskMonthlyData ?? []);
+    
+    // Log tambahan untuk memeriksa data dari backend
+    console.log('Data risiko dari backend:');
+    console.log('extremeRiskMonthlyData:', @json($extremeRiskMonthlyData ?? []));
+    console.log('ekstremRiskMonthlyData:', @json($ekstremRiskMonthlyData ?? []));
+    console.log('highRiskMonthlyData:', @json($highRiskMonthlyData ?? []));
+    console.log('tinggiRiskMonthlyData:', @json($tinggiRiskMonthlyData ?? []));
+    
+    // Jika data kategori risiko bulanan tidak tersedia, gunakan data dari stats 
+    // dan buat data dummy untuk bulan
+    if (extremeRiskMonthlyData.length === 0 && highRiskMonthlyData.length === 0 && 
+        mediumRiskMonthlyData.length === 0 && lowRiskMonthlyData.length === 0) {
+        
+        console.log('Data kategori risiko bulanan tidak tersedia, menggunakan data dari stats');
+        
+        // Dapatkan total untuk setiap kategori dari stats
+        const extremeTotal = {{ $stats['extreme_risk'] ?? $stats['ekstrem'] ?? 0 }};
+        const highTotal = {{ $stats['high_risk'] ?? $stats['tinggi'] ?? 0 }};
+        const mediumTotal = {{ $stats['medium_risk'] ?? $stats['sedang'] ?? 0 }};
+        const lowTotal = {{ $stats['low_risk'] ?? $stats['rendah'] ?? 0 }};
+        
+        console.log('Total dari stats:');
+        console.log('Ekstrem:', extremeTotal);
+        console.log('Tinggi:', highTotal);
+        console.log('Sedang:', mediumTotal);
+        console.log('Rendah:', lowTotal);
+        
+        // Jika ada bulan saat ini dalam data, letakkan semua data pada bulan tersebut
+        // Jika tidak, letakkan di bulan pertama dari daftar bulan
+        const currentMonthName = new Date().toLocaleString('id-ID', { month: 'short' });
+        let targetMonthIndex = monthLabels.findIndex(m => m === currentMonthName);
+        if (targetMonthIndex === -1) targetMonthIndex = 0;
+        
+        // Inisialisasi array kosong untuk setiap kategori
+        extremeRiskMonthlyData = Array(monthLabels.length).fill(0);
+        highRiskMonthlyData = Array(monthLabels.length).fill(0);
+        mediumRiskMonthlyData = Array(monthLabels.length).fill(0);
+        lowRiskMonthlyData = Array(monthLabels.length).fill(0);
+        
+        // Tetapkan data total ke bulan yang ditargetkan
+        extremeRiskMonthlyData[targetMonthIndex] = extremeTotal;
+        highRiskMonthlyData[targetMonthIndex] = highTotal;
+        mediumRiskMonthlyData[targetMonthIndex] = mediumTotal;
+        lowRiskMonthlyData[targetMonthIndex] = lowTotal;
+    }
+    
+    console.log('Extreme Risk Data:', extremeRiskMonthlyData);
+    console.log('High Risk Data:', highRiskMonthlyData);
+    console.log('Medium Risk Data:', mediumRiskMonthlyData);
+    console.log('Low Risk Data:', lowRiskMonthlyData);
+    
+    // Mengurutkan bulan sesuai urutan kalender normal (Jan-Des)
+    const monthOrder = {
+        'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'Mei': 4, 'Jun': 5, 
+        'Jul': 6, 'Agt': 7, 'Sep': 8, 'Okt': 9, 'Nov': 10, 'Des': 11
+    };
+    
+    // Membuat array pasangan bulan dan data
+    const createDataPairs = (labels, dataArray) => {
+        return labels.map((month, index) => {
+            return { month, data: dataArray[index] || 0 };
+        });
+    };
+    
+    const monthExtremeRiskPairs = createDataPairs(monthLabels, extremeRiskMonthlyData);
+    const monthHighRiskPairs = createDataPairs(monthLabels, highRiskMonthlyData);
+    const monthMediumRiskPairs = createDataPairs(monthLabels, mediumRiskMonthlyData);
+    const monthLowRiskPairs = createDataPairs(monthLabels, lowRiskMonthlyData);
+    
+    // Mengurutkan berdasarkan urutan bulan
+    monthExtremeRiskPairs.sort((a, b) => monthOrder[a.month] - monthOrder[b.month]);
+    monthHighRiskPairs.sort((a, b) => monthOrder[a.month] - monthOrder[b.month]);
+    monthMediumRiskPairs.sort((a, b) => monthOrder[a.month] - monthOrder[b.month]);
+    monthLowRiskPairs.sort((a, b) => monthOrder[a.month] - monthOrder[b.month]);
+    
+    // Mengekstrak bulan dan data yang sudah diurutkan
+    const sortedMonthLabels = monthExtremeRiskPairs.map(pair => pair.month);
+    const sortedExtremeRiskData = monthExtremeRiskPairs.map(pair => pair.data);
+    const sortedHighRiskData = monthHighRiskPairs.map(pair => pair.data);
+    const sortedMediumRiskData = monthMediumRiskPairs.map(pair => pair.data);
+    const sortedLowRiskData = monthLowRiskPairs.map(pair => pair.data);
     
     // Data kuartalan - mengelompokkan data bulanan menjadi 4 kuartal
     const quarterlyLabels = ['Q1', 'Q2', 'Q3', 'Q4'];
-    const quarterlyData = [0, 0, 0, 0]; // 4 kuartal
+    const quarterlyExtremeRiskData = [0, 0, 0, 0]; // 4 kuartal
+    const quarterlyHighRiskData = [0, 0, 0, 0]; // 4 kuartal
+    const quarterlyMediumRiskData = [0, 0, 0, 0]; // 4 kuartal
+    const quarterlyLowRiskData = [0, 0, 0, 0]; // 4 kuartal
     
-    // Menghitung data kuartalan dari data bulanan
-    for (let i = 0; i < monthlyData.length; i++) {
-        // Mendapatkan bulan dari label (Jan, Feb, etc.)
-        const month = monthLabels[i];
+    // Menghitung data kuartalan dari data bulanan berdasarkan tingkat risiko
+    for (let i = 0; i < sortedMonthLabels.length; i++) {
+        const month = sortedMonthLabels[i];
         let quarterIndex;
         
-        // Pengelompokan bulan berdasarkan nama bulan yang sebenarnya
+        // Pengelompokan bulan berdasarkan nama bulan dalam urutan kalender normal
         if (['Jan', 'Feb', 'Mar'].includes(month)) {
             quarterIndex = 0; // Q1
         } else if (['Apr', 'Mei', 'Jun'].includes(month)) {
@@ -334,46 +451,26 @@ document.addEventListener('DOMContentLoaded', function() {
             quarterIndex = 3; // Q4 (Okt, Nov, Des)
         }
         
-        // Tambahkan data ke kuartal yang sesuai
-        quarterlyData[quarterIndex] += monthlyData[i];
+        // Tambahkan data ke kuartal yang sesuai untuk setiap tingkat risiko
+        quarterlyExtremeRiskData[quarterIndex] += sortedExtremeRiskData[i];
+        quarterlyHighRiskData[quarterIndex] += sortedHighRiskData[i];
+        quarterlyMediumRiskData[quarterIndex] += sortedMediumRiskData[i];
+        quarterlyLowRiskData[quarterIndex] += sortedLowRiskData[i];
     }
     
-    // Menghasilkan data untuk tingkat risiko berdasarkan data bulanan
-    // Menggunakan proporsi tetap untuk setiap tingkat risiko
-    const calculateRiskData = (data) => {
-        const highRiskData = [];
-        const mediumRiskData = [];
-        const lowRiskData = [];
-        
-        data.forEach(total => {
-            if (total === 0) {
-                highRiskData.push(0);
-                mediumRiskData.push(0);
-                lowRiskData.push(0);
-            } else {
-                // Proporsi untuk setiap tingkat risiko (bisa disesuaikan)
-                const highRisk = Math.round(total * 0.2); // 20% risiko tinggi
-                const mediumRisk = Math.round(total * 0.5); // 50% risiko sedang
-                const lowRisk = total - highRisk - mediumRisk; // sisanya risiko rendah
-                
-                highRiskData.push(highRisk);
-                mediumRiskData.push(mediumRisk);
-                lowRiskData.push(lowRisk);
-            }
-        });
-        
-        return { highRiskData, mediumRiskData, lowRiskData };
-    };
-    
-    // Hitung data risiko untuk tampilan bulanan dan kuartalan
-    const monthlyRiskData = calculateRiskData(monthlyData);
-    const quarterlyRiskData = calculateRiskData(quarterlyData);
+    // Data tahunan - menggabungkan semua data bulanan berdasarkan tingkat risiko
+    const yearlyLabels = ['Tahun Ini'];
+    const yearlyExtremeRiskData = [sortedExtremeRiskData.reduce((sum, value) => sum + value, 0)];
+    const yearlyHighRiskData = [sortedHighRiskData.reduce((sum, value) => sum + value, 0)];
+    const yearlyMediumRiskData = [sortedMediumRiskData.reduce((sum, value) => sum + value, 0)];
+    const yearlyLowRiskData = [sortedLowRiskData.reduce((sum, value) => sum + value, 0)];
     
     // Buat Chart dengan data bulanan sebagai default
-    let currentLabels = monthLabels;
-    let currentHighRiskData = monthlyRiskData.highRiskData;
-    let currentMediumRiskData = monthlyRiskData.mediumRiskData;
-    let currentLowRiskData = monthlyRiskData.lowRiskData;
+    let currentLabels = sortedMonthLabels;
+    let currentExtremeRiskData = sortedExtremeRiskData;
+    let currentHighRiskData = sortedHighRiskData;
+    let currentMediumRiskData = sortedMediumRiskData;
+    let currentLowRiskData = sortedLowRiskData;
     
     const riskReportChart = new Chart(ctx, {
         type: 'bar',
@@ -381,9 +478,18 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: currentLabels,
             datasets: [
                 {
+                    label: 'Risiko Ekstrem',
+                    data: currentExtremeRiskData,
+                    backgroundColor: '#FF0000',
+                    borderWidth: 0,
+                    borderRadius: 4,
+                    barPercentage: 0.6,
+                    categoryPercentage: 0.8
+                },
+                {
                     label: 'Risiko Tinggi',
                     data: currentHighRiskData,
-                    backgroundColor: '#dc3545',
+                    backgroundColor: '#FFA500',
                     borderWidth: 0,
                     borderRadius: 4,
                     barPercentage: 0.6,
@@ -392,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 {
                     label: 'Risiko Sedang',
                     data: currentMediumRiskData,
-                    backgroundColor: '#fd7e14',
+                    backgroundColor: '#FFFF00',
                     borderWidth: 0,
                     borderRadius: 4,
                     barPercentage: 0.6,
@@ -444,13 +550,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const riskLevelChart = new Chart(ctxDoughnut, {
         type: 'doughnut',
         data: {
-            labels: ['Risiko Rendah', 'Risiko Sedang', 'Risiko Tinggi'],
+            labels: ['Risiko Rendah', 'Risiko Sedang', 'Risiko Tinggi', 'Risiko Ekstrem'],
             datasets: [{
-                data: [{{ $stats['low_risk'] }}, {{ $stats['medium_risk'] }}, {{ $stats['high_risk'] }}],
+                data: [
+                    {{ $stats['low_risk'] ?? $stats['rendah'] ?? 0 }}, 
+                    {{ $stats['medium_risk'] ?? $stats['sedang'] ?? 0 }}, 
+                    {{ $stats['high_risk'] ?? $stats['tinggi'] ?? 0 }},
+                    {{ $stats['extreme_risk'] ?? $stats['ekstrem'] ?? 0 }}
+                ],
                 backgroundColor: [
                     '#198754',
-                    '#fd7e14',
-                    '#dc3545'
+                    '#FFFF00',
+                    '#FFA500',
+                    '#FF0000'
                 ],
                 borderWidth: 0,
                 cutout: '70%'
@@ -478,19 +590,22 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Update chart data berdasarkan period yang dipilih
             if (period === 'monthly') {
-                updateChartData(monthLabels, monthlyRiskData.highRiskData, monthlyRiskData.mediumRiskData, monthlyRiskData.lowRiskData);
+                updateChartData(sortedMonthLabels, sortedExtremeRiskData, sortedHighRiskData, sortedMediumRiskData, sortedLowRiskData);
             } else if (period === 'quarterly') {
-                updateChartData(quarterlyLabels, quarterlyRiskData.highRiskData, quarterlyRiskData.mediumRiskData, quarterlyRiskData.lowRiskData);
+                updateChartData(quarterlyLabels, quarterlyExtremeRiskData, quarterlyHighRiskData, quarterlyMediumRiskData, quarterlyLowRiskData);
+            } else if (period === 'yearly') {
+                updateChartData(yearlyLabels, yearlyExtremeRiskData, yearlyHighRiskData, yearlyMediumRiskData, yearlyLowRiskData);
             }
         });
     });
     
     // Fungsi untuk update chart data
-    function updateChartData(labels, highRisk, mediumRisk, lowRisk) {
+    function updateChartData(labels, extremeRisk, highRisk, mediumRisk, lowRisk) {
         riskReportChart.data.labels = labels;
-        riskReportChart.data.datasets[0].data = highRisk;
-        riskReportChart.data.datasets[1].data = mediumRisk;
-        riskReportChart.data.datasets[2].data = lowRisk;
+        riskReportChart.data.datasets[0].data = extremeRisk;
+        riskReportChart.data.datasets[1].data = highRisk;
+        riskReportChart.data.datasets[2].data = mediumRisk;
+        riskReportChart.data.datasets[3].data = lowRisk;
         riskReportChart.update();
     }
 });

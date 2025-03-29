@@ -10,7 +10,7 @@
             <p class="text-muted">Atur peran mana yang dapat mengakses fitur analisis risiko</p>
         </div>
         <div>
-            <a href="{{ route('modules.risk-management.index') }}" class="btn btn-secondary">
+            <a href="{{ route('modules.risk-management.dashboard') }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left me-1"></i> Kembali
             </a>
         </div>

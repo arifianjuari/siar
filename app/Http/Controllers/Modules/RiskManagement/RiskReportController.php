@@ -43,12 +43,31 @@ class RiskReportController extends Controller
         // Query untuk mengambil data asli dari database dengan relasi analysis
         $query = RiskReport::with('analysis')->where('tenant_id', auth()->user()->tenant_id);
 
-        // Filter berdasarkan status
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        // Filter berdasarkan tingkat risiko
+        if ($request->filled('risk_level')) {
+            $query->where('risk_level', $request->risk_level);
         }
 
-        // Filter berdasarkan tanggal kejadian
+        // Filter berdasarkan unit pelapor
+        if ($request->filled('reporter_unit')) {
+            $query->where('reporter_unit', 'LIKE', '%' . $request->reporter_unit . '%');
+        }
+
+        // Filter berdasarkan kategori risiko
+        if ($request->filled('risk_category')) {
+            $query->where('risk_category', $request->risk_category);
+        }
+
+        // Filter berdasarkan rentang tanggal kejadian
+        if ($request->filled('date_from')) {
+            $query->whereDate('occurred_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('occurred_at', '<=', $request->date_to);
+        }
+
+        // Filter berdasarkan tanggal kejadian tunggal (backward compatibility)
         if ($request->filled('occurred_at')) {
             $query->whereDate('occurred_at', $request->occurred_at);
         }
@@ -57,6 +76,20 @@ class RiskReportController extends Controller
         if ($request->filled('risk_title')) {
             $query->where('risk_title', 'LIKE', '%' . $request->risk_title . '%');
         }
+
+        // Log query filter yang digunakan
+        Log::info('Filter laporan risiko', [
+            'user_id' => auth()->id(),
+            'filters' => $request->only([
+                'risk_level',
+                'reporter_unit',
+                'risk_category',
+                'date_from',
+                'date_to',
+                'occurred_at',
+                'risk_title'
+            ])
+        ]);
 
         // Dapatkan hasil query
         $riskReports = $query->orderBy('created_at', 'desc')->get();
@@ -71,46 +104,78 @@ class RiskReportController extends Controller
     {
         $tenantId = auth()->user()->tenant_id;
 
-        // Ambil statistik aktual dari database (risk_analysis)
+        // Ambil semua laporan dengan relasi analysis untuk menghitung status yang benar
+        $reports = RiskReport::with('analysis')->where('tenant_id', $tenantId)->get();
+
+        // Hitung jumlah laporan berdasarkan status
+        $totalReports = $reports->count();
+        $draftCount = 0;
+        $reviewCount = 0;
+        $completedCount = 0;
+
+        // Hitung jumlah berdasarkan tingkat risiko
+        $lowRiskCount = 0;
+        $mediumRiskCount = 0;
+        $highRiskCount = 0;
+        $extremeRiskCount = 0;
+
+        // Loop semua laporan dan hitung status berdasarkan analisis atau status laporan
+        foreach ($reports as $report) {
+            // Hitung status
+            if ($report->analysis) {
+                // Prioritaskan status dari analysis jika ada
+                if ($report->analysis->analysis_status === 'draft') {
+                    $draftCount++;
+                } elseif (in_array($report->analysis->analysis_status, ['in_progress', 'reviewed'])) {
+                    $reviewCount++;
+                } else {
+                    $completedCount++;
+                }
+            } else {
+                // Gunakan status dari laporan jika tidak ada analysis
+                if ($report->status === 'Draft') {
+                    $draftCount++;
+                } elseif ($report->status === 'Ditinjau') {
+                    $reviewCount++;
+                } else {
+                    $completedCount++;
+                }
+            }
+
+            // Hitung tingkat risiko
+            $riskLevel = strtolower($report->risk_level);
+            if (in_array($riskLevel, ['rendah', 'low'])) {
+                $lowRiskCount++;
+            } elseif (in_array($riskLevel, ['sedang', 'medium'])) {
+                $mediumRiskCount++;
+            } elseif (in_array($riskLevel, ['tinggi', 'high'])) {
+                $highRiskCount++;
+            } elseif (in_array($riskLevel, ['ekstrem', 'extreme'])) {
+                $extremeRiskCount++;
+            }
+        }
+
+        // Buat array stats untuk tampilan
         $stats = [
-            'total' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
-                ->where('risk_reports.tenant_id', $tenantId)
-                ->count(),
-
-            'draft' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
-                ->where('risk_reports.tenant_id', $tenantId)
-                ->where('risk_analysis.analysis_status', 'draft')
-                ->count(),
-
-            'review' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
-                ->where('risk_reports.tenant_id', $tenantId)
-                ->whereIn('risk_analysis.analysis_status', ['in_progress', 'reviewed'])
-                ->count(),
-
-            'completed' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
-                ->where('risk_reports.tenant_id', $tenantId)
-                ->where('risk_analysis.analysis_status', 'completed')
-                ->count(),
-
-            'low_risk' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
-                ->where('risk_reports.tenant_id', $tenantId)
-                ->whereIn('risk_reports.risk_level', ['Rendah', 'Low', 'rendah', 'low'])
-                ->count(),
-
-            'medium_risk' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
-                ->where('risk_reports.tenant_id', $tenantId)
-                ->whereIn('risk_reports.risk_level', ['Sedang', 'Medium', 'sedang', 'medium'])
-                ->count(),
-
-            'high_risk' => \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
-                ->where('risk_reports.tenant_id', $tenantId)
-                ->whereIn('risk_reports.risk_level', ['Tinggi', 'High', 'tinggi', 'high'])
-                ->count(),
+            'total' => $totalReports,
+            'draft' => $draftCount,
+            'review' => $reviewCount,
+            'completed' => $completedCount,
+            'low_risk' => $lowRiskCount,
+            'medium_risk' => $mediumRiskCount,
+            'high_risk' => $highRiskCount,
+            'extreme_risk' => $extremeRiskCount
         ];
 
         // Data untuk chart bulanan - ambil data aktual 12 bulan terakhir
         $monthlyData = [];
         $monthLabels = [];
+
+        // Array untuk menyimpan data risiko per bulan berdasarkan level
+        $extremeRiskMonthlyData = [];
+        $highRiskMonthlyData = [];
+        $mediumRiskMonthlyData = [];
+        $lowRiskMonthlyData = [];
 
         // Gunakan startOfMonth untuk memastikan konsistensi
         $startDate = Carbon::now()->startOfMonth()->subMonths(11);
@@ -126,27 +191,58 @@ class RiskReportController extends Controller
             $monthName = $currentDate->translatedFormat('M'); // Gunakan format yang tepat
             $monthLabels[] = $monthName;
 
-            $count = \App\Models\RiskAnalysis::join('risk_reports', 'risk_analysis.risk_report_id', '=', 'risk_reports.id')
-                ->where('risk_reports.tenant_id', $tenantId)
-                ->whereYear('risk_analysis.created_at', $currentDate->year)
-                ->whereMonth('risk_analysis.created_at', $currentDate->month)
+            // Hitung jumlah laporan per bulan
+            $monthlyData[] = RiskReport::where('tenant_id', $tenantId)
+                ->whereYear('created_at', $currentDate->year)
+                ->whereMonth('created_at', $currentDate->month)
                 ->count();
 
-            $monthlyData[] = $count;
+            // Hitung data bulanan berdasarkan tingkat risiko
+            $extremeRiskMonthlyData[] = RiskReport::where('tenant_id', $tenantId)
+                ->whereIn('risk_level', ['Ekstrem', 'Extreme', 'ekstrem', 'extreme'])
+                ->whereYear('created_at', $currentDate->year)
+                ->whereMonth('created_at', $currentDate->month)
+                ->count();
+
+            $highRiskMonthlyData[] = RiskReport::where('tenant_id', $tenantId)
+                ->whereIn('risk_level', ['Tinggi', 'High', 'tinggi', 'high'])
+                ->whereYear('created_at', $currentDate->year)
+                ->whereMonth('created_at', $currentDate->month)
+                ->count();
+
+            $mediumRiskMonthlyData[] = RiskReport::where('tenant_id', $tenantId)
+                ->whereIn('risk_level', ['Sedang', 'Medium', 'sedang', 'medium'])
+                ->whereYear('created_at', $currentDate->year)
+                ->whereMonth('created_at', $currentDate->month)
+                ->count();
+
+            $lowRiskMonthlyData[] = RiskReport::where('tenant_id', $tenantId)
+                ->whereIn('risk_level', ['Rendah', 'Low', 'rendah', 'low'])
+                ->whereYear('created_at', $currentDate->year)
+                ->whereMonth('created_at', $currentDate->month)
+                ->count();
 
             // Log informasi data per bulan
             Log::info('Dashboard Chart Monthly Data', [
                 'month' => $monthName,
                 'year' => $currentDate->year,
-                'count' => $count,
+                'count' => $monthlyData[$i],
                 'index' => $i,
+                'extreme_risk' => $extremeRiskMonthlyData[$i],
+                'high_risk' => $highRiskMonthlyData[$i],
+                'medium_risk' => $mediumRiskMonthlyData[$i],
+                'low_risk' => $lowRiskMonthlyData[$i]
             ]);
         }
 
         return view('modules.RiskManagement.dashboard', compact(
             'stats',
             'monthlyData',
-            'monthLabels'
+            'monthLabels',
+            'extremeRiskMonthlyData',
+            'highRiskMonthlyData',
+            'mediumRiskMonthlyData',
+            'lowRiskMonthlyData'
         ));
     }
 

@@ -30,36 +30,70 @@
 @section('content')
     <!-- Form Filter -->
     <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-filter me-1"></i>
+                <span>Filter</span>
+            </div>
+            <button type="button" id="toggleFilterBtn" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-chevron-up me-1"></i> <span>Sembunyikan</span>
+            </button>
+        </div>
         <div class="card-body py-3">
-            <form method="GET" action="{{ route('modules.risk-management.risk-reports.index') }}">
-                <div class="row align-items-end g-3">
-                    <div class="col-md-3">
-                        <label for="status" class="form-label small mb-1">Status:</label>
-                        <select name="status" id="status" class="form-select form-select-sm">
-                            <option value="">-- Semua Status --</option>
-                            <option value="Draft" {{ request('status') == 'Draft' ? 'selected' : '' }}>Draft</option>
-                            <option value="Ditinjau" {{ request('status') == 'Ditinjau' ? 'selected' : '' }}>Ditinjau</option>
-                            <option value="Selesai" {{ request('status') == 'Selesai' ? 'selected' : '' }}>Selesai</option>
+            <form method="GET" action="{{ route('modules.risk-management.risk-reports.index') }}" id="filterForm">
+                <div class="row align-items-end g-2" id="filterRow">
+                    <div class="col-lg">
+                        <label for="risk_level" class="form-label small mb-0">Tingkat Risiko:</label>
+                        <select name="risk_level" id="risk_level" class="form-select form-select-sm">
+                            <option value="">-- Semua --</option>
+                            <option value="Rendah" {{ request('risk_level') == 'Rendah' ? 'selected' : '' }}>Rendah</option>
+                            <option value="Sedang" {{ request('risk_level') == 'Sedang' ? 'selected' : '' }}>Sedang</option>
+                            <option value="Tinggi" {{ request('risk_level') == 'Tinggi' ? 'selected' : '' }}>Tinggi</option>
+                            <option value="Ekstrem" {{ request('risk_level') == 'Ekstrem' ? 'selected' : '' }}>Ekstrem</option>
                         </select>
                     </div>
                     
-                    <div class="col-md-3">
-                        <label for="occurred_at" class="form-label small mb-1">Tanggal Kejadian:</label>
-                        <input type="date" name="occurred_at" id="occurred_at" class="form-control form-control-sm" value="{{ request('occurred_at') }}">
+                    <div class="col-lg">
+                        <label for="reporter_unit" class="form-label small mb-0">Unit Pelapor:</label>
+                        <input type="text" name="reporter_unit" id="reporter_unit" class="form-control form-control-sm" value="{{ request('reporter_unit') }}" placeholder="Unit...">
                     </div>
                     
-                    <div class="col-md-3">
-                        <label for="risk_title" class="form-label small mb-1">Judul Risiko:</label>
+                    <div class="col-lg">
+                        <label for="risk_category" class="form-label small mb-0">Kategori Risiko:</label>
+                        <select name="risk_category" id="risk_category" class="form-select form-select-sm">
+                            <option value="">-- Semua --</option>
+                            <option value="Medis" {{ request('risk_category') == 'Medis' ? 'selected' : '' }}>Medis</option>
+                            <option value="Non-medis" {{ request('risk_category') == 'Non-medis' ? 'selected' : '' }}>Non-medis</option>
+                            <option value="Pasien" {{ request('risk_category') == 'Pasien' ? 'selected' : '' }}>Pasien</option>
+                            <option value="Pengunjung" {{ request('risk_category') == 'Pengunjung' ? 'selected' : '' }}>Pengunjung</option>
+                            <option value="Fasilitas" {{ request('risk_category') == 'Fasilitas' ? 'selected' : '' }}>Fasilitas</option>
+                            <option value="Karyawan" {{ request('risk_category') == 'Karyawan' ? 'selected' : '' }}>Karyawan</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-lg">
+                        <label for="date_range" class="form-label small mb-0">Periode:</label>
+                        <div class="input-group input-group-sm">
+                            <input type="date" name="date_from" id="date_from" class="form-control form-control-sm" value="{{ request('date_from') }}" placeholder="Dari">
+                            <span class="input-group-text">-</span>
+                            <input type="date" name="date_to" id="date_to" class="form-control form-control-sm" value="{{ request('date_to') }}" placeholder="Sampai">
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg">
+                        <label for="risk_title" class="form-label small mb-0">Judul Risiko:</label>
                         <input type="text" name="risk_title" id="risk_title" class="form-control form-control-sm" value="{{ request('risk_title') }}" placeholder="Cari judul...">
                     </div>
 
-                    <div class="col-md-3 d-flex">
-                        <button type="submit" class="btn btn-primary btn-sm me-2">
-                            <i class="fas fa-search"></i> Filter
-                        </button>
-                        <a href="{{ route('modules.risk-management.risk-reports.index') }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-undo"></i> Reset
-                        </a>
+                    <div class="col-auto">
+                        <div class="d-flex">
+                            <button type="submit" class="btn btn-primary btn-sm me-1">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <a href="{{ route('modules.risk-management.risk-reports.index') }}" class="btn btn-secondary btn-sm">
+                                <i class="fas fa-undo"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -68,6 +102,10 @@
     
     <!-- Tabel Laporan Risiko -->
     <div class="card shadow">
+        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-clipboard-list me-2"></i>Daftar Laporan</h5>
+            <span class="badge bg-primary">Total: {{ $riskReports->count() }}</span>
+        </div>
         <div class="card-body">
             @if($riskReports->isEmpty())
                 <div class="alert alert-info">
@@ -102,9 +140,11 @@
                                         @if(strtolower($report->risk_level) == 'rendah' || strtolower($report->risk_level) == 'low')
                                             <span class="badge bg-success">{{ $report->risk_level }}</span>
                                         @elseif(strtolower($report->risk_level) == 'sedang' || strtolower($report->risk_level) == 'medium')
-                                            <span class="badge bg-warning text-dark">{{ $report->risk_level }}</span>
+                                            <span class="badge bg-warning text-dark" style="background-color: #FFFF00 !important;">{{ $report->risk_level }}</span>
                                         @elseif(strtolower($report->risk_level) == 'tinggi' || strtolower($report->risk_level) == 'high')
-                                            <span class="badge bg-danger">{{ $report->risk_level }}</span>
+                                            <span class="badge text-white" style="background-color: #FFA500 !important;">{{ $report->risk_level }}</span>
+                                        @elseif(strtolower($report->risk_level) == 'ekstrem' || strtolower($report->risk_level) == 'extreme')
+                                            <span class="badge bg-danger" style="background-color: #FF0000 !important;">{{ $report->risk_level }}</span>
                                         @else
                                             {{ $report->risk_level }}
                                         @endif
@@ -184,4 +224,47 @@
             @endif
         </div>
     </div>
-@endsection 
+@endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fungsi toggle untuk form filter
+        const toggleFilterBtn = document.getElementById('toggleFilterBtn');
+        const filterRow = document.getElementById('filterRow');
+        const filterCard = document.querySelector('.card.mb-4.shadow-sm');
+        const btnText = toggleFilterBtn.querySelector('span');
+        const btnIcon = toggleFilterBtn.querySelector('i');
+        
+        // Set initial state
+        let isFilterVisible = true;
+        
+        toggleFilterBtn.addEventListener('click', function() {
+            if (isFilterVisible) {
+                // Sembunyikan filter
+                filterCard.querySelector('.card-body').style.display = 'none';
+                btnText.textContent = 'Tampilkan';
+                btnIcon.classList.remove('fa-chevron-up');
+                btnIcon.classList.add('fa-chevron-down');
+                isFilterVisible = false;
+            } else {
+                // Tampilkan filter
+                filterCard.querySelector('.card-body').style.display = 'block';
+                btnText.textContent = 'Sembunyikan';
+                btnIcon.classList.remove('fa-chevron-down');
+                btnIcon.classList.add('fa-chevron-up');
+                isFilterVisible = true;
+            }
+        });
+        
+        // Auto-submit form saat select berubah
+        const autoSubmitFields = document.querySelectorAll('#risk_level, #risk_category');
+        
+        autoSubmitFields.forEach(function(field) {
+            field.addEventListener('change', function() {
+                document.getElementById('filterForm').submit();
+            });
+        });
+    });
+</script>
+@endpush 

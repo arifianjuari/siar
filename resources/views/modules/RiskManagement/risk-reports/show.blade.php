@@ -88,7 +88,7 @@
         <div>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="{{ route('modules.risk-management.index') }}" class="text-decoration-none">Manajemen Risiko</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('modules.risk-management.dashboard') }}" class="text-decoration-none">Manajemen Risiko</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('modules.risk-management.risk-reports.index') }}" class="text-decoration-none">Daftar Laporan</a></li>
                     <li class="breadcrumb-item active">Detail Laporan</li>
                 </ol>

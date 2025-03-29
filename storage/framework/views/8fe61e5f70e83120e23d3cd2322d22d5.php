@@ -82,7 +82,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="<?php echo e(route('dashboard')); ?>">Beranda</a></li>
-            <li class="breadcrumb-item"><a href="<?php echo e(route('modules.risk-management.index')); ?>">Manajemen Risiko</a></li>
+            <li class="breadcrumb-item"><a href="<?php echo e(route('modules.risk-management.dashboard')); ?>">Manajemen Risiko</a></li>
             <li class="breadcrumb-item"><a href="<?php echo e(route('modules.risk-management.risk-reports.index')); ?>">Daftar Laporan</a></li>
             <li class="breadcrumb-item"><a href="<?php echo e(route('modules.risk-management.risk-reports.show', $report->id)); ?>"><?php echo e(Str::limit($report->risk_title, 30)); ?></a></li>
             <li class="breadcrumb-item active" aria-current="page">Buat Analisis</li>

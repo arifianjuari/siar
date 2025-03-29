@@ -99,7 +99,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>LAPORAN INSIDEN DAN MANAJEMEN RISIKO</h1>
+        <h1>LAPORAN AWAL INSIDEN DAN MANAJEMEN RISIKO</h1>
     </div>
     
     <h2>A. IDENTITAS LAPORAN</h2>

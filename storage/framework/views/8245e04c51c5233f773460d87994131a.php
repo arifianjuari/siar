@@ -39,7 +39,7 @@
     }
 ?>
 
-<aside class="sidebar rounded-end p-0" x-data="{ activeDropdown: null }">
+<aside class="sidebar rounded-end p-0 menu-uniform" x-data="{ activeDropdown: null }">
     <!-- Tenant Information -->
     <div class="p-4 border-bottom border-secondary">
         <div class="d-flex align-items-center">
@@ -74,12 +74,12 @@
                     </div>
                 <?php else: ?>
                     <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                        <span class="fs-4 fw-bold"><?php echo e($tenantInitial); ?></span>
+                        <span class="fw-bold menu-text"><?php echo e($tenantInitial); ?></span>
                     </div>
                 <?php endif; ?>
             </div>
             <div class="flex-grow-1 ms-3">
-                <h6 class="mb-0 text-white fw-semibold"><?php echo e($tenantName); ?></h6>
+                <h6 class="mb-0 text-white fw-semibold menu-text"><?php echo e($tenantName); ?></h6>
                 <?php
                     $roleName = 'Role';
                     try {
@@ -90,7 +90,7 @@
                         // Gunakan default
                     }
                 ?>
-                <span class="text-white-50 small"><?php echo e($roleName); ?></span>
+                <span class="text-white-50 menu-text"><?php echo e($roleName); ?></span>
             </div>
         </div>
     </div>
@@ -103,7 +103,7 @@
                 <div class="icon-sidebar">
                     <i class="fas fa-tachometer-alt"></i>
                 </div>
-                <span>Dashboard</span>
+                <span class="menu-text">Dashboard</span>
             </div>
         </a>
 
@@ -117,7 +117,7 @@
                         <div class="icon-sidebar">
                             <i class="fas fa-building"></i>
                         </div>
-                        <span>Tenant</span>
+                        <span class="menu-text">Tenant</span>
                         <i class="fas fa-chevron-down ms-auto" id="tenant-dropdown-icon"></i>
                     </div>
                 </button>
@@ -128,7 +128,7 @@
                             <div class="icon-sidebar">
                                 <i class="fas fa-id-card"></i>
                             </div>
-                            <span>Profil</span>
+                            <span class="menu-text">Profil</span>
                         </div>
                     </a>
                     <a href="<?php echo e(url('tenant/settings')); ?>" 
@@ -137,7 +137,7 @@
                             <div class="icon-sidebar">
                                 <i class="fas fa-cog"></i>
                             </div>
-                            <span>Pengaturan</span>
+                            <span class="menu-text">Pengaturan</span>
                         </div>
                     </a>
                     <a href="<?php echo e(route('tenant.work-units.index')); ?>" 
@@ -146,7 +146,7 @@
                             <div class="icon-sidebar">
                                 <i class="fas fa-sitemap"></i>
                             </div>
-                            <span>Unit Kerja</span>
+                            <span class="menu-text">Unit Kerja</span>
                         </div>
                     </a>
                 </div>
@@ -160,7 +160,7 @@
                 <div class="icon-sidebar">
                     <i class="fas fa-cubes"></i>
                 </div>
-                <span>Manajemen Modul</span>
+                <span class="menu-text">Manajemen Modul</span>
             </div>
         </a>
         <?php endif; ?>
@@ -176,7 +176,7 @@
                     <div class="icon-sidebar">
                         <i class="fas fa-building"></i>
                     </div>
-                    <span>Tenant</span>
+                    <span class="menu-text">Tenant</span>
                 </div>
             </a>
             
@@ -185,7 +185,7 @@
                     <div class="icon-sidebar">
                         <i class="fas fa-puzzle-piece"></i>
                     </div>
-                    <span>Modul</span>
+                    <span class="menu-text">Modul</span>
                 </div>
             </a>
         <?php endif; ?>
@@ -207,7 +207,7 @@
                                 } elseif ($module->slug == 'product-management') {
                                     $moduleUrl = url('modules/product-management/products');
                                 } elseif ($module->slug == 'risk-management') {
-                                    $moduleUrl = url('modules/risk-management/risk-reports');
+                                    $moduleUrl = url('modules/risk-management/dashboard');
                                 } else {
                                     $moduleUrl = url('modules/' . $module->slug);
                                 }
@@ -233,7 +233,7 @@
                                         <?php echo $module->icon_html ?? '<i class="fas fa-users"></i>'; ?>
 
                                     </div>
-                                    <span><?php echo e($module->name); ?></span>
+                                    <span class="menu-text"><?php echo e($module->name); ?></span>
                                     <i class="fas fa-chevron-down ms-auto" id="um-dropdown-icon"></i>
                                 </div>
                             </button>
@@ -244,7 +244,7 @@
                                         <div class="icon-sidebar">
                                             <i class="fas fa-user"></i>
                                         </div>
-                                        <span>Pengguna</span>
+                                        <span class="menu-text">Pengguna</span>
                                     </div>
                                 </a>
                                 <a href="<?php echo e(url('modules/user-management/roles')); ?>" 
@@ -253,7 +253,7 @@
                                         <div class="icon-sidebar">
                                             <i class="fas fa-user-tag"></i>
                                         </div>
-                                        <span>Role</span>
+                                        <span class="menu-text">Role</span>
                                     </div>
                                 </a>
                             </div>
@@ -265,7 +265,7 @@
                                     <?php echo $module->icon_html ?? '<i class="fas fa-folder"></i>'; ?>
 
                                 </div>
-                                <span><?php echo e($module->name); ?></span>
+                                <span class="menu-text"><?php echo e($module->name); ?></span>
                             </div>
                         </a>
                     <?php endif; ?>
@@ -281,13 +281,17 @@
                 <div class="icon-sidebar">
                     <i class="fas fa-question-circle"></i>
                 </div>
-                <span>Bantuan</span>
+                <span class="menu-text">Bantuan</span>
             </div>
         </a>
     </div>
 </aside>
 
 <style>
+    .menu-uniform {
+        --menu-font-size: 14px;
+    }
+    
     .sidebar {
         display: flex;
         flex-direction: column;
@@ -297,31 +301,63 @@
     .sidebar .nav-link {
         border-radius: 0.5rem;
         transition: all 0.2s;
-        color: rgba(255, 255, 255, 0.8);
-        padding: 0.75rem 1rem;
+        color: rgba(255, 255, 255, 0.8) !important;
+        padding: 0.75rem 1rem !important;
+        font-size: var(--menu-font-size) !important;
     }
     
     .sidebar .nav-link:hover {
         background-color: rgba(255, 255, 255, 0.1);
-        color: #fff;
+        color: #fff !important;
     }
     
-    .sidebar .nav-link.active {
+    .sidebar .nav-link.active,
+    .sidebar .nav-link.active span,
+    .sidebar .nav-link.active i {
         background-color: var(--primary-color);
-        color: #fff;
+        color: #fff !important;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        font-size: var(--menu-font-size) !important;
     }
     
     .icon-sidebar {
-        width: 24px;
-        text-align: center;
-        margin-right: 12px;
+        width: 24px !important;
+        text-align: center !important;
+        margin-right: 12px !important;
+    }
+    
+    .icon-sidebar i {
+        font-size: var(--menu-font-size) !important;
     }
     
     .sidebar-heading {
-        font-size: 10px;
-        letter-spacing: 1px;
-        font-weight: 600;
+        font-size: 10px !important;
+        letter-spacing: 1px !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Memastikan teks menu memiliki ukuran yang sama */
+    .menu-text {
+        font-size: var(--menu-font-size) !important;
+        font-weight: normal !important;
+        line-height: 1.5 !important;
+    }
+    
+    h6.menu-text {
+        font-size: var(--menu-font-size) !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Reset any inherited styles that might affect font size */
+    .menu-uniform span, 
+    .menu-uniform a, 
+    .menu-uniform button,
+    .menu-uniform .menu-text,
+    .menu-uniform .nav-link span,
+    .menu-uniform .nav-link i,
+    .menu-uniform .nav-link.active span,
+    .menu-uniform .nav-link.active i {
+        font-size: var(--menu-font-size) !important;
     }
 
     /* Dropdown styles */
