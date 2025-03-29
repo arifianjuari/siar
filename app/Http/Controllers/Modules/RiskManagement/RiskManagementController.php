@@ -34,13 +34,13 @@ class RiskManagementController extends Controller
         }
 
         $tenantId = session('tenant_id');
-        $roles = Role::where('tenant_id', $tenantId)
+        $roles = Role::where('roles.tenant_id', $tenantId)
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
         // Ambil konfigurasi yang sudah ada jika ada
-        $currentConfig = TenantModuleConfig::where('tenant_id', $tenantId)
+        $currentConfig = TenantModuleConfig::where('tenant_module_configs.tenant_id', $tenantId)
             ->where('module', 'risk_management')
             ->where('feature', 'risk_analysis')
             ->first();

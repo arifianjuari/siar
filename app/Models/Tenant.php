@@ -97,6 +97,14 @@ class Tenant extends Model
     }
 
     /**
+     * Relasi dengan tags
+     */
+    public function tags(): HasMany
+    {
+        return $this->hasMany(Tag::class);
+    }
+
+    /**
      * Ambil modul yang aktif untuk tenant ini
      */
     public function activeModules()

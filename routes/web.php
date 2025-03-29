@@ -463,10 +463,7 @@ Route::middleware(['auth'])->prefix('tenant')->name('tenant.')->group(function (
     Route::post('/profile', [App\Http\Controllers\TenantController::class, 'updateProfile'])->name('profile.update');
     Route::get('/settings', [App\Http\Controllers\TenantController::class, 'settings'])->name('settings');
     Route::post('/settings', [App\Http\Controllers\TenantController::class, 'updateSettings'])->name('settings.update');
-});
 
-// Tenant Management Routes
-Route::middleware(['auth', 'tenant'])->prefix('tenant')->name('tenant.')->group(function () {
     // Unit Kerja Management
     Route::get('work-units', [App\Http\Controllers\Tenant\WorkUnitController::class, 'index'])->name('work-units.index');
     Route::get('work-units/create', [App\Http\Controllers\Tenant\WorkUnitController::class, 'create'])->name('work-units.create');
@@ -477,4 +474,20 @@ Route::middleware(['auth', 'tenant'])->prefix('tenant')->name('tenant.')->group(
     Route::delete('work-units/{workUnit}', [App\Http\Controllers\Tenant\WorkUnitController::class, 'destroy'])->name('work-units.destroy');
     Route::post('work-units/update-order', [App\Http\Controllers\Tenant\WorkUnitController::class, 'updateOrder'])->name('work-units.update-order');
     Route::post('work-units/{workUnit}/toggle-status', [App\Http\Controllers\Tenant\WorkUnitController::class, 'toggleStatus'])->name('work-units.toggle-status');
+
+    // Tag Management
+    Route::get('tags', [App\Http\Controllers\Tenant\TagController::class, 'index'])->name('tags.index');
+    Route::get('tags/create', [App\Http\Controllers\Tenant\TagController::class, 'create'])->name('tags.create');
+    Route::post('tags', [App\Http\Controllers\Tenant\TagController::class, 'store'])->name('tags.store');
+    Route::get('tags/{tag}', [App\Http\Controllers\Tenant\TagController::class, 'show'])->name('tags.show');
+    Route::get('tags/{tag}/edit', [App\Http\Controllers\Tenant\TagController::class, 'edit'])->name('tags.edit');
+    Route::put('tags/{tag}', [App\Http\Controllers\Tenant\TagController::class, 'update'])->name('tags.update');
+    Route::delete('tags/{tag}', [App\Http\Controllers\Tenant\TagController::class, 'destroy'])->name('tags.destroy');
+    Route::post('tags/update-order', [App\Http\Controllers\Tenant\TagController::class, 'updateOrder'])->name('tags.update-order');
+
+    // Tag Document Relations
+    Route::post('tags/attach-document', [App\Http\Controllers\Tenant\TagController::class, 'attachTagToDocument'])->name('tags.attach-document');
+    Route::delete('tags/attach-document', [App\Http\Controllers\Tenant\TagController::class, 'attachTagToDocument'])->name('tags.attach-document');
+    Route::post('tags/delete-tag', [App\Http\Controllers\Tenant\TagController::class, 'deleteTag'])->name('tags.delete-tag');
+    Route::get('tags/documents/{slug}', [App\Http\Controllers\Tenant\TagController::class, 'getDocumentsByTag'])->name('tags.documents');
 });

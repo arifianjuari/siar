@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Laporan Awal Risiko #{{ $riskReport->riskreport_number }}</title>
+    <title>Laporan Awal Risiko #{{ $riskReport->document_number }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -107,12 +107,12 @@
         <tr>
             <td>Nomor Laporan</td>
             <td class="separator">:</td>
-            <td class="value">{{ $riskReport->riskreport_number }}</td>
+            <td class="value">{{ $riskReport->document_number }}</td>
         </tr>
         <tr>
             <td>Tanggal Laporan</td>
             <td class="separator">:</td>
-            <td class="value">{{ $riskReport->created_at->format('d/m/Y') }}</td>
+            <td class="value">{{ $riskReport->document_date ? $riskReport->document_date->format('d/m/Y') : $riskReport->created_at->format('d/m/Y') }}</td>
         </tr>
         <tr>
             <td>Unit Pelapor</td>
@@ -122,7 +122,7 @@
         <tr>
             <td>Judul Risiko</td>
             <td class="separator">:</td>
-            <td class="value">{{ $riskReport->risk_title }}</td>
+            <td class="value">{{ $riskReport->document_title }}</td>
         </tr>
     </table>
     
@@ -188,7 +188,7 @@
     
     <div class="footer">
         <p>Dibuat oleh: {{ $riskReport->creator->name }}</p>
-        <p>Tanggal: {{ $riskReport->created_at->format('d/m/Y H:i') }}</p>
+        <p>Tanggal: {{ $riskReport->document_date ? $riskReport->document_date->format('d/m/Y H:i') : $riskReport->created_at->format('d/m/Y H:i') }}</p>
     </div>
 </body>
 </html> 

@@ -43,6 +43,9 @@ class ProfileController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'position' => 'nullable|string|max:255',
+            'rank' => 'nullable|string|max:255',
+            'nrp' => 'nullable|string|max:255',
             'current_password' => 'nullable|required_with:password',
             'password' => 'nullable|min:8|confirmed',
         ]);
@@ -50,6 +53,9 @@ class ProfileController extends Controller
         // Update user info
         $user->name = $request->name;
         $user->email = $request->email;
+        $user->position = $request->position;
+        $user->rank = $request->rank;
+        $user->nrp = $request->nrp;
 
         // Update password if provided
         if ($request->filled('password')) {

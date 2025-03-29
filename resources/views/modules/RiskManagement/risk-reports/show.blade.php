@@ -3,6 +3,7 @@
 @section('title', ' | Detail Laporan Risiko')
 
 @push('styles')
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <style>
     .card {
         border-radius: 0.75rem;
@@ -128,7 +129,7 @@
             <!-- Informasi Utama -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">{{ $riskReport->risk_title }}</h5>
+                    <h5 class="mb-0">{{ $riskReport->document_title }}</h5>
                     <div>
                         <span class="status-badge status-{{ $riskReport->status }}">
                             {{ ucfirst($riskReport->status) }}
@@ -433,6 +434,44 @@
                             <i class="fas fa-qrcode me-1"></i> Generate QR Code Tanda Tangan
                         </a>
 
+                        <!-- Tag Management Section -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">Tag</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    @foreach($riskReport->tags as $tag)
+                                    <div class="d-flex align-items-center badge bg-primary text-white me-1 mb-1 p-2" id="tag-item-{{ $tag->id }}">
+                                        <a href="{{ route('tenant.tags.documents', $tag->slug) }}" class="text-decoration-none text-white">
+                                            {{ $tag->name }}
+                                        </a>
+                                        <button 
+                                            type="button" 
+                                            class="btn-close btn-close-white ms-2" 
+                                            style="font-size: 0.7rem;" 
+                                            onclick="hapusTagLangsung({{ $tag->id }}, {{ $riskReport->id }}, 'App\\Models\\RiskReport')"
+                                            aria-label="Close">
+                                        </button>
+                                    </div>
+                                    @endforeach
+                                </div>
+
+                                <form id="formTambahTag" action="{{ route('tenant.tags.attach-document') }}" method="POST" class="d-flex gap-2 mt-2">
+                                    @csrf
+                                    <input type="hidden" name="document_id" value="{{ $riskReport->id }}">
+                                    <input type="hidden" name="document_type" value="App\Models\RiskReport">
+                                    <select name="tag_id" id="selectTag" class="form-select form-select-sm" required>
+                                        <option value="">Pilih Tag</option>
+                                        @foreach(App\Models\Tag::forTenant(session('tenant_id'))->orderBy('name')->get() as $tag)
+                                            <option value="{{ $tag->id }}" data-slug="{{ $tag->slug }}">{{ $tag->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-primary">Tambah Tag</button>
+                                </form>
+                            </div>
+                        </div>
+
                         @can('edit', $riskReport)
                         <a href="{{ route('modules.risk-management.risk-reports.edit', $riskReport->id) }}" 
                            class="btn btn-warning">
@@ -456,4 +495,118 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Fungsi untuk menghapus tag langsung tanpa konfirmasi
+    function hapusTagLangsung(tagId, documentId, documentType) {
+        // Dapatkan CSRF token dari meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Hapus tag dari DOM sebelum request selesai (untuk UX yang lebih cepat)
+        const tagElement = document.getElementById('tag-item-' + tagId);
+        if (tagElement) {
+            tagElement.style.opacity = '0.5'; // Visual feedback saat proses penghapusan
+        }
+        
+        // Buat form data untuk endpoint baru
+        const formData = new FormData();
+        formData.append('tag_id', tagId);
+        formData.append('document_id', documentId);
+        formData.append('document_type', documentType);
+        
+        // Kirim request dengan fetch API ke endpoint baru
+        fetch('/tenant/tags/delete-tag', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                // Hapus tag dari DOM jika belum dihapus
+                if (tagElement) {
+                    tagElement.remove();
+                }
+            } else {
+                console.error('Gagal menghapus tag:', response.statusText);
+                // Kembalikan tampilan tag jika terjadi error
+                if (tagElement) {
+                    tagElement.style.opacity = '1';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Kembalikan tampilan tag jika terjadi error
+            if (tagElement) {
+                tagElement.style.opacity = '1';
+            }
+        });
+    }
+    
+    // Tangani submit form tambah tag
+    document.getElementById('formTambahTag').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Dapatkan CSRF token dari meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Dapatkan data dari form
+        const selectElement = document.getElementById('selectTag');
+        const tagId = selectElement.value;
+        
+        if (!tagId) return;
+        
+        const tagName = selectElement.options[selectElement.selectedIndex].text;
+        const tagSlug = selectElement.options[selectElement.selectedIndex].dataset.slug;
+        const documentId = document.querySelector('input[name="document_id"]').value;
+        const documentType = document.querySelector('input[name="document_type"]').value;
+        
+        // Buat form data
+        const formData = new FormData();
+        formData.append('tag_id', tagId);
+        formData.append('document_id', documentId);
+        formData.append('document_type', documentType);
+        formData.append('_token', csrfToken);
+        
+        // Kirim request dengan fetch API
+        fetch('{{ route('tenant.tags.attach-document') }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                // Tambahkan tag baru ke DOM
+                const tagsContainer = document.querySelector('.d-flex.flex-wrap.gap-2.mb-2');
+                const newTagHtml = `
+                    <div class="d-flex align-items-center badge bg-primary text-white me-1 mb-1 p-2" id="tag-item-${tagId}">
+                        <a href="/tenant/tags/${tagSlug}/documents" class="text-decoration-none text-white">
+                            ${tagName}
+                        </a>
+                        <button 
+                            type="button" 
+                            class="btn-close btn-close-white ms-2" 
+                            style="font-size: 0.7rem;" 
+                            onclick="hapusTagLangsung(${tagId}, ${documentId}, '${documentType}')"
+                            aria-label="Close">
+                        </button>
+                    </div>
+                `;
+                tagsContainer.insertAdjacentHTML('beforeend', newTagHtml);
+                
+                // Reset pilihan dropdown
+                selectElement.value = '';
+            } else {
+                console.error('Gagal menambahkan tag:', response.statusText);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    });
+</script>
 @endsection 

@@ -52,7 +52,7 @@ class Product extends Model
     public function scopeTenantScope($query)
     {
         if (session()->has('tenant_id')) {
-            return $query->where('tenant_id', session('tenant_id'));
+            return $query->where('products.tenant_id', session('tenant_id'));
         }
 
         return $query;

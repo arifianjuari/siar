@@ -29,70 +29,49 @@
 
 @section('content')
     <!-- Form Filter -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-filter me-1"></i>
-                <span>Filter</span>
-            </div>
-            <button type="button" id="toggleFilterBtn" class="btn btn-sm btn-outline-secondary">
-                <i class="fas fa-chevron-up me-1"></i> <span>Sembunyikan</span>
-            </button>
+    <div class="card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-filter me-1"></i> Filter</h5>
         </div>
-        <div class="card-body py-3">
-            <form method="GET" action="{{ route('modules.risk-management.risk-reports.index') }}" id="filterForm">
-                <div class="row align-items-end g-2" id="filterRow">
-                    <div class="col-lg">
-                        <label for="risk_level" class="form-label small mb-0">Tingkat Risiko:</label>
-                        <select name="risk_level" id="risk_level" class="form-select form-select-sm">
-                            <option value="">-- Semua --</option>
+        <div class="card-body">
+            <form action="{{ route('modules.risk-management.risk-reports.index') }}" method="GET" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select name="status" id="status" class="form-select">
+                            <option value="">Semua Status</option>
+                            <option value="Draft" {{ request('status') == 'Draft' ? 'selected' : '' }}>Draft</option>
+                            <option value="Ditinjau" {{ request('status') == 'Ditinjau' ? 'selected' : '' }}>Ditinjau</option>
+                            <option value="Selesai" {{ request('status') == 'Selesai' ? 'selected' : '' }}>Selesai</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="risk_level" class="form-label">Tingkat Risiko</label>
+                        <select name="risk_level" id="risk_level" class="form-select">
+                            <option value="">Semua Tingkat</option>
                             <option value="Rendah" {{ request('risk_level') == 'Rendah' ? 'selected' : '' }}>Rendah</option>
                             <option value="Sedang" {{ request('risk_level') == 'Sedang' ? 'selected' : '' }}>Sedang</option>
                             <option value="Tinggi" {{ request('risk_level') == 'Tinggi' ? 'selected' : '' }}>Tinggi</option>
                             <option value="Ekstrem" {{ request('risk_level') == 'Ekstrem' ? 'selected' : '' }}>Ekstrem</option>
                         </select>
                     </div>
-                    
-                    <div class="col-lg">
-                        <label for="reporter_unit" class="form-label small mb-0">Unit Pelapor:</label>
-                        <input type="text" name="reporter_unit" id="reporter_unit" class="form-control form-control-sm" value="{{ request('reporter_unit') }}" placeholder="Unit...">
-                    </div>
-                    
-                    <div class="col-lg">
-                        <label for="risk_category" class="form-label small mb-0">Kategori Risiko:</label>
-                        <select name="risk_category" id="risk_category" class="form-select form-select-sm">
-                            <option value="">-- Semua --</option>
-                            <option value="Medis" {{ request('risk_category') == 'Medis' ? 'selected' : '' }}>Medis</option>
-                            <option value="Non-medis" {{ request('risk_category') == 'Non-medis' ? 'selected' : '' }}>Non-medis</option>
-                            <option value="Pasien" {{ request('risk_category') == 'Pasien' ? 'selected' : '' }}>Pasien</option>
-                            <option value="Pengunjung" {{ request('risk_category') == 'Pengunjung' ? 'selected' : '' }}>Pengunjung</option>
-                            <option value="Fasilitas" {{ request('risk_category') == 'Fasilitas' ? 'selected' : '' }}>Fasilitas</option>
-                            <option value="Karyawan" {{ request('risk_category') == 'Karyawan' ? 'selected' : '' }}>Karyawan</option>
+                    <div class="col-md-3">
+                        <label for="tag" class="form-label">Tag</label>
+                        <select name="tag" id="tag" class="form-select">
+                            <option value="">Semua Tag</option>
+                            @foreach(App\Models\Tag::where('tenant_id', session('tenant_id'))->orderBy('name')->get() as $tag)
+                                <option value="{{ $tag->slug }}" {{ request('tag') == $tag->slug ? 'selected' : '' }}>{{ $tag->name }}</option>
+                            @endforeach
                         </select>
                     </div>
-                    
-                    <div class="col-lg">
-                        <label for="date_range" class="form-label small mb-0">Periode:</label>
-                        <div class="input-group input-group-sm">
-                            <input type="date" name="date_from" id="date_from" class="form-control form-control-sm" value="{{ request('date_from') }}" placeholder="Dari">
-                            <span class="input-group-text">-</span>
-                            <input type="date" name="date_to" id="date_to" class="form-control form-control-sm" value="{{ request('date_to') }}" placeholder="Sampai">
-                        </div>
+                    <div class="col-md-3">
+                        <label for="search" class="form-label">Kata Kunci</label>
+                        <input type="text" name="search" id="search" class="form-control" placeholder="Cari..." value="{{ request('search') }}">
                     </div>
-                    
-                    <div class="col-lg">
-                        <label for="risk_title" class="form-label small mb-0">Judul Risiko:</label>
-                        <input type="text" name="risk_title" id="risk_title" class="form-control form-control-sm" value="{{ request('risk_title') }}" placeholder="Cari judul...">
-                    </div>
-
-                    <div class="col-auto">
-                        <div class="d-flex">
-                            <button type="submit" class="btn btn-primary btn-sm me-1">
-                                <i class="fas fa-search"></i>
-                            </button>
-                            <a href="{{ route('modules.risk-management.risk-reports.index') }}" class="btn btn-secondary btn-sm">
-                                <i class="fas fa-undo"></i>
-                            </a>
+                    <div class="col-12">
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ route('modules.risk-management.risk-reports.index') }}" class="btn btn-secondary me-2">Reset</a>
+                            <button type="submit" class="btn btn-primary">Filter</button>
                         </div>
                     </div>
                 </div>
@@ -123,6 +102,7 @@
                                 <th>Kategori</th>
                                 <th>Tanggal Kejadian</th>
                                 <th>Tingkat Risiko</th>
+                                <th>Tag</th>
                                 <th>Status</th>
                                 <th width="280">Aksi</th>
                             </tr>
@@ -131,9 +111,9 @@
                             @foreach($riskReports as $index => $report)
                                 <tr>
                                     <td class="text-center">{{ $index + 1 }}</td>
-                                    <td>{{ $report->risk_title }}</td>
+                                    <td>{{ $report->document_number }}</td>
                                     <td>{{ $report->reporter_unit }}</td>
-                                    <td>{{ $report->risk_type ?: '-' }}</td>
+                                    <td>{{ $report->risk_type ?? 'N/A' }}</td>
                                     <td>{{ $report->risk_category }}</td>
                                     <td>{{ $report->occurred_at->format('d/m/Y') }}</td>
                                     <td>
@@ -148,6 +128,15 @@
                                         @else
                                             {{ $report->risk_level }}
                                         @endif
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @foreach($report->tags as $tag)
+                                                <a href="{{ route('tenant.tags.documents', $tag->slug) }}" class="badge bg-light text-dark text-decoration-none">
+                                                    {{ $tag->name }}
+                                                </a>
+                                            @endforeach
+                                        </div>
                                     </td>
                                     <td>
                                         @if($report->analysis)

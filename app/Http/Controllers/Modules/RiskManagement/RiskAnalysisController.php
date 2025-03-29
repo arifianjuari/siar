@@ -324,7 +324,7 @@ class RiskAnalysisController extends Controller
         // Buat konten QR yang lebih terstruktur dan jelas
         $qrContent = "=== VERIFIKASI ANALISIS RISIKO ===\n\n";
         $qrContent .= "NO. KASUS: {$report->id}\n";
-        $qrContent .= "JUDUL: {$report->risk_title}\n";
+        $qrContent .= "JUDUL: {$report->document_title}\n";
         $qrContent .= "STATUS: {$analysis->status_label}\n\n";
         $qrContent .= "DIANALISIS OLEH:\n";
         $qrContent .= "Nama: {$analystName}\n";

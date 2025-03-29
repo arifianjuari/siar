@@ -149,6 +149,15 @@
                             <span class="menu-text">Unit Kerja</span>
                         </div>
                     </a>
+                    <a href="{{ route('tenant.tags.index') }}" 
+                       class="nav-link {{ request()->is('tenant/tags*') ? 'active' : '' }} my-1">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-sidebar">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                            <span class="menu-text">Tag</span>
+                        </div>
+                    </a>
                 </div>
             </div>
         @endif

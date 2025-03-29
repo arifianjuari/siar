@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Laporan Akhir Risiko #{{ $riskReport->riskreport_number }}</title>
+    <title>Laporan Akhir Risiko #{{ $riskReport->document_number }}</title>
     <style>
         @page {
             size: A4;
@@ -124,11 +124,11 @@
     <table class="info">
         <tr>
             <td>Nomor Laporan</td>
-            <td>: {{ $riskReport->riskreport_number }}</td>
+            <td>: {{ $riskReport->document_number }}</td>
         </tr>
         <tr>
             <td>Tanggal Laporan</td>
-            <td>: {{ $riskReport->created_at->format('d/m/Y') }}</td>
+            <td>: {{ $riskReport->document_date ? $riskReport->document_date->format('d/m/Y') : $riskReport->created_at->format('d/m/Y') }}</td>
         </tr>
         <tr>
             <td>Unit Pelapor</td>
@@ -136,7 +136,7 @@
         </tr>
         <tr>
             <td>Judul Risiko</td>
-            <td>: {{ $riskReport->risk_title }}</td>
+            <td>: {{ $riskReport->document_title }}</td>
         </tr>
         <tr>
             <td>Status</td>
@@ -329,12 +329,12 @@
     <h2></h2>
     <table class="info">
         <tr>
-            <td>Dibuat oleh</td>
-            <td>: {{ $riskReport->creator->name ?? 'Unknown' }}</td>
+            <td>Dilaporkan Oleh</td>
+            <td>: {{ $riskReport->creator->name }}</td>
         </tr>
         <tr>
-            <td>Tanggal pembuatan</td>
-            <td>: {{ $riskReport->created_at->format('d/m/Y H:i') }}</td>
+            <td>Tanggal Pelaporan</td>
+            <td>: {{ $riskReport->document_date ? $riskReport->document_date->format('d/m/Y H:i') : $riskReport->created_at->format('d/m/Y H:i') }}</td>
         </tr>
         
         @if($riskReport->reviewed_by)
@@ -379,7 +379,7 @@
             <td>
                 <p>Dibuat oleh:</p>
                 <p>{{ $riskReport->creator->name ?? 'Unknown' }}</p>
-                <p>Tanggal: {{ $riskReport->created_at->format('d/m/Y') }}</p>
+                <p>Tanggal: {{ $riskReport->document_date ? $riskReport->document_date->format('d/m/Y') : $riskReport->created_at->format('d/m/Y') }}</p>
             </td>
             
             @if($riskReport->analysis && $riskReport->analysis->analyst)

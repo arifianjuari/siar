@@ -234,14 +234,12 @@
                     <h5 class="mb-0"><i class="fas fa-file-medical me-2"></i> Informasi Dasar Insiden</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label for="risk_title" class="form-label required-field">Judul Insiden</label>
-                            <input type="text" name="risk_title" id="risk_title" class="form-control form-control-lg @error('risk_title') is-invalid @enderror" value="{{ old('risk_title', $riskReport->risk_title) }}" required>
-                            @error('risk_title')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                    <div class="mb-4">
+                        <label for="document_title" class="form-label required-field">Judul Insiden</label>
+                        <input type="text" name="document_title" id="document_title" class="form-control form-control-lg @error('document_title') is-invalid @enderror" value="{{ old('document_title', $riskReport->document_title) }}" required>
+                        @error('document_title')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
                     
                     <div class="row">

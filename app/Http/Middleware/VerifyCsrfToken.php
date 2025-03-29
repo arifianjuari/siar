@@ -13,5 +13,7 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         //
+        'tenant/tags/attach-document',
+        //
     ];
 }

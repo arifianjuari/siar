@@ -16,7 +16,9 @@ trait BelongsToTenant
                 app()->bound('session') &&
                 session()->has('tenant_id')
             ) {
-                $builder->where('tenant_id', session('tenant_id'));
+                // Gunakan nama tabel yang lengkap untuk menghindari ambiguitas
+                $table = $builder->getModel()->getTable();
+                $builder->where($table . '.tenant_id', session('tenant_id'));
             }
         });
 
@@ -40,6 +42,8 @@ trait BelongsToTenant
 
     public function scopeTenant($query, $tenantId)
     {
-        return $query->where('tenant_id', $tenantId);
+        // Gunakan nama tabel yang lengkap untuk menghindari ambiguitas
+        $table = $query->getModel()->getTable();
+        return $query->where($table . '.tenant_id', $tenantId);
     }
 }

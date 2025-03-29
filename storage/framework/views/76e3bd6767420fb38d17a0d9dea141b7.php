@@ -1,6 +1,7 @@
 <?php $__env->startSection('title', ' | Detail Laporan Risiko'); ?>
 
 <?php $__env->startPush('styles'); ?>
+<meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
 <style>
     .card {
         border-radius: 0.75rem;
@@ -126,7 +127,7 @@
             <!-- Informasi Utama -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><?php echo e($riskReport->risk_title); ?></h5>
+                    <h5 class="mb-0"><?php echo e($riskReport->document_title); ?></h5>
                     <div>
                         <span class="status-badge status-<?php echo e($riskReport->status); ?>">
                             <?php echo e(ucfirst($riskReport->status)); ?>
@@ -442,6 +443,45 @@
                             <i class="fas fa-qrcode me-1"></i> Generate QR Code Tanda Tangan
                         </a>
 
+                        <!-- Tag Management Section -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">Tag</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    <?php $__currentLoopData = $riskReport->tags; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tag): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <div class="d-flex align-items-center badge bg-primary text-white me-1 mb-1 p-2" id="tag-item-<?php echo e($tag->id); ?>">
+                                        <a href="<?php echo e(route('tenant.tags.documents', $tag->slug)); ?>" class="text-decoration-none text-white">
+                                            <?php echo e($tag->name); ?>
+
+                                        </a>
+                                        <button 
+                                            type="button" 
+                                            class="btn-close btn-close-white ms-2" 
+                                            style="font-size: 0.7rem;" 
+                                            onclick="hapusTagLangsung(<?php echo e($tag->id); ?>, <?php echo e($riskReport->id); ?>, 'App\\Models\\RiskReport')"
+                                            aria-label="Close">
+                                        </button>
+                                    </div>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </div>
+
+                                <form id="formTambahTag" action="<?php echo e(route('tenant.tags.attach-document')); ?>" method="POST" class="d-flex gap-2 mt-2">
+                                    <?php echo csrf_field(); ?>
+                                    <input type="hidden" name="document_id" value="<?php echo e($riskReport->id); ?>">
+                                    <input type="hidden" name="document_type" value="App\Models\RiskReport">
+                                    <select name="tag_id" id="selectTag" class="form-select form-select-sm" required>
+                                        <option value="">Pilih Tag</option>
+                                        <?php $__currentLoopData = App\Models\Tag::forTenant(session('tenant_id'))->orderBy('name')->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tag): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($tag->id); ?>" data-slug="<?php echo e($tag->slug); ?>"><?php echo e($tag->name); ?></option>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-primary">Tambah Tag</button>
+                                </form>
+                            </div>
+                        </div>
+
                         <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('edit', $riskReport)): ?>
                         <a href="<?php echo e(route('modules.risk-management.risk-reports.edit', $riskReport->id)); ?>" 
                            class="btn btn-warning">
@@ -465,5 +505,119 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Fungsi untuk menghapus tag langsung tanpa konfirmasi
+    function hapusTagLangsung(tagId, documentId, documentType) {
+        // Dapatkan CSRF token dari meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Hapus tag dari DOM sebelum request selesai (untuk UX yang lebih cepat)
+        const tagElement = document.getElementById('tag-item-' + tagId);
+        if (tagElement) {
+            tagElement.style.opacity = '0.5'; // Visual feedback saat proses penghapusan
+        }
+        
+        // Buat form data untuk endpoint baru
+        const formData = new FormData();
+        formData.append('tag_id', tagId);
+        formData.append('document_id', documentId);
+        formData.append('document_type', documentType);
+        
+        // Kirim request dengan fetch API ke endpoint baru
+        fetch('/tenant/tags/delete-tag', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                // Hapus tag dari DOM jika belum dihapus
+                if (tagElement) {
+                    tagElement.remove();
+                }
+            } else {
+                console.error('Gagal menghapus tag:', response.statusText);
+                // Kembalikan tampilan tag jika terjadi error
+                if (tagElement) {
+                    tagElement.style.opacity = '1';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Kembalikan tampilan tag jika terjadi error
+            if (tagElement) {
+                tagElement.style.opacity = '1';
+            }
+        });
+    }
+    
+    // Tangani submit form tambah tag
+    document.getElementById('formTambahTag').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Dapatkan CSRF token dari meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Dapatkan data dari form
+        const selectElement = document.getElementById('selectTag');
+        const tagId = selectElement.value;
+        
+        if (!tagId) return;
+        
+        const tagName = selectElement.options[selectElement.selectedIndex].text;
+        const tagSlug = selectElement.options[selectElement.selectedIndex].dataset.slug;
+        const documentId = document.querySelector('input[name="document_id"]').value;
+        const documentType = document.querySelector('input[name="document_type"]').value;
+        
+        // Buat form data
+        const formData = new FormData();
+        formData.append('tag_id', tagId);
+        formData.append('document_id', documentId);
+        formData.append('document_type', documentType);
+        formData.append('_token', csrfToken);
+        
+        // Kirim request dengan fetch API
+        fetch('<?php echo e(route('tenant.tags.attach-document')); ?>', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                // Tambahkan tag baru ke DOM
+                const tagsContainer = document.querySelector('.d-flex.flex-wrap.gap-2.mb-2');
+                const newTagHtml = `
+                    <div class="d-flex align-items-center badge bg-primary text-white me-1 mb-1 p-2" id="tag-item-${tagId}">
+                        <a href="/tenant/tags/${tagSlug}/documents" class="text-decoration-none text-white">
+                            ${tagName}
+                        </a>
+                        <button 
+                            type="button" 
+                            class="btn-close btn-close-white ms-2" 
+                            style="font-size: 0.7rem;" 
+                            onclick="hapusTagLangsung(${tagId}, ${documentId}, '${documentType}')"
+                            aria-label="Close">
+                        </button>
+                    </div>
+                `;
+                tagsContainer.insertAdjacentHTML('beforeend', newTagHtml);
+                
+                // Reset pilihan dropdown
+                selectElement.value = '';
+            } else {
+                console.error('Gagal menambahkan tag:', response.statusText);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    });
+</script>
 <?php $__env->stopSection(); ?> 
 <?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Users/arifianjuari/Library/CloudStorage/GoogleDrive-arifianjuari@gmail.com/My Drive/MYDEV/siar/resources/views/modules/RiskManagement/risk-reports/show.blade.php ENDPATH**/ ?>

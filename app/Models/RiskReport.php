@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Traits\BelongsToTenant;
+use Illuminate\Support\Facades\Log;
 
 class RiskReport extends Model
 {
@@ -13,8 +14,8 @@ class RiskReport extends Model
 
     protected $fillable = [
         'tenant_id',
-        'riskreport_number',
-        'risk_title',
+        'document_number',
+        'document_title',
         'chronology',
         'description',
         'immediate_action',
@@ -31,7 +32,8 @@ class RiskReport extends Model
         'reviewed_by',
         'reviewed_at',
         'approved_by',
-        'approved_at'
+        'approved_at',
+        'document_date'
     ];
 
     /**
@@ -43,6 +45,7 @@ class RiskReport extends Model
         'occurred_at' => 'date',
         'reviewed_at' => 'datetime',
         'approved_at' => 'datetime',
+        'document_date' => 'datetime',
     ];
 
     /**
@@ -55,6 +58,13 @@ class RiskReport extends Model
         'Ditinjau' => 'Ditinjau',
         'Selesai' => 'Selesai'
     ];
+
+    /**
+     * The relationships that should be eager loaded.
+     *
+     * @var array
+     */
+    protected $with = ['tags'];
 
     /**
      * Mendapatkan warna badge untuk status.
@@ -98,5 +108,83 @@ class RiskReport extends Model
     public function analysis(): HasOne
     {
         return $this->hasOne(RiskAnalysis::class, 'risk_report_id');
+    }
+
+    /**
+     * Get the tags for the risk report.
+     */
+    public function tags()
+    {
+        return $this->morphToMany(Tag::class, 'document', 'document_tag')
+            ->withTimestamps()
+            ->orderBy('tags.name');
+    }
+
+    /**
+     * Attach a tag by its slug
+     *
+     * @param string $slug
+     * @return bool
+     */
+    public function attachTagBySlug($slug)
+    {
+        // Pastikan kita mendapatkan tenant ID dari model
+        $tenantId = $this->tenant_id;
+
+        try {
+            // Cari tag dengan slug dan tenant ID yang sesuai (case insensitive)
+            $tag = Tag::where('tenant_id', $tenantId)
+                ->whereRaw('LOWER(slug) = ?', [strtolower($slug)])
+                ->firstOrFail();
+
+            // Pastikan tag belum terpasang sebelumnya
+            if ($this->tags()->where('tags.id', $tag->id)->exists()) {
+                \Illuminate\Support\Facades\Log::info('Tag sudah terpasang sebelumnya', [
+                    'report_id' => $this->id,
+                    'tag_id' => $tag->id,
+                    'tag_name' => $tag->name
+                ]);
+                return true; // Anggap sukses karena tag sudah terpasang
+            }
+
+            // Debug info
+            \Illuminate\Support\Facades\Log::info('Tag ditemukan dengan slug', [
+                'report_id' => $this->id,
+                'tag_id' => $tag->id,
+                'tag_name' => $tag->name,
+                'tag_slug' => $tag->slug,
+                'tenant_id' => $tenantId
+            ]);
+
+            // Jika tag ditemukan, lampirkan ke laporan ini
+            $this->tags()->attach($tag->id);
+
+            return true;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal melampirkan tag ke laporan risiko', [
+                'report_id' => $this->id,
+                'tag_slug' => $slug,
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+                'error_type' => get_class($e),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Scope a query to only include risk reports with a specific tag.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $slug
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeWithTag($query, $slug)
+    {
+        return $query->whereHas('tags', function ($q) use ($slug) {
+            $q->where('slug', $slug);
+        });
     }
 }

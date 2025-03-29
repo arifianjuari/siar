@@ -27,70 +27,49 @@
 
 <?php $__env->startSection('content'); ?>
     <!-- Form Filter -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-filter me-1"></i>
-                <span>Filter</span>
-            </div>
-            <button type="button" id="toggleFilterBtn" class="btn btn-sm btn-outline-secondary">
-                <i class="fas fa-chevron-up me-1"></i> <span>Sembunyikan</span>
-            </button>
+    <div class="card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-filter me-1"></i> Filter</h5>
         </div>
-        <div class="card-body py-3">
-            <form method="GET" action="<?php echo e(route('modules.risk-management.risk-reports.index')); ?>" id="filterForm">
-                <div class="row align-items-end g-2" id="filterRow">
-                    <div class="col-lg">
-                        <label for="risk_level" class="form-label small mb-0">Tingkat Risiko:</label>
-                        <select name="risk_level" id="risk_level" class="form-select form-select-sm">
-                            <option value="">-- Semua --</option>
+        <div class="card-body">
+            <form action="<?php echo e(route('modules.risk-management.risk-reports.index')); ?>" method="GET" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select name="status" id="status" class="form-select">
+                            <option value="">Semua Status</option>
+                            <option value="Draft" <?php echo e(request('status') == 'Draft' ? 'selected' : ''); ?>>Draft</option>
+                            <option value="Ditinjau" <?php echo e(request('status') == 'Ditinjau' ? 'selected' : ''); ?>>Ditinjau</option>
+                            <option value="Selesai" <?php echo e(request('status') == 'Selesai' ? 'selected' : ''); ?>>Selesai</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="risk_level" class="form-label">Tingkat Risiko</label>
+                        <select name="risk_level" id="risk_level" class="form-select">
+                            <option value="">Semua Tingkat</option>
                             <option value="Rendah" <?php echo e(request('risk_level') == 'Rendah' ? 'selected' : ''); ?>>Rendah</option>
                             <option value="Sedang" <?php echo e(request('risk_level') == 'Sedang' ? 'selected' : ''); ?>>Sedang</option>
                             <option value="Tinggi" <?php echo e(request('risk_level') == 'Tinggi' ? 'selected' : ''); ?>>Tinggi</option>
                             <option value="Ekstrem" <?php echo e(request('risk_level') == 'Ekstrem' ? 'selected' : ''); ?>>Ekstrem</option>
                         </select>
                     </div>
-                    
-                    <div class="col-lg">
-                        <label for="reporter_unit" class="form-label small mb-0">Unit Pelapor:</label>
-                        <input type="text" name="reporter_unit" id="reporter_unit" class="form-control form-control-sm" value="<?php echo e(request('reporter_unit')); ?>" placeholder="Unit...">
-                    </div>
-                    
-                    <div class="col-lg">
-                        <label for="risk_category" class="form-label small mb-0">Kategori Risiko:</label>
-                        <select name="risk_category" id="risk_category" class="form-select form-select-sm">
-                            <option value="">-- Semua --</option>
-                            <option value="Medis" <?php echo e(request('risk_category') == 'Medis' ? 'selected' : ''); ?>>Medis</option>
-                            <option value="Non-medis" <?php echo e(request('risk_category') == 'Non-medis' ? 'selected' : ''); ?>>Non-medis</option>
-                            <option value="Pasien" <?php echo e(request('risk_category') == 'Pasien' ? 'selected' : ''); ?>>Pasien</option>
-                            <option value="Pengunjung" <?php echo e(request('risk_category') == 'Pengunjung' ? 'selected' : ''); ?>>Pengunjung</option>
-                            <option value="Fasilitas" <?php echo e(request('risk_category') == 'Fasilitas' ? 'selected' : ''); ?>>Fasilitas</option>
-                            <option value="Karyawan" <?php echo e(request('risk_category') == 'Karyawan' ? 'selected' : ''); ?>>Karyawan</option>
+                    <div class="col-md-3">
+                        <label for="tag" class="form-label">Tag</label>
+                        <select name="tag" id="tag" class="form-select">
+                            <option value="">Semua Tag</option>
+                            <?php $__currentLoopData = App\Models\Tag::where('tenant_id', session('tenant_id'))->orderBy('name')->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tag): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($tag->slug); ?>" <?php echo e(request('tag') == $tag->slug ? 'selected' : ''); ?>><?php echo e($tag->name); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
-                    
-                    <div class="col-lg">
-                        <label for="date_range" class="form-label small mb-0">Periode:</label>
-                        <div class="input-group input-group-sm">
-                            <input type="date" name="date_from" id="date_from" class="form-control form-control-sm" value="<?php echo e(request('date_from')); ?>" placeholder="Dari">
-                            <span class="input-group-text">-</span>
-                            <input type="date" name="date_to" id="date_to" class="form-control form-control-sm" value="<?php echo e(request('date_to')); ?>" placeholder="Sampai">
-                        </div>
+                    <div class="col-md-3">
+                        <label for="search" class="form-label">Kata Kunci</label>
+                        <input type="text" name="search" id="search" class="form-control" placeholder="Cari..." value="<?php echo e(request('search')); ?>">
                     </div>
-                    
-                    <div class="col-lg">
-                        <label for="risk_title" class="form-label small mb-0">Judul Risiko:</label>
-                        <input type="text" name="risk_title" id="risk_title" class="form-control form-control-sm" value="<?php echo e(request('risk_title')); ?>" placeholder="Cari judul...">
-                    </div>
-
-                    <div class="col-auto">
-                        <div class="d-flex">
-                            <button type="submit" class="btn btn-primary btn-sm me-1">
-                                <i class="fas fa-search"></i>
-                            </button>
-                            <a href="<?php echo e(route('modules.risk-management.risk-reports.index')); ?>" class="btn btn-secondary btn-sm">
-                                <i class="fas fa-undo"></i>
-                            </a>
+                    <div class="col-12">
+                        <div class="d-flex justify-content-end">
+                            <a href="<?php echo e(route('modules.risk-management.risk-reports.index')); ?>" class="btn btn-secondary me-2">Reset</a>
+                            <button type="submit" class="btn btn-primary">Filter</button>
                         </div>
                     </div>
                 </div>
@@ -121,6 +100,7 @@
                                 <th>Kategori</th>
                                 <th>Tanggal Kejadian</th>
                                 <th>Tingkat Risiko</th>
+                                <th>Tag</th>
                                 <th>Status</th>
                                 <th width="280">Aksi</th>
                             </tr>
@@ -129,9 +109,9 @@
                             <?php $__currentLoopData = $riskReports; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $report): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <tr>
                                     <td class="text-center"><?php echo e($index + 1); ?></td>
-                                    <td><?php echo e($report->risk_title); ?></td>
+                                    <td><?php echo e($report->document_number); ?></td>
                                     <td><?php echo e($report->reporter_unit); ?></td>
-                                    <td><?php echo e($report->risk_type ?: '-'); ?></td>
+                                    <td><?php echo e($report->risk_type ?? 'N/A'); ?></td>
                                     <td><?php echo e($report->risk_category); ?></td>
                                     <td><?php echo e($report->occurred_at->format('d/m/Y')); ?></td>
                                     <td>
@@ -147,6 +127,16 @@
                                             <?php echo e($report->risk_level); ?>
 
                                         <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <?php $__currentLoopData = $report->tags; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tag): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <a href="<?php echo e(route('tenant.tags.documents', $tag->slug)); ?>" class="badge bg-light text-dark text-decoration-none">
+                                                    <?php echo e($tag->name); ?>
+
+                                                </a>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                        </div>
                                     </td>
                                     <td>
                                         <?php if($report->analysis): ?>

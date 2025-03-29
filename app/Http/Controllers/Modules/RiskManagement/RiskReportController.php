@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Dompdf\Dompdf;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class RiskReportController extends Controller
 {
@@ -33,68 +34,63 @@ class RiskReportController extends Controller
      */
     public function index(Request $request)
     {
-        // Log aktivitas
-        Log::info('User melihat daftar laporan risiko', [
+        $tenant_id = session('tenant_id');
+
+        // Log akses ke halaman
+        Log::info('User akses halaman daftar laporan risiko', [
             'user_id' => auth()->id(),
-            'role' => auth()->user()->role->slug ?? null,
-            'tenant_id' => auth()->user()->tenant_id ?? null
+            'tenant_id' => $tenant_id
         ]);
 
-        // Query untuk mengambil data asli dari database dengan relasi analysis
-        $query = RiskReport::with('analysis')->where('tenant_id', auth()->user()->tenant_id);
+        // Base query
+        $query = RiskReport::with('tags')->where('tenant_id', $tenant_id);
 
-        // Filter berdasarkan tingkat risiko
+        // Filter berdasarkan tag (slug)
+        if ($request->filled('tag')) {
+            $tagSlug = $request->input('tag');
+            $tag = \App\Models\Tag::where('slug', $tagSlug)
+                ->where('tenant_id', $tenant_id)
+                ->first();
+
+            if ($tag) {
+                $reportIds = $tag->morphedByMany(\App\Models\RiskReport::class, 'document', 'document_tag')
+                    ->select('risk_reports.id')
+                    ->where('risk_reports.tenant_id', $tenant_id)
+                    ->pluck('risk_reports.id');
+
+                $query->whereIn('risk_reports.id', $reportIds);
+            }
+        }
+
+        // Filter lainnya
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
         if ($request->filled('risk_level')) {
             $query->where('risk_level', $request->risk_level);
         }
 
-        // Filter berdasarkan unit pelapor
-        if ($request->filled('reporter_unit')) {
-            $query->where('reporter_unit', 'LIKE', '%' . $request->reporter_unit . '%');
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('document_title', 'like', "%{$search}%")
+                    ->orWhere('document_number', 'like', "%{$search}%")
+                    ->orWhere('reporter_unit', 'like', "%{$search}%");
+            });
         }
 
-        // Filter berdasarkan kategori risiko
-        if ($request->filled('risk_category')) {
-            $query->where('risk_category', $request->risk_category);
-        }
+        // Sorting
+        $query->orderBy('created_at', 'desc');
 
-        // Filter berdasarkan rentang tanggal kejadian
-        if ($request->filled('date_from')) {
-            $query->whereDate('occurred_at', '>=', $request->date_from);
-        }
+        // Get results
+        $riskReports = $query->paginate(10);
 
-        if ($request->filled('date_to')) {
-            $query->whereDate('occurred_at', '<=', $request->date_to);
-        }
+        // Ambil data untuk dashboard
+        $stats = $this->getReportStats($tenant_id);
+        $chartData = $this->getChartData($tenant_id);
 
-        // Filter berdasarkan tanggal kejadian tunggal (backward compatibility)
-        if ($request->filled('occurred_at')) {
-            $query->whereDate('occurred_at', $request->occurred_at);
-        }
-
-        // Filter berdasarkan judul risiko (gunakan LIKE)
-        if ($request->filled('risk_title')) {
-            $query->where('risk_title', 'LIKE', '%' . $request->risk_title . '%');
-        }
-
-        // Log query filter yang digunakan
-        Log::info('Filter laporan risiko', [
-            'user_id' => auth()->id(),
-            'filters' => $request->only([
-                'risk_level',
-                'reporter_unit',
-                'risk_category',
-                'date_from',
-                'date_to',
-                'occurred_at',
-                'risk_title'
-            ])
-        ]);
-
-        // Dapatkan hasil query
-        $riskReports = $query->orderBy('created_at', 'desc')->get();
-
-        return view('modules.RiskManagement.risk-reports.index', compact('riskReports'));
+        return view('modules.RiskManagement.risk-reports.index', compact('riskReports', 'stats', 'chartData'));
     }
 
     /**
@@ -287,8 +283,9 @@ class RiskReportController extends Controller
 
         // Validasi input
         $validator = Validator::make($request->all(), [
-            'risk_title' => 'required|string|max:255',
-            'chronology' => 'required|string',
+            'document_title' => 'required|string|max:255',
+            'chronology' => 'nullable|string',
+            'description' => 'required|string',
             'immediate_action' => 'nullable|string',
             'reporter_unit' => ['required', 'string', function ($attribute, $value, $fail) use ($validWorkUnitNames) {
                 if (!in_array($value, $validWorkUnitNames)) {
@@ -320,7 +317,7 @@ class RiskReportController extends Controller
         $yearCount = RiskReport::where('tenant_id', auth()->user()->tenant_id)
             ->whereYear('created_at', date('Y'))
             ->count() + 1;
-        $riskReport->riskreport_number = 'RIR-' . date('Ymd') . '-' . str_pad($yearCount, 3, '0', STR_PAD_LEFT);
+        $riskReport->document_number = 'RIR-' . date('Ymd') . '-' . str_pad($yearCount, 3, '0', STR_PAD_LEFT);
 
         $riskReport->save();
 
@@ -340,7 +337,7 @@ class RiskReportController extends Controller
      */
     public function show(string $id)
     {
-        $riskReport = RiskReport::findOrFail($id);
+        $riskReport = RiskReport::with(['tags'])->findOrFail($id);
 
         // Pastikan laporan berada dalam tenant yang sama
         if ($riskReport->tenant_id !== auth()->user()->tenant_id) {
@@ -391,7 +388,7 @@ class RiskReportController extends Controller
 
         // Validasi input
         $validator = Validator::make($request->all(), [
-            'risk_title' => 'required|string|max:255',
+            'document_title' => 'required|string|max:255',
             'chronology' => 'nullable|string',
             'description' => 'required|string',
             'immediate_action' => 'required|string',
@@ -416,7 +413,7 @@ class RiskReportController extends Controller
         }
 
         // Update data laporan
-        $riskReport->risk_title = $request->risk_title;
+        $riskReport->document_title = $request->document_title;
         $riskReport->chronology = $request->chronology;
         $riskReport->description = $request->description;
         $riskReport->immediate_action = $request->immediate_action;
@@ -515,47 +512,33 @@ class RiskReportController extends Controller
      */
     public function generateQr($id)
     {
-        // Log aktivitas
-        Log::info('User mencoba mengakses QR code', [
-            'user_id' => auth()->id(),
-            'role' => auth()->user()->role->slug ?? null,
-            'tenant_id' => auth()->user()->tenant_id ?? null,
-            'report_id' => $id
-        ]);
-
         $riskReport = RiskReport::findOrFail($id);
 
         // Pastikan laporan berada dalam tenant yang sama
         if ($riskReport->tenant_id !== auth()->user()->tenant_id) {
-            abort(403, 'Anda tidak memiliki izin untuk mengakses QR code ini.');
+            abort(403, 'Anda tidak memiliki izin untuk mengakses laporan dari tenant lain.');
         }
 
-        // Dapatkan informasi penandatangan
-        $signerName = auth()->user()->name ?? 'Unknown';
-        $signerRole = auth()->user()->role->name ?? 'Unknown';
-        $signerDate = now()->format('d-m-Y H:i');
+        // Pemeriksaan izin manual tambahan
+        if (!\App\Helpers\PermissionHelper::hasPermission('risk-management', 'can_view')) {
+            abort(403, 'Anda tidak memiliki izin untuk melihat laporan risiko.');
+        }
 
-        // Buat informasi QR yang lebih jelas dan terstruktur
-        $qrContent = "=== TANDA TANGAN DIGITAL ===\n\n";
-        $qrContent .= "LAPORAN RISIKO #{$riskReport->id}\n\n";
-        $qrContent .= "Judul: {$riskReport->risk_title}\n";
-        $qrContent .= "Unit: {$riskReport->reporter_unit}\n";
-        $qrContent .= "Tanggal Kejadian: {$riskReport->occurred_at->format('d-m-Y')}\n";
-        $qrContent .= "Level Risiko: {$riskReport->risk_level}\n\n";
-        $qrContent .= "PENANDATANGAN:\n";
-        $qrContent .= "Nama: {$signerName}\n";
-        $qrContent .= "Jabatan: {$signerRole}\n";
-        $qrContent .= "Tanggal: {$signerDate}";
+        // Buat konten QR code
+        $url = route('modules.risk-management.risk-reports.show', $riskReport->id);
+        $qrContent = "URL: {$url}\n";
+        $qrContent .= "ID: {$riskReport->id}\n";
+        $qrContent .= "NOMOR: {$riskReport->document_number}\n";
+        $qrContent .= "Judul: {$riskReport->document_title}\n";
+        $qrContent .= "Tanggal: " . ($riskReport->document_date ? $riskReport->document_date->format('d/m/Y') : $riskReport->created_at->format('d/m/Y')) . "\n";
+        $qrContent .= "Status: {$riskReport->status}\n";
 
-        // Generate QR code as SVG (tidak membutuhkan imagick)
-        $qrCode = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
-            ->size(300)
-            ->errorCorrection('H')
+        // Generate QR code
+        $qrCode = QrCode::size(200)
+            ->format('png')
             ->generate($qrContent);
 
-        return response($qrCode)
-            ->header('Content-Type', 'image/svg+xml')
-            ->header('Content-Disposition', 'inline; filename="qr-code-' . $id . '.svg"');
+        return response($qrCode)->header('Content-Type', 'image/png');
     }
 
     /**
@@ -677,5 +660,139 @@ class RiskReportController extends Controller
 
         // Stream PDF ke browser
         return $dompdf->stream("laporan_akhir_{$id}.pdf");
+    }
+
+    /**
+     * Get stats data for dashboard
+     */
+    private function getReportStats($tenantId)
+    {
+        // Ambil semua laporan dengan relasi analysis untuk menghitung status yang benar
+        $reports = RiskReport::with('analysis')->where('tenant_id', $tenantId)->get();
+
+        // Hitung jumlah laporan berdasarkan status
+        $totalReports = $reports->count();
+        $draftCount = 0;
+        $reviewCount = 0;
+        $completedCount = 0;
+
+        // Hitung jumlah berdasarkan tingkat risiko
+        $lowRiskCount = 0;
+        $mediumRiskCount = 0;
+        $highRiskCount = 0;
+        $extremeRiskCount = 0;
+
+        // Loop semua laporan dan hitung status berdasarkan analisis atau status laporan
+        foreach ($reports as $report) {
+            // Hitung status
+            if ($report->analysis) {
+                // Prioritaskan status dari analysis jika ada
+                if ($report->analysis->analysis_status === 'draft') {
+                    $draftCount++;
+                } elseif (in_array($report->analysis->analysis_status, ['in_progress', 'reviewed'])) {
+                    $reviewCount++;
+                } else {
+                    $completedCount++;
+                }
+            } else {
+                // Gunakan status dari laporan jika tidak ada analysis
+                if ($report->status === 'Draft') {
+                    $draftCount++;
+                } elseif ($report->status === 'Ditinjau') {
+                    $reviewCount++;
+                } else {
+                    $completedCount++;
+                }
+            }
+
+            // Hitung tingkat risiko
+            $riskLevel = strtolower($report->risk_level);
+            if (in_array($riskLevel, ['rendah', 'low'])) {
+                $lowRiskCount++;
+            } elseif (in_array($riskLevel, ['sedang', 'medium'])) {
+                $mediumRiskCount++;
+            } elseif (in_array($riskLevel, ['tinggi', 'high'])) {
+                $highRiskCount++;
+            } elseif (in_array($riskLevel, ['ekstrem', 'extreme'])) {
+                $extremeRiskCount++;
+            }
+        }
+
+        // Buat array stats untuk tampilan
+        return [
+            'total' => $totalReports,
+            'draft' => $draftCount,
+            'review' => $reviewCount,
+            'completed' => $completedCount,
+            'low_risk' => $lowRiskCount,
+            'medium_risk' => $mediumRiskCount,
+            'high_risk' => $highRiskCount,
+            'extreme_risk' => $extremeRiskCount
+        ];
+    }
+
+    /**
+     * Get chart data for dashboard
+     */
+    private function getChartData($tenantId)
+    {
+        // Data untuk chart bulanan - ambil data aktual 12 bulan terakhir
+        $monthlyData = [];
+        $monthLabels = [];
+
+        // Array untuk menyimpan data risiko per bulan berdasarkan level
+        $extremeRiskMonthlyData = [];
+        $highRiskMonthlyData = [];
+        $mediumRiskMonthlyData = [];
+        $lowRiskMonthlyData = [];
+
+        // Gunakan startOfMonth untuk memastikan konsistensi
+        $startDate = Carbon::now()->startOfMonth()->subMonths(11);
+
+        for ($i = 0; $i < 12; $i++) {
+            $currentDate = (clone $startDate)->addMonths($i);
+            $monthName = $currentDate->translatedFormat('M'); // Gunakan format yang tepat
+            $monthLabels[] = $monthName;
+
+            // Hitung jumlah laporan per bulan
+            $monthlyData[] = RiskReport::where('tenant_id', $tenantId)
+                ->whereYear('created_at', $currentDate->year)
+                ->whereMonth('created_at', $currentDate->month)
+                ->count();
+
+            // Hitung data bulanan berdasarkan tingkat risiko
+            $extremeRiskMonthlyData[] = RiskReport::where('tenant_id', $tenantId)
+                ->whereIn('risk_level', ['Ekstrem', 'Extreme', 'ekstrem', 'extreme'])
+                ->whereYear('created_at', $currentDate->year)
+                ->whereMonth('created_at', $currentDate->month)
+                ->count();
+
+            $highRiskMonthlyData[] = RiskReport::where('tenant_id', $tenantId)
+                ->whereIn('risk_level', ['Tinggi', 'High', 'tinggi', 'high'])
+                ->whereYear('created_at', $currentDate->year)
+                ->whereMonth('created_at', $currentDate->month)
+                ->count();
+
+            $mediumRiskMonthlyData[] = RiskReport::where('tenant_id', $tenantId)
+                ->whereIn('risk_level', ['Sedang', 'Medium', 'sedang', 'medium'])
+                ->whereYear('created_at', $currentDate->year)
+                ->whereMonth('created_at', $currentDate->month)
+                ->count();
+
+            $lowRiskMonthlyData[] = RiskReport::where('tenant_id', $tenantId)
+                ->whereIn('risk_level', ['Rendah', 'Low', 'rendah', 'low'])
+                ->whereYear('created_at', $currentDate->year)
+                ->whereMonth('created_at', $currentDate->month)
+                ->count();
+        }
+
+        return [
+            'monthlyData' => $monthlyData,
+            'monthLabels' => $monthLabels,
+            'extremeRiskMonthlyData' => $extremeRiskMonthlyData,
+            'highRiskMonthlyData' => $highRiskMonthlyData,
+            'mediumRiskMonthlyData' => $mediumRiskMonthlyData,
+            'lowRiskMonthlyData' => $lowRiskMonthlyData
+        ];
     }
 }

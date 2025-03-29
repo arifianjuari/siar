@@ -61,6 +61,6 @@ class WorkUnit extends Model
      */
     public function scopeForTenant($query, $tenantId)
     {
-        return $query->where('tenant_id', $tenantId);
+        return $query->where('work_units.tenant_id', $tenantId);
     }
 }

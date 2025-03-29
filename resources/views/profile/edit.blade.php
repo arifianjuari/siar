@@ -36,6 +36,33 @@
                         @enderror
                     </div>
                     
+                    <div class="mb-3">
+                        <label for="position" class="form-label">Jabatan</label>
+                        <input type="text" class="form-control @error('position') is-invalid @enderror" 
+                            id="position" name="position" value="{{ old('position', $user->position) }}">
+                        @error('position')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="rank" class="form-label">Pangkat</label>
+                        <input type="text" class="form-control @error('rank') is-invalid @enderror" 
+                            id="rank" name="rank" value="{{ old('rank', $user->rank) }}">
+                        @error('rank')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="nrp" class="form-label">NRP</label>
+                        <input type="text" class="form-control @error('nrp') is-invalid @enderror" 
+                            id="nrp" name="nrp" value="{{ old('nrp', $user->nrp) }}">
+                        @error('nrp')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    
                     <hr>
                     <h5 class="mb-3">Ubah Password</h5>
                     <p class="text-muted small mb-3">Biarkan kosong jika tidak ingin mengubah password</p>
@@ -108,6 +135,24 @@
                     <span>Status Akun</span>
                     <span class="badge bg-success">Aktif</span>
                 </div>
+                @if($user->position)
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Jabatan</span>
+                    <span>{{ $user->position }}</span>
+                </div>
+                @endif
+                @if($user->rank)
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Pangkat</span>
+                    <span>{{ $user->rank }}</span>
+                </div>
+                @endif
+                @if($user->nrp)
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>NRP</span>
+                    <span>{{ $user->nrp }}</span>
+                </div>
+                @endif
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <span>Login Terakhir</span>
                     <span>{{ now()->format('d M Y, H:i') }}</span>
