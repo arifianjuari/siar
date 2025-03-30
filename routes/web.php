@@ -220,6 +220,38 @@ Route::middleware(['auth', 'tenant'])->prefix('modules')->name('modules.')->grou
     Route::get('/', [App\Http\Controllers\ModuleController::class, 'index'])->name('index');
     Route::post('/request-activation', [App\Http\Controllers\ModuleController::class, 'requestActivation'])->name('request-activation');
     Route::get('/{slug}', [App\Http\Controllers\ModuleController::class, 'show'])->name('show');
+
+    /**
+     * Document Management Module
+     */
+    Route::prefix('document-management')->name('document-management.')->middleware('module:document-management')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [\App\Http\Controllers\Modules\DocumentManagement\DocumentManagementController::class, 'dashboard'])->name('dashboard');
+
+        // Documents routes
+        Route::resource('documents', \App\Http\Controllers\Modules\DocumentManagement\DocumentController::class)
+            ->except(['show']);
+        Route::get('documents/{document}', [\App\Http\Controllers\Modules\DocumentManagement\DocumentController::class, 'show'])
+            ->name('documents.show')
+            ->middleware(['check.permission:document-management,can_view', 'tenant.document']);
+
+        Route::get('documents/{id}/edit', [\App\Http\Controllers\Modules\DocumentManagement\DocumentController::class, 'edit'])
+            ->name('documents.edit')
+            ->middleware(['check.permission:document-management,can_edit', 'tenant.document']);
+
+        Route::put('documents/{id}', [\App\Http\Controllers\Modules\DocumentManagement\DocumentController::class, 'update'])
+            ->name('documents.update')
+            ->middleware(['check.permission:document-management,can_edit', 'tenant.document']);
+
+        // Dokumen Revisi Route
+        Route::post('documents/{id}/revise', [\App\Http\Controllers\Modules\DocumentManagement\DocumentController::class, 'revise'])
+            ->name('documents.revise')
+            ->middleware(['check.permission:document-management,can_create', 'tenant.document']);
+
+        // Documents By Tag Route
+        Route::get('documents-by-tag/{slug}', [\App\Http\Controllers\Modules\DocumentManagement\DocumentManagementController::class, 'documentsByTag'])
+            ->name('documents-by-tag');
+    });
 });
 
 // Tenant routes - akses melalui subdomain

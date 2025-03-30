@@ -94,6 +94,8 @@
                                                             $moduleUrl = route('modules.product-management.products.index');
                                                         } elseif ($tenantModule->slug == 'risk-management') {
                                                             $moduleUrl = route('modules.risk-management.dashboard');
+                                                        } elseif ($tenantModule->slug == 'document-management') {
+                                                            $moduleUrl = route('modules.document-management.dashboard');
                                                         } elseif ($tenantModule->slug == 'dashboard') {
                                                             $moduleUrl = route('dashboard');
                                                         } else {

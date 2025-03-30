@@ -174,6 +174,70 @@
             </div>
         </div>
 
+        <!-- Permintaan Aktivasi Modul -->
+        <div class="col-lg-5 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-bell me-2 text-danger"></i>
+                        Permintaan Aktivasi Modul
+                        @php
+                            $pendingRequests = \App\Models\TenantModule::pendingRequests()
+                                ->with(['tenant', 'module', 'requester'])
+                                ->count();
+                        @endphp
+                        @if($pendingRequests > 0)
+                            <span class="badge bg-danger ms-2">{{ $pendingRequests }}</span>
+                        @endif
+                    </h5>
+                    <a href="{{ route('superadmin.tenants.index') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-check-double me-1"></i>Kelola Permintaan
+                    </a>
+                </div>
+                <div class="card-body">
+                    @php
+                        $moduleRequests = \App\Models\TenantModule::pendingRequests()
+                            ->with(['tenant', 'module', 'requester'])
+                            ->latest('requested_at')
+                            ->take(5)
+                            ->get();
+                    @endphp
+
+                    @if($moduleRequests->count() > 0)
+                        <div class="list-group list-group-flush">
+                            @foreach($moduleRequests as $request)
+                                <a href="{{ route('superadmin.tenants.edit', $request->tenant_id) }}" 
+                                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3">
+                                    <div>
+                                        <p class="mb-1 fw-medium">
+                                            <i class="fas fa-building me-1 text-primary"></i>
+                                            {{ $request->tenant->name }}
+                                        </p>
+                                        <p class="mb-0 text-muted small">
+                                            <i class="fas {{ $request->module->icon ?? 'fa-cube' }} me-1"></i>
+                                            {{ $request->module->name }}
+                                            <span class="ms-2 text-danger">
+                                                <i class="fas fa-clock me-1"></i>
+                                                {{ $request->requested_at->diffForHumans() }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </span>
+                                </a>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+                            <p class="mb-0 text-muted">Tidak ada permintaan aktivasi modul yang tertunda.</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
         <!-- Modul Populer -->
         <div class="col-lg-5 mb-4">
             <div class="card border-0 shadow-sm">

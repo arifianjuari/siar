@@ -238,7 +238,7 @@
         @endif
         
         <!-- Form Card -->
-        <form method="POST" action="{{ route('modules.risk-management.risk-reports.store') }}" class="needs-validation" id="riskReportForm" novalidate>
+        <form method="POST" action="{{ route('modules.risk-management.risk-reports.store') }}" class="needs-validation" id="riskReportForm" enctype="multipart/form-data" novalidate>
             @csrf
             
             <div class="row">
@@ -429,7 +429,84 @@
                         </div>
                     </div>
                     
-                    <!-- Section 4: Submit -->
+                    <!-- Section 4: Informasi Dokumen -->
+                    <div class="card form-section">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i> Informasi Dokumen</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="document_type" class="form-label">Tipe Dokumen</label>
+                                    <select name="document_type" id="document_type" class="form-select @error('document_type') is-invalid @enderror">
+                                        <option value="">-- Pilih Tipe Dokumen --</option>
+                                        <option value="Regulasi" {{ old('document_type') == 'Regulasi' ? 'selected' : '' }}>Regulasi</option>
+                                        <option value="Bukti" {{ old('document_type') == 'Bukti' ? 'selected' : '' }}>Bukti</option>
+                                    </select>
+                                    @error('document_type')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-text">Jenis dokumen akan menentukan bagaimana laporan ini dikategorikan di modul Manajemen Dokumen.</div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="document_version" class="form-label">Versi Dokumen</label>
+                                    <input type="text" name="document_version" id="document_version" class="form-control @error('document_version') is-invalid @enderror" value="{{ old('document_version') }}">
+                                    @error('document_version')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-text">Misalnya: 1.0, 2.1, dst.</div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="confidentiality_level" class="form-label">Tingkat Kerahasiaan</label>
+                                    <select name="confidentiality_level" id="confidentiality_level" class="form-select @error('confidentiality_level') is-invalid @enderror">
+                                        <option value="">-- Pilih Tingkat Kerahasiaan --</option>
+                                        <option value="Publik" {{ old('confidentiality_level') == 'Publik' ? 'selected' : '' }}>Publik</option>
+                                        <option value="Internal" {{ old('confidentiality_level', 'Internal') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                                        <option value="Rahasia" {{ old('confidentiality_level') == 'Rahasia' ? 'selected' : '' }}>Rahasia</option>
+                                    </select>
+                                    @error('confidentiality_level')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-text">Menentukan siapa yang boleh mengakses laporan ini.</div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="document_file" class="form-label">File Dokumen</label>
+                                    <input type="file" name="document_file" id="document_file" class="form-control @error('document_file') is-invalid @enderror">
+                                    @error('document_file')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-text">Format yang didukung: PDF, DOC, DOCX, XLS, XLSX. Maks. 10MB.</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="next_review" class="form-label">Tanggal Tinjauan Berikutnya</label>
+                                    <input type="date" name="next_review" id="next_review" class="form-control @error('next_review') is-invalid @enderror" value="{{ old('next_review') }}">
+                                    @error('next_review')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-text">Kapan dokumen ini perlu ditinjau kembali.</div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="review_cycle_months" class="form-label">Siklus Tinjauan (bulan)</label>
+                                    <input type="number" name="review_cycle_months" id="review_cycle_months" class="form-control @error('review_cycle_months') is-invalid @enderror" value="{{ old('review_cycle_months') }}" min="0" max="60">
+                                    @error('review_cycle_months')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-text">Berapa bulan sekali dokumen ini perlu ditinjau ulang.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Section 5: Submit -->
                     <div class="card form-section">
                         <div class="card-header">
                             <h5 class="mb-0"><i class="fas fa-paper-plane me-2"></i> Pengiriman Laporan</h5>
@@ -446,18 +523,18 @@
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div class="d-grid gap-2 mt-4">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="fas fa-save me-2"></i> Simpan Laporan Risiko
-                                </button>
-                                <a href="{{ route('modules.risk-management.risk-reports.index') }}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-times me-2"></i> Batal
-                                </a>
-                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+            
+            <div class="d-flex justify-content-between mb-4">
+                <a href="{{ route('modules.risk-management.risk-reports.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Batal
+                </a>
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="fas fa-save me-1"></i> Simpan Laporan
+                </button>
             </div>
         </form>
     </div>

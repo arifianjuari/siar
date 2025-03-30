@@ -22,6 +22,10 @@ class TenantModule extends Model
         'tenant_id',
         'module_id',
         'is_active',
+        'requested_at',
+        'requested_by',
+        'approved_at',
+        'approved_by',
     ];
 
     /**
@@ -29,6 +33,8 @@ class TenantModule extends Model
      */
     protected $casts = [
         'is_active' => 'boolean',
+        'requested_at' => 'datetime',
+        'approved_at' => 'datetime',
     ];
 
     /**
@@ -48,10 +54,37 @@ class TenantModule extends Model
     }
 
     /**
+     * Get user yang meminta modul
+     */
+    public function requester()
+    {
+        return $this->belongsTo(User::class, 'requested_by');
+    }
+
+    /**
+     * Get user yang menyetujui modul
+     */
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /**
      * Scope untuk tenant module aktif
      */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope untuk tenant module yang memiliki permintaan aktif
+     * (sudah diminta tapi belum diapprove)
+     */
+    public function scopePendingRequests($query)
+    {
+        return $query->whereNotNull('requested_at')
+            ->whereNull('approved_at')
+            ->where('is_active', false);
     }
 }

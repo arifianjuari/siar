@@ -7,10 +7,13 @@ use Illuminate\Http\Request;
 use App\Models\RiskReport;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Dompdf\Dompdf;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use App\Models\Document;
+use Illuminate\Support\Facades\DB;
 
 class RiskReportController extends Controller
 {
@@ -247,20 +250,32 @@ class RiskReportController extends Controller
      */
     public function create()
     {
-        // Log aktivitas
-        Log::info('User mencoba membuat laporan risiko', [
-            'user_id' => auth()->id(),
-            'role' => auth()->user()->role->slug ?? null,
-            'tenant_id' => auth()->user()->tenant_id ?? null
+        $tenant_id = session('tenant_id');
+        $user = auth()->user();
+
+        // Log akses ke halaman
+        Log::info('User akses halaman buat laporan risiko', [
+            'user_id' => $user->id,
+            'tenant_id' => $tenant_id
         ]);
 
-        // Ambil daftar unit kerja yang aktif untuk tenant saat ini
-        $workUnits = \App\Models\WorkUnit::where('tenant_id', auth()->user()->tenant_id)
+        // Get available tags
+        $tags = \App\Models\Tag::where('tenant_id', $tenant_id)
+            ->orderBy('name')
+            ->get();
+
+        // Get available documents
+        $documents = \App\Models\Document::where('tenant_id', $tenant_id)
+            ->orderBy('document_title')
+            ->get();
+
+        // Get work units
+        $workUnits = \App\Models\WorkUnit::where('tenant_id', $tenant_id)
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
-        return view('modules.RiskManagement.risk-reports.create', compact('workUnits'));
+        return view('modules.RiskManagement.risk-reports.create', compact('tags', 'documents', 'workUnits'));
     }
 
     /**
@@ -268,68 +283,158 @@ class RiskReportController extends Controller
      */
     public function store(Request $request)
     {
-        // Log aktivitas
-        Log::info('User mencoba menyimpan laporan risiko', [
-            'user_id' => auth()->id(),
-            'role' => auth()->user()->role->slug ?? null,
-            'tenant_id' => auth()->user()->tenant_id ?? null
-        ]);
+        $tenant_id = session('tenant_id');
 
-        // Dapatkan daftar nama unit kerja yang valid
-        $validWorkUnitNames = \App\Models\WorkUnit::where('tenant_id', auth()->user()->tenant_id)
-            ->where('is_active', true)
-            ->pluck('name')
-            ->toArray();
+        // Log aksi
+        Log::info('User mencoba menyimpan laporan risiko baru', [
+            'user_id' => auth()->id(),
+            'tenant_id' => $tenant_id,
+            'request_data' => $request->except(['_token']),
+        ]);
 
         // Validasi input
         $validator = Validator::make($request->all(), [
             'document_title' => 'required|string|max:255',
-            'chronology' => 'nullable|string',
-            'description' => 'required|string',
+            'reporter_unit' => 'required|string|max:100',
+            'chronology' => 'required|string',
+            'description' => 'nullable|string',
             'immediate_action' => 'nullable|string',
-            'reporter_unit' => ['required', 'string', function ($attribute, $value, $fail) use ($validWorkUnitNames) {
-                if (!in_array($value, $validWorkUnitNames)) {
-                    $fail('Unit pelapor yang dipilih tidak valid.');
-                }
-            }],
-            'risk_type' => 'nullable|in:KTD,KNC,KTC,KPC,Sentinel',
-            'risk_category' => 'required|string',
+            'risk_type' => 'required|string|max:100',
+            'risk_category' => 'required|string|max:100',
             'occurred_at' => 'required|date',
             'impact' => 'required|string',
             'probability' => 'required|string',
-            'risk_level' => 'required|string',
-            'recommendation' => 'nullable|string',
+            'risk_level' => 'required|string|max:50',
+            'document_number' => 'nullable|string|max:50',
+            'document_date' => 'nullable|date',
+            'tags' => 'nullable|array',
+            'document_ids' => 'nullable|array',
+            'document_ids.*' => 'exists:documents,id',
+            // Validasi untuk kolom baru
+            'document_type' => 'nullable|string|in:Regulasi,Bukti',
+            'document_version' => 'nullable|string|max:20',
+            'confidentiality_level' => 'nullable|string|in:Publik,Internal,Rahasia',
+            'document_file' => 'nullable|file|max:10240',
+            'next_review' => 'nullable|date',
+            'review_cycle_months' => 'nullable|integer|min:0|max:60',
         ]);
 
         if ($validator->fails()) {
-            return redirect()->back()
+            return redirect()
+                ->back()
                 ->withErrors($validator)
                 ->withInput();
         }
 
-        // Buat risk report baru
-        $riskReport = new RiskReport($request->all());
-        $riskReport->tenant_id = auth()->user()->tenant_id;
-        $riskReport->created_by = auth()->id();
-        $riskReport->status = 'Draft'; // Status default saat pembuatan
+        // Add missing document_number if not provided
+        if (empty($request->document_number)) {
+            $year = date('Y');
+            $count = RiskReport::where('tenant_id', $tenant_id)
+                ->where('document_number', 'like', "LR/{$year}/%")
+                ->count();
+            $number = str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+            $document_number = "LR/{$year}/{$number}";
+        } else {
+            $document_number = $request->document_number;
+        }
 
-        // Generate nomor laporan
-        $yearCount = RiskReport::where('tenant_id', auth()->user()->tenant_id)
-            ->whereYear('created_at', date('Y'))
-            ->count() + 1;
-        $riskReport->document_number = 'RIR-' . date('Ymd') . '-' . str_pad($yearCount, 3, '0', STR_PAD_LEFT);
+        // Create new risk report
+        $riskReport = new RiskReport();
+        $riskReport->tenant_id = $tenant_id;
+        $riskReport->document_title = $request->document_title;
+        $riskReport->document_number = $document_number;
+        $riskReport->chronology = $request->chronology;
+        $riskReport->description = $request->description;
+        $riskReport->immediate_action = $request->immediate_action;
+        $riskReport->reporter_unit = $request->reporter_unit;
+        $riskReport->risk_type = $request->risk_type;
+        $riskReport->risk_category = $request->risk_category;
+        $riskReport->occurred_at = $request->occurred_at;
+        $riskReport->impact = $request->impact;
+        $riskReport->probability = $request->probability;
+        $riskReport->risk_level = $request->risk_level;
+        $riskReport->status = 'Draft';
+        $riskReport->created_by = auth()->id();
+        $riskReport->document_date = $request->document_date ?? now();
+
+        // Field baru
+        $riskReport->document_type = $request->document_type;
+        $riskReport->document_version = $request->document_version;
+        $riskReport->confidentiality_level = $request->confidentiality_level ?? 'Internal';
+        $riskReport->next_review = $request->next_review;
+        $riskReport->review_cycle_months = $request->review_cycle_months;
+
+        // Upload file jika ada
+        if ($request->hasFile('document_file')) {
+            $file = $request->file('document_file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('risk-reports', $fileName, 'public');
+            $riskReport->file_path = $filePath;
+        }
 
         $riskReport->save();
 
-        // Mencatat ke log
-        Log::info('Laporan risiko berhasil dibuat', [
-            'report_id' => $riskReport->id,
-            'user_id' => auth()->id(),
-            'tenant_id' => auth()->user()->tenant_id
-        ]);
+        // Attach tags if provided
+        if ($request->has('tags')) {
+            foreach ($request->tags as $tagSlug) {
+                $riskReport->attachTagBySlug($tagSlug);
+            }
+        }
 
-        return redirect()->route('modules.risk-management.risk-reports.index')
-            ->with('success', 'Laporan risiko berhasil dibuat');
+        // Attach documents if provided
+        if ($request->has('document_ids')) {
+            try {
+                Log::info('Syncing documents with risk report (store)', [
+                    'report_id' => $riskReport->id,
+                    'document_ids' => $request->document_ids,
+                ]);
+
+                // Pastikan semua dokumen memiliki tenant_id sebelum melakukan sinkronisasi
+                $nullCount = Document::whereIn('id', $request->document_ids)
+                    ->whereNull('tenant_id')
+                    ->update(['tenant_id' => $tenant_id]);
+
+                // Log dokumen yang diperbarui tenant_id-nya
+                $mismatchCount = Document::whereIn('id', $request->document_ids)
+                    ->where('tenant_id', '!=', $tenant_id)
+                    ->update(['tenant_id' => $tenant_id]);
+
+                Log::info('Memperbarui tenant_id dokumen', [
+                    'null_tenant_ids_fixed' => $nullCount,
+                    'mismatched_tenant_ids_fixed' => $mismatchCount,
+                    'tenant_id' => $tenant_id
+                ]);
+
+                $documentData = [];
+                foreach ($request->document_ids as $docId) {
+                    $documentData[$docId] = ['relation_type' => 'related'];
+                }
+                $riskReport->documents()->sync($documentData);
+
+                // Verifikasi jumlah dokumen yang tersinkron
+                $syncedCount = DB::table('documentables')
+                    ->where('documentable_id', $riskReport->id)
+                    ->where('documentable_type', 'App\\Models\\RiskReport')
+                    ->count();
+
+                Log::info('Documents synced with risk report', [
+                    'report_id' => $riskReport->id,
+                    'expected' => count($request->document_ids),
+                    'actual' => $syncedCount
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error syncing documents with risk report', [
+                    'report_id' => $riskReport->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+        }
+
+        // Success redirect
+        return redirect()
+            ->route('modules.risk-management.risk-reports.show', $riskReport->id)
+            ->with('success', 'Laporan risiko berhasil dibuat dengan nomor: ' . $document_number);
     }
 
     /**
@@ -337,7 +442,7 @@ class RiskReportController extends Controller
      */
     public function show(string $id)
     {
-        $riskReport = RiskReport::with(['tags'])->findOrFail($id);
+        $riskReport = RiskReport::with(['tags', 'documents'])->findOrFail($id);
 
         // Pastikan laporan berada dalam tenant yang sama
         if ($riskReport->tenant_id !== auth()->user()->tenant_id) {
@@ -352,20 +457,35 @@ class RiskReportController extends Controller
      */
     public function edit(string $id)
     {
-        $riskReport = RiskReport::findOrFail($id);
+        $tenant_id = session('tenant_id');
+        $riskReport = RiskReport::where('tenant_id', $tenant_id)->findOrFail($id);
 
-        // Pastikan laporan berada dalam tenant yang sama
-        if ($riskReport->tenant_id !== auth()->user()->tenant_id) {
-            abort(403, 'Anda tidak memiliki izin untuk mengedit laporan dari tenant lain.');
-        }
+        // Log akses ke halaman
+        Log::info('User akses halaman edit laporan risiko', [
+            'user_id' => auth()->id(),
+            'tenant_id' => $tenant_id,
+            'report_id' => $id
+        ]);
 
-        // Ambil daftar unit kerja yang aktif untuk tenant saat ini
-        $workUnits = \App\Models\WorkUnit::where('tenant_id', auth()->user()->tenant_id)
+        // Get available tags and currently attached tags
+        $tags = \App\Models\Tag::where('tenant_id', $tenant_id)
+            ->orderBy('name')
+            ->get();
+
+        $attachedTags = $riskReport->tags()->pluck('slug')->toArray();
+
+        // Get available documents
+        $documents = \App\Models\Document::where('tenant_id', $tenant_id)
+            ->orderBy('document_title')
+            ->get();
+
+        // Get work units
+        $workUnits = \App\Models\WorkUnit::where('tenant_id', $tenant_id)
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
-        return view('modules.RiskManagement.risk-reports.edit', compact('riskReport', 'workUnits'));
+        return view('modules.RiskManagement.risk-reports.edit', compact('riskReport', 'tags', 'attachedTags', 'documents', 'workUnits'));
     }
 
     /**
@@ -373,47 +493,54 @@ class RiskReportController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $riskReport = RiskReport::findOrFail($id);
+        $tenant_id = session('tenant_id');
+        $riskReport = RiskReport::where('tenant_id', $tenant_id)->findOrFail($id);
 
-        // Pastikan laporan berada dalam tenant yang sama
-        if ($riskReport->tenant_id !== auth()->user()->tenant_id) {
-            abort(403, 'Anda tidak memiliki izin untuk memperbarui laporan dari tenant lain.');
-        }
-
-        // Dapatkan daftar nama unit kerja yang valid
-        $validWorkUnitNames = \App\Models\WorkUnit::where('tenant_id', auth()->user()->tenant_id)
-            ->where('is_active', true)
-            ->pluck('name')
-            ->toArray();
+        // Log aksi
+        Log::info('User mencoba update laporan risiko', [
+            'user_id' => auth()->id(),
+            'tenant_id' => $tenant_id,
+            'report_id' => $id,
+            'request_data' => $request->except(['_token', '_method']),
+        ]);
 
         // Validasi input
         $validator = Validator::make($request->all(), [
             'document_title' => 'required|string|max:255',
-            'chronology' => 'nullable|string',
-            'description' => 'required|string',
-            'immediate_action' => 'required|string',
-            'reporter_unit' => ['required', 'string', function ($attribute, $value, $fail) use ($validWorkUnitNames) {
-                if (!in_array($value, $validWorkUnitNames)) {
-                    $fail('Unit pelapor yang dipilih tidak valid.');
-                }
-            }],
-            'risk_type' => 'nullable|in:KTD,KNC,KTC,KPC,Sentinel',
-            'risk_category' => 'required|string',
+            'document_number' => 'required|string|max:50',
+            'reporter_unit' => 'required|string|max:100',
+            'chronology' => 'required|string',
+            'description' => 'nullable|string',
+            'immediate_action' => 'nullable|string',
+            'risk_type' => 'required|string|max:100',
+            'risk_category' => 'required|string|max:100',
             'occurred_at' => 'required|date',
             'impact' => 'required|string',
             'probability' => 'required|string',
-            'risk_level' => 'required|string',
-            'recommendation' => 'nullable|string',
+            'risk_level' => 'required|string|max:50',
+            'document_date' => 'nullable|date',
+            'tags' => 'nullable|array',
+            'document_ids' => 'nullable|array',
+            'document_ids.*' => 'exists:documents,id',
+            // Validasi untuk kolom baru
+            'document_type' => 'nullable|string|in:Regulasi,Bukti',
+            'document_version' => 'nullable|string|max:20',
+            'confidentiality_level' => 'nullable|string|in:Publik,Internal,Rahasia',
+            'document_file' => 'nullable|file|max:10240',
+            'next_review' => 'nullable|date',
+            'review_cycle_months' => 'nullable|integer|min:0|max:60',
         ]);
 
         if ($validator->fails()) {
-            return redirect()->back()
+            return redirect()
+                ->back()
                 ->withErrors($validator)
                 ->withInput();
         }
 
-        // Update data laporan
+        // Update risk report
         $riskReport->document_title = $request->document_title;
+        $riskReport->document_number = $request->document_number;
         $riskReport->chronology = $request->chronology;
         $riskReport->description = $request->description;
         $riskReport->immediate_action = $request->immediate_action;
@@ -424,10 +551,93 @@ class RiskReportController extends Controller
         $riskReport->impact = $request->impact;
         $riskReport->probability = $request->probability;
         $riskReport->risk_level = $request->risk_level;
-        $riskReport->recommendation = $request->recommendation;
+        $riskReport->document_date = $request->document_date;
+
+        // Update field baru
+        $riskReport->document_type = $request->document_type;
+        $riskReport->document_version = $request->document_version;
+        $riskReport->confidentiality_level = $request->confidentiality_level;
+        $riskReport->next_review = $request->next_review;
+        $riskReport->review_cycle_months = $request->review_cycle_months;
+
+        // Upload file baru jika ada
+        if ($request->hasFile('document_file')) {
+            // Hapus file lama jika ada
+            if ($riskReport->file_path) {
+                Storage::disk('public')->delete($riskReport->file_path);
+            }
+
+            $file = $request->file('document_file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('risk-reports', $fileName, 'public');
+            $riskReport->file_path = $filePath;
+        }
+
         $riskReport->save();
 
-        return redirect()->route('modules.risk-management.risk-reports.index')
+        // Re-sync tags
+        $riskReport->tags()->detach();
+        if ($request->has('tags')) {
+            foreach ($request->tags as $tagSlug) {
+                $riskReport->attachTagBySlug($tagSlug);
+            }
+        }
+
+        // Sync documents
+        if ($request->has('document_ids')) {
+            Log::info('Syncing documents with risk report (update)', [
+                'report_id' => $riskReport->id,
+                'document_ids' => $request->document_ids,
+            ]);
+
+            try {
+                // Pastikan semua dokumen memiliki tenant_id sebelum melakukan sinkronisasi
+                $nullCount = Document::whereIn('id', $request->document_ids)
+                    ->whereNull('tenant_id')
+                    ->update(['tenant_id' => $tenant_id]);
+
+                // Log dokumen yang diperbarui tenant_id-nya
+                $mismatchCount = Document::whereIn('id', $request->document_ids)
+                    ->where('tenant_id', '!=', $tenant_id)
+                    ->update(['tenant_id' => $tenant_id]);
+
+                Log::info('Memperbarui tenant_id dokumen saat update', [
+                    'null_tenant_ids_fixed' => $nullCount,
+                    'mismatched_tenant_ids_fixed' => $mismatchCount,
+                    'tenant_id' => $tenant_id
+                ]);
+
+                $documentData = [];
+                foreach ($request->document_ids as $docId) {
+                    $documentData[$docId] = ['relation_type' => 'related'];
+                }
+                $riskReport->documents()->sync($documentData);
+
+                // Verifikasi jumlah dokumen yang tersinkron
+                $syncedCount = DB::table('documentables')
+                    ->where('documentable_id', $riskReport->id)
+                    ->where('documentable_type', 'App\\Models\\RiskReport')
+                    ->count();
+
+                Log::info('Documents synced with risk report during update', [
+                    'report_id' => $riskReport->id,
+                    'expected' => count($request->document_ids),
+                    'actual' => $syncedCount
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error syncing documents with risk report', [
+                    'report_id' => $riskReport->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+        } else {
+            $riskReport->documents()->detach();
+        }
+
+        // Success redirect
+        return redirect()
+            ->route('modules.risk-management.risk-reports.show', $riskReport->id)
             ->with('success', 'Laporan risiko berhasil diperbarui');
     }
 

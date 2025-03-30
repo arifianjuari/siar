@@ -187,4 +187,15 @@ class RiskReport extends Model
             $q->where('slug', $slug);
         });
     }
+
+    /**
+     * Get the documents for the risk report.
+     */
+    public function documents()
+    {
+        return $this->morphToMany(Document::class, 'documentable', 'documentables')
+            ->where('documents.tenant_id', $this->tenant_id)
+            ->withPivot('relation_type')
+            ->withTimestamps();
+    }
 }

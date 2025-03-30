@@ -28,52 +28,57 @@
 <?php $__env->startSection('content'); ?>
     <!-- Form Filter -->
     <div class="card mb-4">
-        <div class="card-header bg-white py-3">
-            <h5 class="mb-0 fw-bold"><i class="fas fa-filter me-1"></i> Filter</h5>
+        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="fas fa-filter me-1"></i> Filter</h6>
+            <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                <i class="fas fa-chevron-down"></i>
+            </button>
         </div>
-        <div class="card-body">
-            <form action="<?php echo e(route('modules.risk-management.risk-reports.index')); ?>" method="GET" id="filterForm">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label for="status" class="form-label">Status</label>
-                        <select name="status" id="status" class="form-select">
-                            <option value="">Semua Status</option>
-                            <option value="Draft" <?php echo e(request('status') == 'Draft' ? 'selected' : ''); ?>>Draft</option>
-                            <option value="Ditinjau" <?php echo e(request('status') == 'Ditinjau' ? 'selected' : ''); ?>>Ditinjau</option>
-                            <option value="Selesai" <?php echo e(request('status') == 'Selesai' ? 'selected' : ''); ?>>Selesai</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="risk_level" class="form-label">Tingkat Risiko</label>
-                        <select name="risk_level" id="risk_level" class="form-select">
-                            <option value="">Semua Tingkat</option>
-                            <option value="Rendah" <?php echo e(request('risk_level') == 'Rendah' ? 'selected' : ''); ?>>Rendah</option>
-                            <option value="Sedang" <?php echo e(request('risk_level') == 'Sedang' ? 'selected' : ''); ?>>Sedang</option>
-                            <option value="Tinggi" <?php echo e(request('risk_level') == 'Tinggi' ? 'selected' : ''); ?>>Tinggi</option>
-                            <option value="Ekstrem" <?php echo e(request('risk_level') == 'Ekstrem' ? 'selected' : ''); ?>>Ekstrem</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="tag" class="form-label">Tag</label>
-                        <select name="tag" id="tag" class="form-select">
-                            <option value="">Semua Tag</option>
-                            <?php $__currentLoopData = App\Models\Tag::where('tenant_id', session('tenant_id'))->orderBy('name')->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tag): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <option value="<?php echo e($tag->slug); ?>" <?php echo e(request('tag') == $tag->slug ? 'selected' : ''); ?>><?php echo e($tag->name); ?></option>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="search" class="form-label">Kata Kunci</label>
-                        <input type="text" name="search" id="search" class="form-control" placeholder="Cari..." value="<?php echo e(request('search')); ?>">
-                    </div>
-                    <div class="col-12">
-                        <div class="d-flex justify-content-end">
-                            <a href="<?php echo e(route('modules.risk-management.risk-reports.index')); ?>" class="btn btn-secondary me-2">Reset</a>
-                            <button type="submit" class="btn btn-primary">Filter</button>
+        <div class="collapse" id="filterCollapse">
+            <div class="card-body py-2">
+                <form action="<?php echo e(route('modules.risk-management.risk-reports.index')); ?>" method="GET" id="filterForm">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-2">
+                            <label for="status" class="form-label small">Status</label>
+                            <select name="status" id="status" class="form-select form-select-sm">
+                                <option value="">Semua Status</option>
+                                <option value="Draft" <?php echo e(request('status') == 'Draft' ? 'selected' : ''); ?>>Draft</option>
+                                <option value="Ditinjau" <?php echo e(request('status') == 'Ditinjau' ? 'selected' : ''); ?>>Ditinjau</option>
+                                <option value="Selesai" <?php echo e(request('status') == 'Selesai' ? 'selected' : ''); ?>>Selesai</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="risk_level" class="form-label small">Tingkat Risiko</label>
+                            <select name="risk_level" id="risk_level" class="form-select form-select-sm">
+                                <option value="">Semua Tingkat</option>
+                                <option value="Rendah" <?php echo e(request('risk_level') == 'Rendah' ? 'selected' : ''); ?>>Rendah</option>
+                                <option value="Sedang" <?php echo e(request('risk_level') == 'Sedang' ? 'selected' : ''); ?>>Sedang</option>
+                                <option value="Tinggi" <?php echo e(request('risk_level') == 'Tinggi' ? 'selected' : ''); ?>>Tinggi</option>
+                                <option value="Ekstrem" <?php echo e(request('risk_level') == 'Ekstrem' ? 'selected' : ''); ?>>Ekstrem</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="tag" class="form-label small">Tag</label>
+                            <select name="tag" id="tag" class="form-select form-select-sm">
+                                <option value="">Semua Tag</option>
+                                <?php $__currentLoopData = App\Models\Tag::where('tenant_id', session('tenant_id'))->orderBy('name')->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tag): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($tag->slug); ?>" <?php echo e(request('tag') == $tag->slug ? 'selected' : ''); ?>><?php echo e($tag->name); ?></option>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="search" class="form-label small">Kata Kunci</label>
+                            <input type="text" name="search" id="search" class="form-control form-control-sm" placeholder="Cari..." value="<?php echo e(request('search')); ?>">
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex gap-2">
+                                <a href="<?php echo e(route('modules.risk-management.risk-reports.index')); ?>" class="btn btn-sm btn-secondary">Reset</a>
+                                <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
     
@@ -218,36 +223,24 @@
 <?php $__env->startPush('scripts'); ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Fungsi toggle untuk form filter
-        const toggleFilterBtn = document.getElementById('toggleFilterBtn');
-        const filterRow = document.getElementById('filterRow');
-        const filterCard = document.querySelector('.card.mb-4.shadow-sm');
-        const btnText = toggleFilterBtn.querySelector('span');
-        const btnIcon = toggleFilterBtn.querySelector('i');
+        // Fungsi toggle collapse filter
+        const filterToggleBtn = document.querySelector('[data-bs-target="#filterCollapse"]');
+        const filterCollapse = document.getElementById('filterCollapse');
+        const filterIcon = filterToggleBtn.querySelector('i');
         
-        // Set initial state
-        let isFilterVisible = true;
+        // Toggle icon saat collapse/expand
+        filterCollapse.addEventListener('show.bs.collapse', function () {
+            filterIcon.classList.remove('fa-chevron-down');
+            filterIcon.classList.add('fa-chevron-up');
+        });
         
-        toggleFilterBtn.addEventListener('click', function() {
-            if (isFilterVisible) {
-                // Sembunyikan filter
-                filterCard.querySelector('.card-body').style.display = 'none';
-                btnText.textContent = 'Tampilkan';
-                btnIcon.classList.remove('fa-chevron-up');
-                btnIcon.classList.add('fa-chevron-down');
-                isFilterVisible = false;
-            } else {
-                // Tampilkan filter
-                filterCard.querySelector('.card-body').style.display = 'block';
-                btnText.textContent = 'Sembunyikan';
-                btnIcon.classList.remove('fa-chevron-down');
-                btnIcon.classList.add('fa-chevron-up');
-                isFilterVisible = true;
-            }
+        filterCollapse.addEventListener('hide.bs.collapse', function () {
+            filterIcon.classList.remove('fa-chevron-up');
+            filterIcon.classList.add('fa-chevron-down');
         });
         
         // Auto-submit form saat select berubah
-        const autoSubmitFields = document.querySelectorAll('#risk_level, #risk_category');
+        const autoSubmitFields = document.querySelectorAll('#status, #risk_level, #tag');
         
         autoSubmitFields.forEach(function(field) {
             field.addEventListener('change', function() {

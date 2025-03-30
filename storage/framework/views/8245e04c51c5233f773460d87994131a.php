@@ -217,6 +217,8 @@
                                     $moduleUrl = url('modules/product-management/products');
                                 } elseif ($module->slug == 'risk-management') {
                                     $moduleUrl = url('modules/risk-management/dashboard');
+                                } elseif ($module->slug == 'document-management') {
+                                    $moduleUrl = url('modules/document-management/dashboard');
                                 } else {
                                     $moduleUrl = url('modules/' . $module->slug);
                                 }

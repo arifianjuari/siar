@@ -434,6 +434,45 @@
                             <i class="fas fa-qrcode me-1"></i> Generate QR Code Tanda Tangan
                         </a>
 
+                        <!-- Dokumen Terkait -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">Dokumen Terkait</h5>
+                            </div>
+                            <div class="card-body">
+                                @if($riskReport->documents->count() > 0)
+                                <ul class="list-group list-group-flush">
+                                    @foreach($riskReport->documents as $doc)
+                                    <li class="list-group-item border-0 p-2">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ $doc->document_title }}</strong><br>
+                                                <small class="text-muted">No: {{ $doc->document_number }}</small>
+                                                @if($doc->file_path)
+                                                <div>
+                                                    <a href="{{ asset('storage/' . $doc->file_path) }}" class="text-primary" target="_blank">
+                                                        <i class="fas fa-paperclip me-1"></i> Lihat File
+                                                    </a>
+                                                </div>
+                                                @else
+                                                <div>
+                                                    <span class="text-muted fst-italic"><i class="fas fa-info-circle me-1"></i> Tanpa file</span>
+                                                </div>
+                                                @endif
+                                            </div>
+                                            <a href="{{ route('modules.document-management.documents.show', $doc->id) }}" class="btn btn-sm btn-outline-primary" title="Lihat Detail Dokumen">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        </div>
+                                    </li>
+                                    @endforeach
+                                </ul>
+                                @else
+                                <p class="text-muted fst-italic mb-0">Belum ada dokumen yang terhubung.</p>
+                                @endif
+                            </div>
+                        </div>
+
                         <!-- Tag Management Section -->
                         <div class="card mt-3">
                             <div class="card-header">

@@ -74,6 +74,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'tenant' => \App\Http\Middleware\SetTenantId::class,
         'tenant.resolve' => \App\Http\Middleware\ResolveTenant::class,
+        'tenant.document' => \App\Http\Middleware\EnsureTenantDocumentAccess::class,
         'module' => \App\Http\Middleware\CheckModuleAccess::class,
         'module.log' => \App\Http\Middleware\LogModuleAccess::class,
         'superadmin' => \App\Http\Middleware\SuperadminMiddleware::class,

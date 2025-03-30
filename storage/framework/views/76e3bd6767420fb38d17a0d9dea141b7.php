@@ -443,6 +443,45 @@
                             <i class="fas fa-qrcode me-1"></i> Generate QR Code Tanda Tangan
                         </a>
 
+                        <!-- Dokumen Terkait -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">Dokumen Terkait</h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if($riskReport->documents->count() > 0): ?>
+                                <ul class="list-group list-group-flush">
+                                    <?php $__currentLoopData = $riskReport->documents; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $doc): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <li class="list-group-item border-0 p-2">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong><?php echo e($doc->document_title); ?></strong><br>
+                                                <small class="text-muted">No: <?php echo e($doc->document_number); ?></small>
+                                                <?php if($doc->file_path): ?>
+                                                <div>
+                                                    <a href="<?php echo e(asset('storage/' . $doc->file_path)); ?>" class="text-primary" target="_blank">
+                                                        <i class="fas fa-paperclip me-1"></i> Lihat File
+                                                    </a>
+                                                </div>
+                                                <?php else: ?>
+                                                <div>
+                                                    <span class="text-muted fst-italic"><i class="fas fa-info-circle me-1"></i> Tanpa file</span>
+                                                </div>
+                                                <?php endif; ?>
+                                            </div>
+                                            <a href="<?php echo e(route('modules.document-management.documents.show', $doc->id)); ?>" class="btn btn-sm btn-outline-primary" title="Lihat Detail Dokumen">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        </div>
+                                    </li>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </ul>
+                                <?php else: ?>
+                                <p class="text-muted fst-italic mb-0">Belum ada dokumen yang terhubung.</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
                         <!-- Tag Management Section -->
                         <div class="card mt-3">
                             <div class="card-header">
