@@ -27,6 +27,38 @@
     </div>
 @endsection
 
+@push('styles')
+<style>
+    .table-risk-reports th,
+    .table-risk-reports td {
+        font-size: 0.85rem; 
+        padding: 0.3rem 0.4rem; /* Perkecil padding lagi */
+        line-height: 1.1; /* Perkecil jarak baris lagi */
+        vertical-align: middle; 
+    }
+    .table-risk-reports thead th {
+        padding-top: 0.4rem;
+        padding-bottom: 0.4rem;
+    }
+    .table-risk-reports .badge {
+        font-size: 0.75rem; 
+        padding: 0.25rem 0.4rem; /* Sesuaikan padding badge */
+    }
+    .tag-input.form-control-sm {
+        font-size: 0.75rem; /* Perkecil font input */
+        padding: 0.15rem 0.4rem; /* Perkecil padding vertikal input */
+        height: calc(1.1 * 0.75rem + 0.15rem * 2 + 2px); /* Sesuaikan tinggi input (line-height * font-size + padding-y*2 + border*2) */
+    }
+    /* Perkecil tombol tambah tag */
+    .tag-form .btn-sm {
+        padding: 0.15rem 0.5rem; /* Sesuaikan padding tombol */
+        font-size: 0.75rem; /* Samakan font tombol */
+        height: calc(1.1 * 0.75rem + 0.15rem * 2 + 2px); /* Samakan tinggi tombol */
+        line-height: 1.1; /* Samakan line-height */
+    }
+</style>
+@endpush
+
 @section('content')
     <!-- Form Filter -->
     <div class="card mb-4">
@@ -97,19 +129,20 @@
                 </div>
             @else
                 <div class="table-responsive">
-                    <table class="table table-hover table-striped table-bordered">
+                    <table class="table table-hover table-striped table-bordered table-risk-reports">
                         <thead class="table-primary">
                             <tr>
                                 <th width="40">No</th>
                                 <th>Judul</th>
+                                <th>Judul Insiden</th>
                                 <th>Unit Pelapor</th>
                                 <th>Tipe</th>
                                 <th>Kategori</th>
                                 <th>Tanggal Kejadian</th>
                                 <th>Tingkat Risiko</th>
-                                <th>Tag</th>
+                                <th width="18%">Tag</th>
                                 <th>Status</th>
-                                <th width="280">Aksi</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -117,6 +150,7 @@
                                 <tr>
                                     <td class="text-center">{{ $index + 1 }}</td>
                                     <td>{{ $report->document_number }}</td>
+                                    <td>{{ $report->document_title }}</td>
                                     <td>{{ $report->reporter_unit }}</td>
                                     <td>{{ $report->risk_type ?? 'N/A' }}</td>
                                     <td>{{ $report->risk_category }}</td>
@@ -135,13 +169,39 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <div class="d-flex flex-wrap gap-1">
+                                        <div class="d-flex flex-wrap gap-1 mb-1">
                                             @foreach($report->tags as $tag)
-                                                <a href="{{ route('tenant.tags.documents', $tag->slug) }}" class="badge bg-light text-dark text-decoration-none">
-                                                    {{ $tag->name }}
-                                                </a>
+                                                <div class="d-flex align-items-center badge bg-secondary text-white me-1 mb-1 p-1" 
+                                                     id="tag-item-{{ $tag->id }}-{{ $report->id }}" 
+                                                     style="font-size: 0.75rem;"> 
+                                                    <a href="{{ route('tenant.tags.documents', $tag->slug) }}" class="text-decoration-none text-white">
+                                                        {{ $tag->name }}
+                                                    </a>
+                                                    <button 
+                                                        type="button" 
+                                                        class="btn-close btn-close-white ms-2"
+                                                        style="font-size: 0.6rem;" 
+                                                        onclick="hapusTagLangsung({{ $tag->id }}, {{ $report->id }}, 'App\\Models\\RiskReport')"
+                                                        aria-label="Close">
+                                                    </button>
+                                                </div>
                                             @endforeach
                                         </div>
+                                        
+                                        {{-- Ganti select dengan input text --}}
+                                        <form class="d-flex gap-2 tag-form" data-report-id="{{ $report->id }}">
+                                            {{-- Tambahkan style width --}}
+                                            <input type="text" class="form-control form-control-sm tag-input" placeholder="Tambah tag baru..." required style="width: 150px;">
+                                            {{-- 
+                                            <select class="form-select form-select-sm tag-select" required>
+                                                <option value="">Pilih Tag</option>
+                                                @foreach(App\Models\Tag::where('tenant_id', session('tenant_id'))->orderBy('name')->get() as $tag)
+                                                    <option value="{{ $tag->id }}" data-slug="{{ $tag->slug }}">{{ $tag->name }}</option>
+                                                @endforeach
+                                            </select>
+                                            --}}
+                                            <button type="submit" class="btn btn-sm btn-primary">+</button>
+                                        </form>
                                     </td>
                                     <td>
                                         @if($report->analysis)
@@ -247,6 +307,156 @@
                 document.getElementById('filterForm').submit();
             });
         });
+
+        // Tangani submit form tambah tag
+        const tagForms = document.querySelectorAll('.tag-form');
+        tagForms.forEach(function(form) {
+            let isSubmitting = false; // Tambahkan flag untuk form spesifik ini
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                if (isSubmitting) {
+                    console.log('Submission already in progress for form:', form.dataset.reportId);
+                    return; // Cegah submit ganda
+                }
+                isSubmitting = true; // Set flag
+                
+                // Dapatkan CSRF token dari meta tag
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                // Dapatkan data dari form
+                const reportId = form.dataset.reportId;
+                const inputElement = form.querySelector('.tag-input'); // Ambil dari input text
+                const tagName = inputElement.value.trim(); // Ambil nama tag dari input
+                
+                if (!tagName) {
+                    isSubmitting = false; // Reset flag jika input kosong
+                    return; 
+                }
+                
+                // Buat form data
+                const formData = new FormData();
+                formData.append('tag_name', tagName); // Kirim tag_name bukan tag_id
+                formData.append('document_id', reportId);
+                formData.append('document_type', 'App\\Models\\RiskReport');
+                formData.append('_token', csrfToken);
+
+                const tagsContainer = form.previousElementSibling; // Target kontainer tag
+                
+                // Kirim request dengan fetch API ke route baru
+                fetch('{{ route('tenant.tags.create-and-attach') }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json' // Kita mengharapkan JSON
+                    },
+                    body: formData
+                })
+                .then(response => {
+                    // Coba periksa apakah respons OK sebelum parse JSON
+                    if (!response.ok) {
+                        // Jika tidak OK, coba baca teks error dan lempar
+                        return response.text().then(text => {
+                            throw new Error(`Server error: ${response.status} ${response.statusText}. ${text}`);
+                        });
+                    }
+                    // Jika OK, coba parse JSON
+                    return response.json(); 
+                })
+                .then(data => {
+                    // Hanya proses jika sukses DAN ada data tag
+                    if (data.success && data.tag) {
+                        const newTag = data.tag; 
+                        if (!tagsContainer.querySelector(`#tag-item-${newTag.id}-${reportId}`)) {
+                            const newTagHtml = `
+                                <div class="d-flex align-items-center badge bg-secondary text-white me-1 mb-1 p-1" 
+                                     id="tag-item-${newTag.id}-${reportId}" 
+                                     style="font-size: 0.75rem;"> 
+                                    <a href="/tenant/tags/${newTag.slug}/documents" class="text-decoration-none text-white">
+                                        ${newTag.name}
+                                    </a>
+                                    <button 
+                                        type="button" 
+                                        class="btn-close btn-close-white ms-2"
+                                        style="font-size: 0.6rem;" 
+                                        onclick="hapusTagLangsung(${newTag.id}, ${reportId}, 'App\\Models\\RiskReport')"
+                                        aria-label="Close">
+                                    </button>
+                                </div>
+                            `;
+                            tagsContainer.insertAdjacentHTML('beforeend', newTagHtml);
+                        } else {
+                           console.warn('Tag already exists visually, skipping DOM insertion.'); 
+                        }
+                        inputElement.value = ''; // Reset input hanya jika sukses
+                    } else {
+                        // Jika tidak sukses atau tidak ada data tag, log error tapi jangan tampilkan alert
+                        console.error('Gagal menambahkan tag atau respons tidak valid:', data.error || data);
+                        // alert('Gagal menambahkan tag: ' + (data.error || 'Silakan coba lagi.')); // Hapus alert
+                    }
+                })
+                .catch(error => {
+                    // Log error tapi jangan tampilkan alert
+                    console.error('Error saat fetch atau parsing JSON:', error);
+                    // alert('Terjadi kesalahan saat menambahkan tag.'); // Hapus alert
+                })
+                .finally(() => {
+                    isSubmitting = false; 
+                });
+            });
+        });
     });
+
+    // Fungsi untuk menghapus tag langsung
+    function hapusTagLangsung(tagId, documentId, documentType) {
+        // Dapatkan CSRF token dari meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Hapus tag dari DOM sebelum request selesai (untuk UX yang lebih cepat)
+        const tagElement = document.getElementById(`tag-item-${tagId}-${documentId}`);
+        if (tagElement) {
+            tagElement.style.opacity = '0.5'; // Visual feedback saat proses penghapusan
+        }
+        
+        // Buat form data untuk request
+        const formData = new FormData();
+        formData.append('tag_id', tagId);
+        formData.append('document_id', documentId);
+        formData.append('document_type', documentType);
+        formData.append('_token', csrfToken);
+        
+        // Kirim request dengan fetch API ke route delete-tag
+        fetch('{{ route('tenant.tags.delete-tag') }}', { // Menggunakan route delete-tag
+            method: 'POST', // Route delete-tag menggunakan POST
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                // 'Accept': 'application/json' // Tidak perlu memaksakan JSON jika server mungkin mengembalikan 204
+            },
+            body: formData
+        })
+        .then(response => {
+            // Jika respons OK (status 2xx), anggap sukses dan hapus elemen
+            if (response.ok) {
+                if (tagElement) {
+                    tagElement.remove();
+                }
+            } else {
+                // Jika respons tidak OK, lempar error untuk ditangani .catch
+                // Coba dapatkan teks error dari respons jika ada
+                return response.text().then(text => {
+                    throw new Error(`Server error: ${response.status} ${response.statusText}. ${text}`);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error saat menghapus tag:', error);
+            // Kembalikan tampilan tag jika terjadi error network atau respons non-OK
+            if (tagElement) {
+                tagElement.style.opacity = '1';
+            }
+            // Tampilkan pesan error umum (opsional)
+            // alert('Terjadi kesalahan saat mencoba menghapus tag.');
+        });
+    }
 </script>
 @endpush 

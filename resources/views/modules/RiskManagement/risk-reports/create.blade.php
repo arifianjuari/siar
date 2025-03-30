@@ -506,6 +506,33 @@
                         </div>
                     </div>
                     
+                    <!-- Section Tambahan: Tags -->
+                    <div class="card form-section">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-tags me-2"></i> Tags Laporan</h5>
+                        </div>
+                        <div class="card-body">
+                            <label for="tag-input" class="form-label">Tambah Tag</label>
+                            <div class="input-group mb-2">
+                                <input type="text" id="tag-input" class="form-control form-control-sm" placeholder="Ketik tag lalu tekan Enter...">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" id="add-tag-button">Tambah</button>
+                            </div>
+                            <div id="tags-container" class="d-flex flex-wrap gap-1 mb-1">
+                                {{-- Tag badges akan ditambahkan di sini oleh JS --}}
+                            </div>
+                            <div class="form-text">Pisahkan beberapa tag dengan menekan Enter atau tombol Tambah setelah mengetik.</div>
+                            
+                            {{-- Hidden inputs untuk menyimpan tag yang akan dikirim --}}
+                            <div id="hidden-tags-container">
+                                @if(old('tags'))
+                                    @foreach(old('tags') as $tagName)
+                                        <input type="hidden" name="tags[]" value="{{ $tagName }}">
+                                    @endforeach
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Section 5: Submit -->
                     <div class="card form-section">
                         <div class="card-header">
@@ -662,5 +689,122 @@
             form.classList.add('was-validated');
         });
     });
+
+    // --- Tag Input Logic --- 
+    const tagInput = document.getElementById('tag-input');
+    const addTagButton = document.getElementById('add-tag-button');
+    const tagsContainer = document.getElementById('tags-container');
+    const hiddenTagsContainer = document.getElementById('hidden-tags-container');
+
+    function addTag(tagName) {
+        tagName = tagName.trim();
+        if (!tagName) return; // Jangan tambahkan jika kosong
+
+        // Cek duplikasi visual
+        const existingBadges = tagsContainer.querySelectorAll('.tag-badge');
+        for (let badge of existingBadges) {
+            if (badge.dataset.tagName.toLowerCase() === tagName.toLowerCase()) {
+                tagInput.value = ''; // Kosongkan input saja
+                return;
+            }
+        }
+
+        // Buat badge visual
+        const badgeId = `tag-badge-${Date.now()}`; // ID unik sementara
+        const badge = document.createElement('div');
+        badge.classList.add('d-flex', 'align-items-center', 'badge', 'bg-secondary', 'text-white', 'me-1', 'mb-1', 'p-1', 'tag-badge');
+        badge.style.fontSize = '0.75rem';
+        badge.dataset.tagName = tagName;
+        badge.id = badgeId;
+
+        const badgeText = document.createElement('span');
+        badgeText.textContent = tagName;
+        badge.appendChild(badgeText);
+
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.classList.add('btn-close', 'btn-close-white', 'ms-2');
+        closeButton.style.fontSize = '0.6rem';
+        closeButton.ariaLabel = 'Close';
+        closeButton.onclick = function() { removeTag(badgeId, tagName); };
+        badge.appendChild(closeButton);
+
+        tagsContainer.appendChild(badge);
+
+        // Tambahkan ke hidden input
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'tags[]';
+        hiddenInput.value = tagName;
+        hiddenInput.id = `hidden-${badgeId}`;
+        hiddenTagsContainer.appendChild(hiddenInput);
+
+        // Kosongkan input field
+        tagInput.value = '';
+    }
+
+    function removeTag(badgeId, tagName) {
+        const badgeElement = document.getElementById(badgeId);
+        const hiddenInputElement = document.getElementById(`hidden-${badgeId}`);
+
+        if (badgeElement) {
+            badgeElement.remove();
+        }
+        if (hiddenInputElement) {
+            hiddenInputElement.remove();
+        }
+    }
+
+    // Event listeners untuk input tag
+    tagInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Cegah submit form
+            addTag(tagInput.value);
+        }
+    });
+
+    addTagButton.addEventListener('click', function() {
+        addTag(tagInput.value);
+    });
+
+    // Tambahkan tag dari old input jika ada (saat validasi error)
+    const existingHiddenTags = hiddenTagsContainer.querySelectorAll('input[name="tags[]"]');
+    existingHiddenTags.forEach(input => {
+        addTagFromValue(input.value, input);
+    });
+
+    function addTagFromValue(tagName, existingInput) {
+        tagName = tagName.trim();
+        if (!tagName) return;
+
+        const badgeId = `tag-badge-${Date.now()}${Math.random()}`; // ID unik sementara
+        const badge = document.createElement('div');
+        badge.classList.add('d-flex', 'align-items-center', 'badge', 'bg-secondary', 'text-white', 'me-1', 'mb-1', 'p-1', 'tag-badge');
+        badge.style.fontSize = '0.75rem';
+        badge.dataset.tagName = tagName;
+        badge.id = badgeId;
+
+        const badgeText = document.createElement('span');
+        badgeText.textContent = tagName;
+        badge.appendChild(badgeText);
+
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.classList.add('btn-close', 'btn-close-white', 'ms-2');
+        closeButton.style.fontSize = '0.6rem';
+        closeButton.ariaLabel = 'Close';
+        // Pastikan fungsi removeTag juga menghapus input hidden yang sudah ada
+        closeButton.onclick = function() { 
+            const badgeElement = document.getElementById(badgeId);
+            if (badgeElement) badgeElement.remove();
+            if (existingInput) existingInput.remove(); 
+        };
+        badge.appendChild(closeButton);
+
+        tagsContainer.appendChild(badge);
+        // Set ID pada input hidden yang sudah ada agar bisa dihapus
+        if(existingInput) existingInput.id = `hidden-${badgeId}`; 
+    }
+
 </script>
 @endpush 

@@ -84,6 +84,8 @@
                                                                     $moduleUrl = url('modules/risk-management');
                                                                 } elseif ($module->slug == 'document-management') {
                                                                     $moduleUrl = url('modules/document-management/dashboard');
+                                                                } elseif ($module->slug == 'correspondence') {
+                                                                    $moduleUrl = url('modules/correspondence');
                                                                 } elseif ($module->slug == 'dashboard') {
                                                                     $moduleUrl = url('dashboard');
                                                                 } else {

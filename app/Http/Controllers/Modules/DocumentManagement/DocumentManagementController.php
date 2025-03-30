@@ -231,7 +231,8 @@ class DocumentManagementController extends Controller
 
         if ($documentCount > 0) {
             $moduleCategories[] = [
-                'module' => 'Manajemen Dokumen',
+                'module' => 'document-management',
+                'display_name' => 'Manajemen Dokumen',
                 'icon' => 'fa-file-alt',
                 'total' => $documentCount,
                 'color' => 'primary'
@@ -245,7 +246,8 @@ class DocumentManagementController extends Controller
 
         if ($riskReportCount > 0) {
             $moduleCategories[] = [
-                'module' => 'Manajemen Risiko',
+                'module' => 'risk-management',
+                'display_name' => 'Manajemen Risiko',
                 'icon' => 'fa-exclamation-triangle',
                 'total' => $riskReportCount,
                 'color' => 'danger'
@@ -469,5 +471,88 @@ class DocumentManagementController extends Controller
             ->sortByDesc('document_date');
 
         return view('modules.DocumentManagement.documents-by-tag', compact('tag', 'combinedDocuments'));
+    }
+
+    /**
+     * Menampilkan dokumen berdasarkan jenis confidentiality_level
+     *
+     * @param string $type (all, public, internal, confidential)
+     * @return \Illuminate\View\View
+     */
+    public function documentsByType($type)
+    {
+        // Default tenant ID jika tidak ada dalam sesi
+        $defaultTenantId = 2;
+        $tenantId = session('tenant_id') ?? $defaultTenantId;
+        $validTenantIds = [1, $tenantId];
+
+        // Logging untuk debugging
+        Log::info('Dokumen berdasarkan tipe diakses', [
+            'type' => $type,
+            'tenant_id' => $tenantId,
+            'user_id' => Auth::id() ?? 'unknown'
+        ]);
+
+        // Siapkan query untuk Document
+        $documentsQuery = Document::whereIn('tenant_id', $validTenantIds);
+
+        // Siapkan query untuk RiskReport
+        $riskReportsQuery = RiskReport::whereIn('tenant_id', $validTenantIds);
+
+        // Filter berdasarkan tipe
+        if ($type !== 'all') {
+            // Filter dokumen dari modul Document Management
+            $documentsQuery->where('confidentiality_level', $type);
+
+            // Filter dokumen dari modul Risk Management
+            // Perhatikan perbedaan format (publik/Publik, internal/Internal, rahasia/Rahasia)
+            if ($type === 'public') {
+                $riskReportsQuery->where('confidentiality_level', 'Publik');
+            } elseif ($type === 'internal') {
+                $riskReportsQuery->where('confidentiality_level', 'Internal');
+            } elseif ($type === 'confidential') {
+                $riskReportsQuery->where('confidentiality_level', 'Rahasia');
+            }
+        }
+
+        // Ambil dokumen dari Document Management
+        $documents = $documentsQuery->orderByDesc('document_date')->get();
+
+        // Ambil dokumen dari Risk Management
+        $riskReports = $riskReportsQuery->orderByDesc('created_at')
+            ->select(
+                'id',
+                'document_title',
+                'document_number',
+                'file_path',
+                'created_at',
+                'document_date',
+                'document_type',
+                'confidentiality_level'
+            )
+            ->get();
+
+        // Gabungkan kedua jenis dokumen
+        $combinedDocuments = $documents->concat($riskReports)
+            ->sortByDesc('document_date');
+
+        // Tentukan judul halaman berdasarkan tipe
+        $typeTitle = 'Semua Dokumen';
+        if ($type === 'public') {
+            $typeTitle = 'Dokumen Publik';
+        } elseif ($type === 'internal') {
+            $typeTitle = 'Dokumen Internal';
+        } elseif ($type === 'confidential') {
+            $typeTitle = 'Dokumen Rahasia';
+        }
+
+        Log::info('Hasil query dokumen berdasarkan tipe', [
+            'type' => $type,
+            'documents_count' => $documents->count(),
+            'risk_reports_count' => $riskReports->count(),
+            'combined_count' => $combinedDocuments->count()
+        ]);
+
+        return view('modules.DocumentManagement.documents-by-type', compact('combinedDocuments', 'typeTitle', 'type'));
     }
 }

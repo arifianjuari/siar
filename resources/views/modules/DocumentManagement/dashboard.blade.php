@@ -102,6 +102,12 @@ $hideDefaultHeader = true;
         background: linear-gradient(45deg, #0d6efd, #50a3ff);
         color: white;
     }
+    
+    .list-group-item.hover-effect:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        background-color: rgba(0,0,0,0.02);
+    }
 </style>
 @endpush
 
@@ -125,43 +131,51 @@ $hideDefaultHeader = true;
     <!-- KPI Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card kpi-card">
-                <div class="card-body">
-                    <i class="fas fa-file-alt kpi-icon text-primary"></i>
-                    <h2 class="kpi-value">{{ $stats['total'] }}</h2>
-                    <p class="kpi-label">Total Dokumen</p>
+            <a href="{{ route('modules.document-management.documents-by-type', 'all') }}" class="text-decoration-none">
+                <div class="card kpi-card" style="cursor: pointer;">
+                    <div class="card-body">
+                        <i class="fas fa-file-alt kpi-icon text-primary"></i>
+                        <h2 class="kpi-value">{{ $stats['total'] }}</h2>
+                        <p class="kpi-label">Total Dokumen</p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
         
         <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card kpi-card bg-public">
-                <div class="card-body">
-                    <i class="fas fa-globe kpi-icon"></i>
-                    <h2 class="kpi-value">{{ $stats['public'] }}</h2>
-                    <p class="kpi-label">Dokumen Publik</p>
+            <a href="{{ route('modules.document-management.documents-by-type', 'public') }}" class="text-decoration-none">
+                <div class="card kpi-card bg-public" style="cursor: pointer;">
+                    <div class="card-body">
+                        <i class="fas fa-globe kpi-icon"></i>
+                        <h2 class="kpi-value">{{ $stats['public'] }}</h2>
+                        <p class="kpi-label">Dokumen Publik</p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
         
         <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card kpi-card bg-internal">
-                <div class="card-body">
-                    <i class="fas fa-building kpi-icon"></i>
-                    <h2 class="kpi-value">{{ $stats['internal'] }}</h2>
-                    <p class="kpi-label">Dokumen Internal</p>
+            <a href="{{ route('modules.document-management.documents-by-type', 'internal') }}" class="text-decoration-none">
+                <div class="card kpi-card bg-internal" style="cursor: pointer;">
+                    <div class="card-body">
+                        <i class="fas fa-building kpi-icon"></i>
+                        <h2 class="kpi-value">{{ $stats['internal'] }}</h2>
+                        <p class="kpi-label">Dokumen Internal</p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
         
         <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card kpi-card bg-confidential">
-                <div class="card-body">
-                    <i class="fas fa-lock kpi-icon"></i>
-                    <h2 class="kpi-value">{{ $stats['confidential'] }}</h2>
-                    <p class="kpi-label">Dokumen Rahasia</p>
+            <a href="{{ route('modules.document-management.documents-by-type', 'confidential') }}" class="text-decoration-none">
+                <div class="card kpi-card bg-confidential" style="cursor: pointer;">
+                    <div class="card-body">
+                        <i class="fas fa-lock kpi-icon"></i>
+                        <h2 class="kpi-value">{{ $stats['confidential'] }}</h2>
+                        <p class="kpi-label">Dokumen Rahasia</p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
     
@@ -176,13 +190,16 @@ $hideDefaultHeader = true;
                     @if(isset($moduleCategories) && count($moduleCategories) > 0)
                         <ul class="list-group">
                             @foreach($moduleCategories as $category)
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <i class="fas {{ $category['icon'] }} me-2 text-{{ $category['color'] }}"></i>
-                                        {{ $category['module'] }}
-                                    </div>
-                                    <span class="badge bg-{{ $category['color'] }} rounded-pill">{{ $category['total'] }}</span>
-                                </li>
+                                <a href="{{ route('modules.' . $category['module'] . '.dashboard') }}" class="text-decoration-none">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center hover-effect" 
+                                        style="cursor: pointer; transition: all 0.2s ease;">
+                                        <div>
+                                            <i class="fas {{ $category['icon'] }} me-2 text-{{ $category['color'] }}"></i>
+                                            {{ $category['display_name'] }}
+                                        </div>
+                                        <span class="badge bg-{{ $category['color'] }} rounded-pill">{{ $category['total'] }}</span>
+                                    </li>
+                                </a>
                             @endforeach
                         </ul>
                     @else

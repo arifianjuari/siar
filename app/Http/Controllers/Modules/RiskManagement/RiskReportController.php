@@ -14,6 +14,8 @@ use Dompdf\Dompdf;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use App\Models\Document;
 use Illuminate\Support\Facades\DB;
+use App\Models\Tag;
+use Illuminate\Support\Str;
 
 class RiskReportController extends Controller
 {
@@ -297,20 +299,20 @@ class RiskReportController extends Controller
             'document_title' => 'required|string|max:255',
             'reporter_unit' => 'required|string|max:100',
             'chronology' => 'required|string',
-            'description' => 'nullable|string',
-            'immediate_action' => 'nullable|string',
+            'description' => 'required|string',
+            'immediate_action' => 'required|string',
+            'recommendation' => 'nullable|string',
             'risk_type' => 'required|string|max:100',
             'risk_category' => 'required|string|max:100',
             'occurred_at' => 'required|date',
             'impact' => 'required|string',
             'probability' => 'required|string',
             'risk_level' => 'required|string|max:50',
-            'document_number' => 'nullable|string|max:50',
             'document_date' => 'nullable|date',
             'tags' => 'nullable|array',
+            'tags.*' => 'string|max:255',
             'document_ids' => 'nullable|array',
             'document_ids.*' => 'exists:documents,id',
-            // Validasi untuk kolom baru
             'document_type' => 'nullable|string|in:Regulasi,Bukti',
             'document_version' => 'nullable|string|max:20',
             'confidentiality_level' => 'nullable|string|in:Publik,Internal,Rahasia',
@@ -326,26 +328,25 @@ class RiskReportController extends Controller
                 ->withInput();
         }
 
-        // Add missing document_number if not provided
-        if (empty($request->document_number)) {
-            $year = date('Y');
-            $count = RiskReport::where('tenant_id', $tenant_id)
-                ->where('document_number', 'like', "LR/{$year}/%")
-                ->count();
-            $number = str_pad($count + 1, 3, '0', STR_PAD_LEFT);
-            $document_number = "LR/{$year}/{$number}";
-        } else {
-            $document_number = $request->document_number;
-        }
+        // Generate document number
+        $year = Carbon::now()->year;
+        $lastReport = RiskReport::where('tenant_id', $tenant_id)
+            ->whereYear('created_at', $year)
+            ->orderBy('id', 'desc')
+            ->first();
+        $nextNumber = $lastReport ? ((int) substr($lastReport->document_number, -3)) + 1 : 1;
+        $document_number = sprintf('RIR/%d/%03d', $year, $nextNumber);
 
-        // Create new risk report
+        // Create risk report
         $riskReport = new RiskReport();
         $riskReport->tenant_id = $tenant_id;
-        $riskReport->document_title = $request->document_title;
+        $riskReport->created_by = Auth::id();
         $riskReport->document_number = $document_number;
+        $riskReport->document_title = $request->document_title;
         $riskReport->chronology = $request->chronology;
         $riskReport->description = $request->description;
         $riskReport->immediate_action = $request->immediate_action;
+        $riskReport->recommendation = $request->recommendation;
         $riskReport->reporter_unit = $request->reporter_unit;
         $riskReport->risk_type = $request->risk_type;
         $riskReport->risk_category = $request->risk_category;
@@ -354,17 +355,16 @@ class RiskReportController extends Controller
         $riskReport->probability = $request->probability;
         $riskReport->risk_level = $request->risk_level;
         $riskReport->status = 'Draft';
-        $riskReport->created_by = auth()->id();
-        $riskReport->document_date = $request->document_date ?? now();
+        $riskReport->document_date = $request->document_date ?? Carbon::now();
 
-        // Field baru
+        // Fill new fields
         $riskReport->document_type = $request->document_type;
         $riskReport->document_version = $request->document_version;
         $riskReport->confidentiality_level = $request->confidentiality_level ?? 'Internal';
         $riskReport->next_review = $request->next_review;
         $riskReport->review_cycle_months = $request->review_cycle_months;
 
-        // Upload file jika ada
+        // Upload file if provided
         if ($request->hasFile('document_file')) {
             $file = $request->file('document_file');
             $fileName = time() . '_' . $file->getClientOriginalName();
@@ -374,10 +374,23 @@ class RiskReportController extends Controller
 
         $riskReport->save();
 
-        // Attach tags if provided
-        if ($request->has('tags')) {
-            foreach ($request->tags as $tagSlug) {
-                $riskReport->attachTagBySlug($tagSlug);
+        // Process and attach tags
+        if ($request->filled('tags')) {
+            $tagIds = [];
+            foreach ($request->input('tags') as $tagName) {
+                $trimmedName = trim($tagName);
+                if (empty($trimmedName)) continue; // Skip empty tags
+
+                $slug = Str::slug($trimmedName);
+                $tag = Tag::firstOrCreate(
+                    ['slug' => $slug, 'tenant_id' => $tenant_id],
+                    ['name' => $trimmedName, 'tenant_id' => $tenant_id]
+                );
+                $tagIds[] = $tag->id;
+            }
+            if (!empty($tagIds)) {
+                $riskReport->tags()->sync($tagIds);
+                Log::info('Tags synced for new report', ['report_id' => $riskReport->id, 'tag_ids' => $tagIds]);
             }
         }
 
@@ -467,25 +480,20 @@ class RiskReportController extends Controller
             'report_id' => $id
         ]);
 
-        // Get available tags and currently attached tags
-        $tags = \App\Models\Tag::where('tenant_id', $tenant_id)
-            ->orderBy('name')
-            ->get();
-
-        $attachedTags = $riskReport->tags()->pluck('slug')->toArray();
-
-        // Get available documents
-        $documents = \App\Models\Document::where('tenant_id', $tenant_id)
-            ->orderBy('document_title')
-            ->get();
-
-        // Get work units
+        // Get available work units
         $workUnits = \App\Models\WorkUnit::where('tenant_id', $tenant_id)
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
-        return view('modules.RiskManagement.risk-reports.edit', compact('riskReport', 'tags', 'attachedTags', 'documents', 'workUnits'));
+        // Get available documents for linking (jika masih diperlukan)
+        $documents = \App\Models\Document::where('tenant_id', $tenant_id)
+            ->orderBy('document_title')
+            ->get();
+
+        // $tags and $attachedTags tidak diperlukan lagi karena JS menangani tag
+
+        return view('modules.RiskManagement.risk-reports.edit', compact('riskReport', 'workUnits', 'documents'));
     }
 
     /**
@@ -510,19 +518,21 @@ class RiskReportController extends Controller
             'document_number' => 'required|string|max:50',
             'reporter_unit' => 'required|string|max:100',
             'chronology' => 'required|string',
-            'description' => 'nullable|string',
-            'immediate_action' => 'nullable|string',
+            'description' => 'required|string',
+            'immediate_action' => 'required|string',
+            'recommendation' => 'nullable|string',
             'risk_type' => 'required|string|max:100',
             'risk_category' => 'required|string|max:100',
             'occurred_at' => 'required|date',
             'impact' => 'required|string',
             'probability' => 'required|string',
             'risk_level' => 'required|string|max:50',
+            'status' => 'required|string|in:Draft,Ditinjau,Selesai',
             'document_date' => 'nullable|date',
             'tags' => 'nullable|array',
+            'tags.*' => 'string|max:255',
             'document_ids' => 'nullable|array',
             'document_ids.*' => 'exists:documents,id',
-            // Validasi untuk kolom baru
             'document_type' => 'nullable|string|in:Regulasi,Bukti',
             'document_version' => 'nullable|string|max:20',
             'confidentiality_level' => 'nullable|string|in:Publik,Internal,Rahasia',
@@ -544,6 +554,7 @@ class RiskReportController extends Controller
         $riskReport->chronology = $request->chronology;
         $riskReport->description = $request->description;
         $riskReport->immediate_action = $request->immediate_action;
+        $riskReport->recommendation = $request->recommendation;
         $riskReport->reporter_unit = $request->reporter_unit;
         $riskReport->risk_type = $request->risk_type;
         $riskReport->risk_category = $request->risk_category;
@@ -551,6 +562,7 @@ class RiskReportController extends Controller
         $riskReport->impact = $request->impact;
         $riskReport->probability = $request->probability;
         $riskReport->risk_level = $request->risk_level;
+        $riskReport->status = $request->status;
         $riskReport->document_date = $request->document_date;
 
         // Update field baru
@@ -575,13 +587,23 @@ class RiskReportController extends Controller
 
         $riskReport->save();
 
-        // Re-sync tags
-        $riskReport->tags()->detach();
-        if ($request->has('tags')) {
-            foreach ($request->tags as $tagSlug) {
-                $riskReport->attachTagBySlug($tagSlug);
+        // Process and sync tags
+        $tagIds = [];
+        if ($request->filled('tags')) {
+            foreach ($request->input('tags') as $tagName) {
+                $trimmedName = trim($tagName);
+                if (empty($trimmedName)) continue;
+
+                $slug = Str::slug($trimmedName);
+                $tag = Tag::firstOrCreate(
+                    ['slug' => $slug, 'tenant_id' => $tenant_id],
+                    ['name' => $trimmedName, 'tenant_id' => $tenant_id]
+                );
+                $tagIds[] = $tag->id;
             }
         }
+        $riskReport->tags()->sync($tagIds); // Gunakan sync, akan menghapus yang lama & menambah yang baru
+        Log::info('Tags synced for updated report', ['report_id' => $riskReport->id, 'tag_ids' => $tagIds]);
 
         // Sync documents
         if ($request->has('document_ids')) {
@@ -638,7 +660,7 @@ class RiskReportController extends Controller
         // Success redirect
         return redirect()
             ->route('modules.risk-management.risk-reports.show', $riskReport->id)
-            ->with('success', 'Laporan risiko berhasil diperbarui');
+            ->with('success', 'Laporan risiko berhasil diperbarui.');
     }
 
     /**

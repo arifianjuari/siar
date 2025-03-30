@@ -219,6 +219,10 @@ Route::middleware(['auth', 'tenant'])->prefix('modules')->name('modules.')->grou
     // Rute Manajemen Modul - PINDAHKAN KE BAWAH
     Route::get('/', [App\Http\Controllers\ModuleController::class, 'index'])->name('index');
     Route::post('/request-activation', [App\Http\Controllers\ModuleController::class, 'requestActivation'])->name('request-activation');
+
+    // Route khusus untuk Korespondensi
+    Route::get('/correspondence', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'dashboard'])->name('correspondence.index');
+
     Route::get('/{slug}', [App\Http\Controllers\ModuleController::class, 'show'])->name('show');
 
     /**
@@ -251,6 +255,54 @@ Route::middleware(['auth', 'tenant'])->prefix('modules')->name('modules.')->grou
         // Documents By Tag Route
         Route::get('documents-by-tag/{slug}', [\App\Http\Controllers\Modules\DocumentManagement\DocumentManagementController::class, 'documentsByTag'])
             ->name('documents-by-tag');
+
+        // Documents By Type Route
+        Route::get('documents-by-type/{type}', [\App\Http\Controllers\Modules\DocumentManagement\DocumentManagementController::class, 'documentsByType'])
+            ->name('documents-by-type');
+    });
+
+    /**
+     * Correspondence Module
+     */
+    Route::prefix('correspondence')->name('correspondence.')->middleware('module:correspondence')->group(function () {
+        // Index route - redirect ke dashboard
+        Route::get('/', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'dashboard'])->name('index');
+
+        // Dashboard
+        Route::get('/dashboard', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'dashboard'])->name('dashboard');
+
+        // Surat/Nota Dinas routes
+        Route::resource('letters', App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class);
+
+        // Export routes
+        Route::get('letters/{id}/export-pdf', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'exportPdf'])
+            ->name('letters.export-pdf')
+            ->middleware('check.permission:correspondence,can_export');
+
+        Route::get('letters/{id}/export-word', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'exportWord'])
+            ->name('letters.export-word')
+            ->middleware('check.permission:correspondence,can_export');
+
+        // QR Code route
+        Route::get('letters/{id}/qr-code', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'generateQr'])
+            ->name('letters.qr-code');
+
+        // Pencarian
+        Route::get('search', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'search'])
+            ->name('search');
+
+        // Laporan
+        Route::get('reports', [App\Http\Controllers\Modules\Correspondence\ReportController::class, 'index'])
+            ->name('reports.index')
+            ->middleware('check.permission:correspondence,can_generate_reports');
+
+        Route::get('reports/generate', [App\Http\Controllers\Modules\Correspondence\ReportController::class, 'generate'])
+            ->name('reports.generate')
+            ->middleware('check.permission:correspondence,can_generate_reports');
+
+        Route::post('reports/export', [App\Http\Controllers\Modules\Correspondence\ReportController::class, 'export'])
+            ->name('reports.export')
+            ->middleware('check.permission:correspondence,can_generate_reports');
     });
 });
 
@@ -521,5 +573,6 @@ Route::middleware(['auth'])->prefix('tenant')->name('tenant.')->group(function (
     Route::post('tags/attach-document', [App\Http\Controllers\Tenant\TagController::class, 'attachTagToDocument'])->name('tags.attach-document');
     Route::delete('tags/attach-document', [App\Http\Controllers\Tenant\TagController::class, 'attachTagToDocument'])->name('tags.attach-document');
     Route::post('tags/delete-tag', [App\Http\Controllers\Tenant\TagController::class, 'deleteTag'])->name('tags.delete-tag');
+    Route::post('tags/create-and-attach', [App\Http\Controllers\Tenant\TagController::class, 'createAndAttachTag'])->name('tags.create-and-attach');
     Route::get('tags/documents/{slug}', [App\Http\Controllers\Tenant\TagController::class, 'getDocumentsByTag'])->name('tags.documents');
 });

@@ -405,11 +405,17 @@
                         <img src="<?php echo e(route('modules.risk-management.risk-reports.qr-code', $riskReport->id)); ?>" 
                              alt="QR Code" class="img-fluid mb-2" style="max-width: 200px;">
                         <p class="text-muted small mb-0">Scan QR code untuk verifikasi laporan</p>
-                    <?php elseif($riskReport->analysis && $riskReport->analysis->analysis_status === 'completed'): ?>
+                    <?php elseif($riskReport->analysis && in_array($riskReport->analysis->analysis_status, ['completed', 'in_progress'])): ?> 
                         <img src="<?php echo e(route('modules.risk-management.risk-analysis.qr-code', [$riskReport->id, $riskReport->analysis->id])); ?>" 
                              alt="QR Code Analisis" class="img-fluid mb-2" style="max-width: 200px;">
                         <p class="text-muted small">Scan QR code untuk verifikasi analisis</p>
-                        <p class="text-muted small mb-0">Status: <span class="badge bg-success">Analisis Selesai</span></p>
+                        <p class="text-muted small mb-0">Status: 
+                            <?php if($riskReport->analysis->analysis_status === 'completed'): ?>
+                                <span class="badge bg-success">Analisis Selesai</span>
+                            <?php else: ?>
+                                <span class="badge bg-warning text-dark">Analisis Dalam Proses</span> 
+                            <?php endif; ?>
+                        </p>
                     <?php else: ?>
                         <div class="alert alert-warning mb-0">
                             <i class="fas fa-exclamation-triangle me-2"></i>

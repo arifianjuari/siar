@@ -96,6 +96,8 @@
                                                             $moduleUrl = route('modules.risk-management.dashboard');
                                                         } elseif ($tenantModule->slug == 'document-management') {
                                                             $moduleUrl = route('modules.document-management.dashboard');
+                                                        } elseif ($tenantModule->slug == 'correspondence') {
+                                                            $moduleUrl = route('modules.correspondence.index');
                                                         } elseif ($tenantModule->slug == 'dashboard') {
                                                             $moduleUrl = route('dashboard');
                                                         } else {

@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use App\Models\RiskReport;
 use App\Models\Document;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
 
 class TagController extends Controller
 {
@@ -662,6 +664,116 @@ class TagController extends Controller
 
             // Untuk permintaan non-AJAX, kembali ke halaman sebelumnya dengan pesan error
             return redirect()->back()->with('error', 'Terjadi kesalahan saat menghapus tag: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Membuat tag baru jika belum ada dan melampirkannya ke dokumen.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function createAndAttachTag(Request $request)
+    {
+        $tenantId = auth()->user()->tenant_id;
+
+        // Validasi Input
+        $validator = Validator::make($request->all(), [
+            'tag_name' => 'required|string|max:255',
+            'document_id' => 'required|integer',
+            'document_type' => 'required|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'error' => $validator->errors()->first()], 400);
+        }
+
+        $tagName = $request->input('tag_name');
+        $documentId = $request->input('document_id');
+        $documentType = $request->input('document_type');
+        $slug = Str::slug($tagName);
+
+        try {
+            // Cari atau buat tag baru
+            $tag = Tag::firstOrCreate(
+                [
+                    'slug' => $slug,
+                    'tenant_id' => $tenantId
+                ],
+                [
+                    'name' => $tagName,
+                    'tenant_id' => $tenantId
+                    // Anda bisa menambahkan default description atau order jika perlu
+                ]
+            );
+
+            // Tentukan model dokumen berdasarkan document_type
+            $documentModel = null;
+            if ($documentType === 'App\\Models\\RiskReport' || $documentType === 'risk_report') {
+                $documentModel = RiskReport::class;
+            } elseif ($documentType === 'App\\Models\\Document' || $documentType === 'document') {
+                $documentModel = Document::class;
+            }
+            // Tambahkan elseif untuk tipe dokumen lain jika ada
+
+            if (!$documentModel) {
+                return response()->json(['success' => false, 'error' => 'Tipe dokumen tidak dikenali.'], 400);
+            }
+
+            // Cari dokumen
+            $document = $documentModel::where('id', $documentId)
+                ->where('tenant_id', $tenantId)
+                ->firstOrFail();
+
+            // Lampirkan tag ke dokumen jika belum terpasang
+            if (!$document->tags()->where('tags.id', $tag->id)->exists()) {
+                $document->tags()->attach($tag->id);
+                Log::info('Tag baru dibuat dan/atau dilampirkan', [
+                    'user_id' => auth()->id(),
+                    'tag_id' => $tag->id,
+                    'tag_name' => $tag->name,
+                    'document_id' => $documentId,
+                    'document_type' => $documentType,
+                    'tenant_id' => $tenantId
+                ]);
+            } else {
+                Log::info('Tag sudah terpasang sebelumnya, tidak melampirkan lagi', [
+                    'user_id' => auth()->id(),
+                    'tag_id' => $tag->id,
+                    'tag_name' => $tag->name,
+                    'document_id' => $documentId,
+                    'document_type' => $documentType,
+                    'tenant_id' => $tenantId
+                ]);
+            }
+
+            // Kembalikan response sukses dengan detail tag
+            return response()->json([
+                'success' => true,
+                'tag' => [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'slug' => $tag->slug
+                ]
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('Dokumen tidak ditemukan saat createAndAttachTag', [
+                'error' => $e->getMessage(),
+                'document_id' => $documentId,
+                'document_type' => $documentType,
+                'tenant_id' => $tenantId
+            ]);
+            return response()->json(['success' => false, 'error' => 'Dokumen tidak ditemukan.'], 404);
+        } catch (\Exception $e) {
+            Log::error('Error saat createAndAttachTag', [
+                'error' => $e->getMessage(),
+                'tag_name' => $tagName,
+                'document_id' => $documentId,
+                'document_type' => $documentType,
+                'tenant_id' => $tenantId,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['success' => false, 'error' => 'Terjadi kesalahan internal.'], 500);
         }
     }
 }

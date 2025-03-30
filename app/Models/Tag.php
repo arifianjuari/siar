@@ -94,6 +94,16 @@ class Tag extends Model
     }
 
     /**
+     * Morph relasi khusus untuk Correspondence
+     */
+    public function correspondences()
+    {
+        return $this->morphedByMany(Correspondence::class, 'document', 'document_tag', 'tag_id', 'document_id')
+            ->select('correspondences.*')
+            ->where('correspondences.tenant_id', $this->tenant_id);
+    }
+
+    /**
      * Scope query untuk tenant berdasarkan user yang login
      */
     public function scopeTenant($query)

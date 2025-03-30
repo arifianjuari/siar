@@ -100,6 +100,12 @@ $hideDefaultHeader = true;
         background: linear-gradient(45deg, #0d6efd, #50a3ff);
         color: white;
     }
+    
+    .list-group-item.hover-effect:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        background-color: rgba(0,0,0,0.02);
+    }
 </style>
 <?php $__env->stopPush(); ?>
 
@@ -123,43 +129,51 @@ $hideDefaultHeader = true;
     <!-- KPI Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card kpi-card">
-                <div class="card-body">
-                    <i class="fas fa-file-alt kpi-icon text-primary"></i>
-                    <h2 class="kpi-value"><?php echo e($stats['total']); ?></h2>
-                    <p class="kpi-label">Total Dokumen</p>
+            <a href="<?php echo e(route('modules.document-management.documents-by-type', 'all')); ?>" class="text-decoration-none">
+                <div class="card kpi-card" style="cursor: pointer;">
+                    <div class="card-body">
+                        <i class="fas fa-file-alt kpi-icon text-primary"></i>
+                        <h2 class="kpi-value"><?php echo e($stats['total']); ?></h2>
+                        <p class="kpi-label">Total Dokumen</p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
         
         <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card kpi-card bg-public">
-                <div class="card-body">
-                    <i class="fas fa-globe kpi-icon"></i>
-                    <h2 class="kpi-value"><?php echo e($stats['public']); ?></h2>
-                    <p class="kpi-label">Dokumen Publik</p>
+            <a href="<?php echo e(route('modules.document-management.documents-by-type', 'public')); ?>" class="text-decoration-none">
+                <div class="card kpi-card bg-public" style="cursor: pointer;">
+                    <div class="card-body">
+                        <i class="fas fa-globe kpi-icon"></i>
+                        <h2 class="kpi-value"><?php echo e($stats['public']); ?></h2>
+                        <p class="kpi-label">Dokumen Publik</p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
         
         <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card kpi-card bg-internal">
-                <div class="card-body">
-                    <i class="fas fa-building kpi-icon"></i>
-                    <h2 class="kpi-value"><?php echo e($stats['internal']); ?></h2>
-                    <p class="kpi-label">Dokumen Internal</p>
+            <a href="<?php echo e(route('modules.document-management.documents-by-type', 'internal')); ?>" class="text-decoration-none">
+                <div class="card kpi-card bg-internal" style="cursor: pointer;">
+                    <div class="card-body">
+                        <i class="fas fa-building kpi-icon"></i>
+                        <h2 class="kpi-value"><?php echo e($stats['internal']); ?></h2>
+                        <p class="kpi-label">Dokumen Internal</p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
         
         <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card kpi-card bg-confidential">
-                <div class="card-body">
-                    <i class="fas fa-lock kpi-icon"></i>
-                    <h2 class="kpi-value"><?php echo e($stats['confidential']); ?></h2>
-                    <p class="kpi-label">Dokumen Rahasia</p>
+            <a href="<?php echo e(route('modules.document-management.documents-by-type', 'confidential')); ?>" class="text-decoration-none">
+                <div class="card kpi-card bg-confidential" style="cursor: pointer;">
+                    <div class="card-body">
+                        <i class="fas fa-lock kpi-icon"></i>
+                        <h2 class="kpi-value"><?php echo e($stats['confidential']); ?></h2>
+                        <p class="kpi-label">Dokumen Rahasia</p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
     
@@ -174,14 +188,17 @@ $hideDefaultHeader = true;
                     <?php if(isset($moduleCategories) && count($moduleCategories) > 0): ?>
                         <ul class="list-group">
                             <?php $__currentLoopData = $moduleCategories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <i class="fas <?php echo e($category['icon']); ?> me-2 text-<?php echo e($category['color']); ?>"></i>
-                                        <?php echo e($category['module']); ?>
+                                <a href="<?php echo e(route('modules.' . $category['module'] . '.dashboard')); ?>" class="text-decoration-none">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center hover-effect" 
+                                        style="cursor: pointer; transition: all 0.2s ease;">
+                                        <div>
+                                            <i class="fas <?php echo e($category['icon']); ?> me-2 text-<?php echo e($category['color']); ?>"></i>
+                                            <?php echo e($category['display_name']); ?>
 
-                                    </div>
-                                    <span class="badge bg-<?php echo e($category['color']); ?> rounded-pill"><?php echo e($category['total']); ?></span>
-                                </li>
+                                        </div>
+                                        <span class="badge bg-<?php echo e($category['color']); ?> rounded-pill"><?php echo e($category['total']); ?></span>
+                                    </li>
+                                </a>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </ul>
                     <?php else: ?>
