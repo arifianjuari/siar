@@ -43,13 +43,24 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-1 fw-bold">Dokumen dengan Tag: <span class="tag-badge"><i class="fas fa-tag me-1"></i>{{ $tag->name }}</span></h2>
             <p class="text-muted mb-0">{{ $combinedDocuments->count() }} dokumen ditemukan</p>
         </div>
         <div>
             <a href="{{ route('modules.document-management.dashboard') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i> Kembali ke Dashboard
             </a>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label for="moduleFilter" class="form-label">Filter berdasarkan Modul:</label>
+            <select class="form-select" id="moduleFilter">
+                <option value="all" {{ $selectedModule == 'all' ? 'selected' : '' }}>Semua Modul</option>
+                <option value="document-management" {{ $selectedModule == 'document-management' ? 'selected' : '' }}>Manajemen Dokumen</option>
+                <option value="risk-management" {{ $selectedModule == 'risk-management' ? 'selected' : '' }}>Manajemen Risiko</option>
+                <option value="correspondence" {{ $selectedModule == 'correspondence' ? 'selected' : '' }}>Korespondensi</option>
+            </select>
         </div>
     </div>
     
@@ -68,10 +79,28 @@
                 <div class="list-group list-group-flush">
                     @foreach($combinedDocuments as $document)
                         @php
+                            $isDocument = $document instanceof \App\Models\Document;
                             $isRiskReport = $document instanceof \App\Models\RiskReport;
-                            $detailRoute = $isRiskReport 
-                                ? route('modules.risk-management.risk-reports.show', $document->id)
-                                : route('modules.document-management.documents.show', $document->id);
+                            $isCorrespondence = $document instanceof \App\Models\Correspondence;
+                            
+                            $detailRoute = '#';
+                            $iconClass = 'fas fa-file-alt text-secondary';
+                            $typeBadge = '<span class="badge bg-secondary">Unknown</span>';
+                            
+                            if ($isDocument) {
+                                $detailRoute = route('modules.document-management.documents.show', $document->id);
+                                $iconClass = 'fas fa-file-alt text-primary';
+                                $typeBadge = '<span class="badge bg-primary">Dokumen</span>';
+                            } elseif ($isRiskReport) {
+                                $detailRoute = route('modules.risk-management.risk-reports.show', $document->id);
+                                $iconClass = 'fas fa-exclamation-triangle text-danger';
+                                $typeBadge = '<span class="badge bg-danger">Laporan Risiko</span>';
+                            } elseif ($isCorrespondence) {
+                                $detailRoute = route('modules.correspondence.letters.show', $document->id);
+                                $iconClass = 'fas fa-envelope text-info';
+                                $typeBadge = '<span class="badge bg-info">Korespondensi</span>';
+                            }
+
                             $docDate = $document->document_date ?? $document->created_at;
                             $formattedDate = $docDate ? \Carbon\Carbon::parse($docDate)->format('d M Y') : '-';
                         @endphp
@@ -80,22 +109,14 @@
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
                                         <h5 class="doc-title mb-0">
-                                            @if($isRiskReport)
-                                                <i class="fas fa-exclamation-triangle text-danger me-2"></i>
-                                            @else
-                                                <i class="fas fa-file-alt text-primary me-2"></i>
-                                            @endif
+                                            <i class="fas fa-file-alt text-primary me-2"></i>
                                             {{ $document->document_title }}
                                         </h5>
                                         <div class="doc-meta">
                                             <span class="me-3">{{ $document->document_number ?? 'No. Dokumen tidak tersedia' }}</span>
                                             <span class="me-3"><i class="far fa-calendar-alt me-1"></i> {{ $formattedDate }}</span>
                                             <span>
-                                                @if($isRiskReport)
-                                                    <span class="badge bg-danger">Laporan Risiko</span>
-                                                @else
-                                                    <span class="badge bg-primary">Dokumen</span>
-                                                @endif
+                                                {!! $typeBadge !!}
                                                 
                                                 @if($document->confidentiality_level)
                                                     @php
@@ -139,4 +160,21 @@
         </div>
     </div>
 </div>
-@endsection 
+@endsection
+
+@push('scripts')
+<script>
+    document.getElementById('moduleFilter').addEventListener('change', function() {
+        const selectedModule = this.value;
+        const currentUrl = new URL(window.location.href);
+        
+        if (selectedModule === 'all') {
+            currentUrl.searchParams.delete('module');
+        } else {
+            currentUrl.searchParams.set('module', selectedModule);
+        }
+        
+        window.location.href = currentUrl.toString();
+    });
+</script>
+@endpush 

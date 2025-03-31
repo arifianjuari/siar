@@ -1,3 +1,21 @@
+@php
+    // --- Penambahan Mulai ---
+    $currentYear = date('Y');
+    $currentMonth = date('n');
+    $romanMonths = [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V', 6 => 'VI', 7 => 'VII', 8 => 'VIII', 9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII'];
+    $romanMonth = $romanMonths[$currentMonth];
+    // Placeholder untuk nomor urut surat. Ini harus di-pass dari Controller.
+    $defaultDocumentNumber = "B/ND-" . ($nextLetterNumber ?? '...') . " /" . $romanMonth . "/" . $currentYear . "/Subbidyanmeddokpol";
+
+    // -- Perbaikan Isi Surat Mulai --
+    $defaultBody = "Sehubungan dengan rujukan tersebut di atas, bersama ini kami merencanakan untuk melakukan kegiatan sebagai berikut :\n" .
+                   "Nama Giat : \n" .
+                   "Waktu        : \n" .
+                   "Tempat      : \n" .
+                   "Agenda      :";
+    // -- Perbaikan Isi Surat Selesai --
+    // --- Penambahan Selesai ---
+@endphp
 @extends('layouts.app')
 
 @section('title', 'Buat Surat Baru')
@@ -6,7 +24,6 @@
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
-            <h1 class="mb-4">Buat Surat Baru</h1>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
@@ -42,7 +59,7 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="document_number" class="form-label">Nomor Surat</label>
-                        <input type="text" class="form-control" id="document_number" name="document_number" value="{{ old('document_number') }}">
+                        <input type="text" class="form-control" id="document_number" name="document_number" value="{{ old('document_number', $defaultDocumentNumber) }}">
                     </div>
                 </div>
 
@@ -51,8 +68,8 @@
                         <label for="document_type" class="form-label">Tipe Dokumen <span class="text-danger">*</span></label>
                         <select class="form-control" id="document_type" name="document_type" required>
                             <option value="">-- Pilih Tipe --</option>
-                            <option value="Regulasi" {{ old('document_type') == 'Regulasi' ? 'selected' : '' }}>Regulasi</option>
-                            <option value="Bukti" {{ old('document_type') == 'Bukti' ? 'selected' : '' }}>Bukti</option>
+                            <option value="Regulasi" {{ old('document_type', 'Bukti') == 'Regulasi' ? 'selected' : '' }}>Regulasi</option>
+                            <option value="Bukti" {{ old('document_type', 'Bukti') == 'Bukti' ? 'selected' : '' }}>Bukti</option>
                         </select>
                     </div>
                     <div class="col-md-4 mb-3">
@@ -63,9 +80,9 @@
                         <label for="confidentiality_level" class="form-label">Tingkat Kerahasiaan <span class="text-danger">*</span></label>
                         <select class="form-control" id="confidentiality_level" name="confidentiality_level" required>
                             <option value="">-- Pilih Level --</option>
-                            <option value="Publik" {{ old('confidentiality_level') == 'Publik' ? 'selected' : '' }}>Publik</option>
-                            <option value="Internal" {{ old('confidentiality_level') == 'Internal' ? 'selected' : '' }}>Internal</option>
-                            <option value="Rahasia" {{ old('confidentiality_level') == 'Rahasia' ? 'selected' : '' }}>Rahasia</option>
+                            <option value="Publik" {{ old('confidentiality_level', 'Internal') == 'Publik' ? 'selected' : '' }}>Publik</option>
+                            <option value="Internal" {{ old('confidentiality_level', 'Internal') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                            <option value="Rahasia" {{ old('confidentiality_level', 'Internal') == 'Rahasia' ? 'selected' : '' }}>Rahasia</option>
                         </select>
                     </div>
                 </div>
@@ -84,7 +101,7 @@
                 <div class="row">
                     <div class="col-md-12 mb-3">
                         <label for="body" class="form-label">Isi Surat <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="body" name="body" rows="6" required>{{ old('body') }}</textarea>
+                        <textarea class="form-control" id="body" name="body" rows="6" required>{{ old('body', $defaultBody) }}</textarea>
                     </div>
                 </div>
 
@@ -186,26 +203,26 @@
                     </div>
                 </div>
 
-                @if(count($tags) > 0)
                 <div class="row mt-2">
                     <div class="col-md-12 mb-3">
-                        <label class="form-label">Tag</label>
-                        <div class="row">
-                            @foreach($tags as $tag)
-                            <div class="col-md-3 mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="tags[]" value="{{ $tag->slug }}" id="tag_{{ $tag->id }}" 
-                                        {{ in_array($tag->slug, old('tags', [])) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="tag_{{ $tag->id }}">
-                                        {{ $tag->name }}
-                                    </label>
-                                </div>
-                            </div>
-                            @endforeach
+                        <label for="tag-input" class="form-label">Tag</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="tag-input" placeholder="Ketik tag lalu tekan Enter atau tombol Tambah">
+                            <button class="btn btn-outline-secondary" type="button" id="add-tag-button">Tambah</button>
                         </div>
+                        <div id="tags-container" class="mt-2 d-flex flex-wrap">
+                            {{-- Badge tag akan muncul di sini --}}
+                        </div>
+                        <div id="hidden-tags-container">
+                            @if(old('tags'))
+                                @foreach(old('tags') as $oldTag)
+                                    <input type="hidden" name="tags[]" value="{{ $oldTag }}">
+                                @endforeach
+                            @endif
+                        </div>
+                        <small class="text-muted">Anda bisa menambahkan tag baru atau menggunakan tag yang sudah ada.</small>
                     </div>
                 </div>
-                @endif
             </div>
         </div>
 
@@ -221,31 +238,245 @@
         </div>
     </form>
 </div>
-@endsection
 
-@section('scripts')
+{{-- Script dipindah ke sini karena @section('scripts') tidak berjalan --}}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Mengisi data pengirim dan penandatangan secara otomatis jika diperlukan
+        console.log('DOM Content Loaded from Inline Script.');
+        
+        // === Data User ===
         const userPosition = "{{ auth()->user()->position ?? '' }}";
         const userName = "{{ auth()->user()->name ?? '' }}";
+        const userRank = "{{ auth()->user()->rank ?? '' }}";
+        const userNrp = "{{ auth()->user()->nrp ?? '' }}";
         
-        if (userPosition && document.getElementById('sender_position').value === '') {
-            document.getElementById('sender_position').value = userPosition;
+        console.log('User Name from Blade:', userName);
+        console.log('User Position from Blade:', userPosition);
+        console.log('User Rank from Blade:', userRank);
+        console.log('User NRP from Blade:', userNrp);
+        
+        // === Isi Data Pengirim ===
+        const senderNameInput = document.getElementById('sender_name');
+        const senderPositionInput = document.getElementById('sender_position');
+        
+        if (senderNameInput) {
+            console.log('Initial Sender Name Input Value:', senderNameInput.value);
+            if (userName && senderNameInput.value === '') {
+                console.log('Condition met for Sender Name. Setting value...');
+                senderNameInput.value = userName;
+            } else {
+                console.log('Condition NOT met for Sender Name. Reason:', { hasUserName: !!userName, isValueEmpty: senderNameInput.value === '' });
+            }
+        } else {
+            console.error('Element with ID \'sender_name\' not found!');
+        }
+
+        if (senderPositionInput) {
+            console.log('Initial Sender Position Input Value:', senderPositionInput.value);
+            if (userPosition && senderPositionInput.value === '') {
+                console.log('Condition met for Sender Position. Setting value...');
+                senderPositionInput.value = userPosition;
+            } else {
+                console.log('Condition NOT met for Sender Position. Reason:', { hasUserPosition: !!userPosition, isValueEmpty: senderPositionInput.value === '' });
+            }
+        } else {
+            console.error('Element with ID \'sender_position\' not found!');
         }
         
-        if (userName && document.getElementById('sender_name').value === '') {
-            document.getElementById('sender_name').value = userName;
+        // === Isi Data Penandatangan ===
+        const signatoryNameInput = document.getElementById('signatory_name');
+        const signatoryPositionInput = document.getElementById('signatory_position');
+        const signatoryRankInput = document.getElementById('signatory_rank');
+        const signatoryNrpInput = document.getElementById('signatory_nrp');
+
+        if (signatoryNameInput) {
+            console.log('Initial Signatory Name Input Value:', signatoryNameInput.value);
+            if (userName && signatoryNameInput.value === '') {
+                console.log('Condition met for Signatory Name. Setting value...');
+                signatoryNameInput.value = userName;
+            } else {
+                console.log('Condition NOT met for Signatory Name. Reason:', { hasUserName: !!userName, isValueEmpty: signatoryNameInput.value === '' });
+            }
+        } else {
+             console.error('Element with ID \'signatory_name\' not found!');
+        }
+
+        if (signatoryPositionInput) {
+            console.log('Initial Signatory Position Input Value:', signatoryPositionInput.value);
+            if (userPosition && signatoryPositionInput.value === '') {
+                console.log('Condition met for Signatory Position. Setting value...');
+                signatoryPositionInput.value = userPosition;
+            } else {
+                console.log('Condition NOT met for Signatory Position. Reason:', { hasUserPosition: !!userPosition, isValueEmpty: signatoryPositionInput.value === '' });
+            }
+        } else {
+             console.error('Element with ID \'signatory_position\' not found!');
+        }
+
+        if (signatoryRankInput) {
+            console.log('Initial Signatory Rank Input Value:', signatoryRankInput.value);
+            if (userRank && signatoryRankInput.value === '') {
+                console.log('Condition met for Signatory Rank. Setting value...');
+                signatoryRankInput.value = userRank;
+            } else {
+                console.log('Condition NOT met for Signatory Rank. Reason:', { hasUserRank: !!userRank, isValueEmpty: signatoryRankInput.value === '' });
+            }
+        } else {
+             console.error('Element with ID \'signatory_rank\' not found!');
+        }
+
+        if (signatoryNrpInput) {
+            console.log('Initial Signatory NRP Input Value:', signatoryNrpInput.value);
+            if (userNrp && signatoryNrpInput.value === '') {
+                console.log('Condition met for Signatory NRP. Setting value...');
+                signatoryNrpInput.value = userNrp;
+            } else {
+                console.log('Condition NOT met for Signatory NRP. Reason:', { hasUserNrp: !!userNrp, isValueEmpty: signatoryNrpInput.value === '' });
+            }
+        } else {
+             console.error('Element with ID \'signatory_nrp\' not found!');
         }
         
-        // Formatir textarea untuk WYSIWYG jika tersedia
+        // === Formatir WYSIWYG ===
         if (typeof ClassicEditor !== 'undefined') {
+            console.log('Attempting to initialize ClassicEditor for #body');
             ClassicEditor
                 .create(document.querySelector('#body'))
+                .then(editor => {
+                    console.log('ClassicEditor initialized successfully.');
+                })
                 .catch(error => {
-                    console.error(error);
+                    console.error('Error initializing ClassicEditor:', error);
                 });
+        } else {
+            console.log('ClassicEditor is not defined.');
         }
+        
+        // === Logika Tag Input Baru ===
+        const tagInput = document.getElementById('tag-input');
+        const addTagButton = document.getElementById('add-tag-button');
+        const tagsContainer = document.getElementById('tags-container');
+        const hiddenTagsContainer = document.getElementById('hidden-tags-container');
+    
+        function addTag(tagName) {
+            tagName = tagName.trim();
+            if (!tagName) return; // Jangan tambahkan jika kosong
+    
+            // Cek duplikasi visual
+            const existingBadges = tagsContainer.querySelectorAll('.tag-badge');
+            for (let badge of existingBadges) {
+                if (badge.dataset.tagName.toLowerCase() === tagName.toLowerCase()) {
+                    tagInput.value = ''; // Kosongkan input saja
+                    return;
+                }
+            }
+    
+            // Buat badge visual
+            const badgeId = `tag-badge-${Date.now()}${Math.random()}`; // ID unik
+            const badge = document.createElement('div');
+            badge.classList.add('d-flex', 'align-items-center', 'badge', 'bg-secondary', 'text-white', 'me-1', 'mb-1', 'p-1', 'tag-badge');
+            badge.style.fontSize = '0.75rem';
+            badge.dataset.tagName = tagName;
+            badge.id = badgeId;
+    
+            const badgeText = document.createElement('span');
+            badgeText.textContent = tagName;
+            badge.appendChild(badgeText);
+    
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.classList.add('btn-close', 'btn-close-white', 'ms-2');
+            closeButton.style.fontSize = '0.6rem';
+            closeButton.ariaLabel = 'Close';
+            closeButton.onclick = function() { removeTag(badgeId, tagName); };
+            badge.appendChild(closeButton);
+    
+            tagsContainer.appendChild(badge);
+    
+            // Tambahkan ke hidden input
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'tags[]';
+            hiddenInput.value = tagName;
+            hiddenInput.id = `hidden-${badgeId}`;
+            hiddenTagsContainer.appendChild(hiddenInput);
+    
+            // Kosongkan input field
+            tagInput.value = '';
+            tagInput.focus(); // Fokus kembali ke input
+        }
+    
+        function removeTag(badgeId, tagName) {
+            const badgeElement = document.getElementById(badgeId);
+            const hiddenInputElement = document.getElementById(`hidden-${badgeId}`);
+    
+            if (badgeElement) {
+                badgeElement.remove();
+            }
+            if (hiddenInputElement) {
+                hiddenInputElement.remove();
+            }
+        }
+
+        function addTagFromValue(tagName, existingInput) {
+            tagName = tagName.trim();
+            if (!tagName) return;
+    
+            const badgeId = `tag-badge-${Date.now()}${Math.random()}`; // ID unik
+            const badge = document.createElement('div');
+            badge.classList.add('d-flex', 'align-items-center', 'badge', 'bg-secondary', 'text-white', 'me-1', 'mb-1', 'p-1', 'tag-badge');
+            badge.style.fontSize = '0.75rem';
+            badge.dataset.tagName = tagName;
+            badge.id = badgeId;
+    
+            const badgeText = document.createElement('span');
+            badgeText.textContent = tagName;
+            badge.appendChild(badgeText);
+    
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.classList.add('btn-close', 'btn-close-white', 'ms-2');
+            closeButton.style.fontSize = '0.6rem';
+            closeButton.ariaLabel = 'Close';
+            // Pastikan fungsi removeTag juga menghapus input hidden yang sudah ada
+            closeButton.onclick = function() { 
+                const badgeElement = document.getElementById(badgeId);
+                if (badgeElement) badgeElement.remove();
+                if (existingInput) existingInput.remove(); 
+            };
+            badge.appendChild(closeButton);
+    
+            tagsContainer.appendChild(badge);
+            // Set ID pada input hidden yang sudah ada agar bisa dihapus
+            if(existingInput) existingInput.id = `hidden-${badgeId}`; 
+        }
+    
+        // Event listeners untuk input tag
+        if(tagInput) {
+            tagInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Cegah submit form
+                    addTag(tagInput.value);
+                }
+            });
+        }
+        
+        if(addTagButton) {
+            addTagButton.addEventListener('click', function() {
+                addTag(tagInput.value);
+            });
+        }
+    
+        // Tambahkan tag dari old input jika ada (saat validasi error)
+        const existingHiddenTags = hiddenTagsContainer.querySelectorAll('input[name="tags[]"]');
+        if(existingHiddenTags.length > 0) {
+            console.log('Adding tags from old input...', existingHiddenTags);
+            existingHiddenTags.forEach(input => {
+                addTagFromValue(input.value, input);
+            });
+        }
+        // === Akhir Logika Tag Input Baru ===
     });
 </script>
+
 @endsection 

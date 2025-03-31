@@ -216,6 +216,8 @@ class CorrespondenceController extends Controller
         $correspondence->signatory_rank = $request->signatory_rank;
         $correspondence->signatory_nrp = $request->signatory_nrp;
         $correspondence->created_by = Auth::id();
+        $correspondence->file_path = null;
+        $correspondence->signature_file = null;
 
         // Upload document file if provided
         if ($request->hasFile('document_file')) {
@@ -235,12 +237,28 @@ class CorrespondenceController extends Controller
 
         $correspondence->save();
 
-        // Attach tags if provided
+        // === Perubahan Penanganan Tag Mulai ===
+        $tagIds = [];
         if ($request->has('tags')) {
-            foreach ($request->tags as $tagSlug) {
-                $correspondence->attachTagBySlug($tagSlug);
+            foreach ($request->tags as $tagName) {
+                // Cari tag berdasarkan nama dan tenant_id, atau buat jika tidak ada
+                $tag = Tag::firstOrCreate(
+                    [
+                        'name' => trim($tagName),
+                        'tenant_id' => $tenant_id
+                    ],
+                    [
+                        'slug' => Str::slug(trim($tagName)), // Buat slug otomatis
+                        'tenant_id' => $tenant_id
+                    ]
+                );
+                $tagIds[] = $tag->id;
             }
         }
+
+        // Sync tags berdasarkan ID yang terkumpul
+        $correspondence->tags()->sync($tagIds);
+        // === Perubahan Penanganan Tag Selesai ===
 
         // Attach documents if provided
         if ($request->has('document_ids')) {

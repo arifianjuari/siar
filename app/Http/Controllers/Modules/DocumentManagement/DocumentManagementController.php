@@ -422,55 +422,96 @@ class DocumentManagementController extends Controller
      * @param string $slug
      * @return \Illuminate\View\View
      */
-    public function documentsByTag($slug)
+    public function documentsByTag(Request $request, $slug)
     {
         // Default tenant ID jika tidak ada dalam sesi
         $defaultTenantId = 2;
         $tenantId = session('tenant_id') ?? $defaultTenantId;
         $validTenantIds = [1, $tenantId];
 
+        // Ambil filter modul dari request, default 'all'
+        $selectedModule = $request->input('module', 'all');
+
         // Cari tag berdasarkan slug
         $tag = \App\Models\Tag::where('slug', $slug)
             ->whereIn('tenant_id', $validTenantIds)
             ->firstOrFail();
 
-        // Dokumen dari modul Manajemen Dokumen dengan tag ini
-        $documentIds = DB::table('document_tag')
-            ->where('tag_id', $tag->id)
-            ->where('document_type', 'App\\Models\\Document')
-            ->pluck('document_id');
+        // Inisialisasi koleksi kosong
+        $documents = collect();
+        $riskReports = collect();
+        $correspondences = collect();
 
-        $documents = Document::whereIn('id', $documentIds)
-            ->whereIn('tenant_id', $validTenantIds)
-            ->orderByDesc('document_date')
-            ->get();
+        // Query kondisional berdasarkan filter modul
+        if ($selectedModule === 'all' || $selectedModule === 'document-management') {
+            // Dokumen dari modul Manajemen Dokumen dengan tag ini
+            $documentIds = DB::table('document_tag')
+                ->where('tag_id', $tag->id)
+                ->where('document_type', 'App\\Models\\Document')
+                ->pluck('document_id');
 
-        // Dokumen dari modul Manajemen Risiko dengan tag ini
-        $riskReportIds = DB::table('document_tag')
-            ->where('tag_id', $tag->id)
-            ->where('document_type', 'App\\Models\\RiskReport')
-            ->pluck('document_id');
+            $documents = Document::whereIn('id', $documentIds)
+                ->whereIn('tenant_id', $validTenantIds)
+                ->orderByDesc('document_date')
+                ->get();
+        }
 
-        $riskReports = RiskReport::whereIn('id', $riskReportIds)
-            ->whereIn('tenant_id', $validTenantIds)
-            ->orderByDesc('created_at')
-            ->select(
-                'id',
-                'document_title',
-                'document_number',
-                'file_path',
-                'created_at',
-                'document_date',
-                'document_type',
-                'confidentiality_level'
-            )
-            ->get();
+        if ($selectedModule === 'all' || $selectedModule === 'risk-management') {
+            // Dokumen dari modul Manajemen Risiko dengan tag ini
+            $riskReportIds = DB::table('document_tag')
+                ->where('tag_id', $tag->id)
+                ->where('document_type', 'App\\Models\\RiskReport')
+                ->pluck('document_id');
 
-        // Gabungkan kedua jenis dokumen
-        $combinedDocuments = $documents->concat($riskReports)
-            ->sortByDesc('document_date');
+            $riskReports = RiskReport::whereIn('id', $riskReportIds)
+                ->whereIn('tenant_id', $validTenantIds)
+                ->orderByDesc('created_at')
+                ->select(
+                    'id',
+                    'document_title',
+                    'document_number',
+                    'file_path',
+                    'created_at',
+                    'document_date',
+                    'document_type',
+                    'confidentiality_level'
+                )
+                ->get();
+        }
 
-        return view('modules.DocumentManagement.documents-by-tag', compact('tag', 'combinedDocuments'));
+        if ($selectedModule === 'all' || $selectedModule === 'correspondence') {
+            // Dokumen dari modul Korespondensi dengan tag ini
+            $correspondenceIds = DB::table('document_tag')
+                ->where('tag_id', $tag->id)
+                ->where('document_type', 'App\\Models\\Correspondence')
+                ->pluck('document_id');
+
+            $correspondences = \App\Models\Correspondence::whereIn('id', $correspondenceIds)
+                ->whereIn('tenant_id', $validTenantIds)
+                ->orderByDesc('created_at')
+                ->select(
+                    'id',
+                    'document_title',
+                    'document_number',
+                    'file_path',
+                    'created_at',
+                    'document_date',
+                    'document_type',
+                    'confidentiality_level'
+                )
+                ->get();
+        }
+
+        // Gabungkan hasil query yang dijalankan
+        $combinedDocuments = $documents
+            ->concat($riskReports)
+            ->concat($correspondences)
+            ->sortByDesc(function ($item) {
+                return $item->document_date ?? $item->created_at;
+            });
+
+        // Kirim filter aktif ke view
+        return view('modules.DocumentManagement.documents-by-tag', compact('tag', 'combinedDocuments', 'selectedModule'));
     }
 
     /**

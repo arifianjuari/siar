@@ -33,6 +33,9 @@ class User extends Authenticatable
         'last_login_user_agent',
         'created_by',
         'updated_by',
+        'position',
+        'rank',
+        'nrp',
     ];
 
     /**
