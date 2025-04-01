@@ -5,7 +5,7 @@
     $romanMonths = [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V', 6 => 'VI', 7 => 'VII', 8 => 'VIII', 9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII'];
     $romanMonth = $romanMonths[$currentMonth];
     // Placeholder untuk nomor urut surat. Ini harus di-pass dari Controller.
-    $defaultDocumentNumber = "B/ND-" . ($nextLetterNumber ?? '...') . " /" . $romanMonth . "/" . $currentYear . "/Subbidyanmeddokpol";
+    $defaultDocumentNumber = "B/ND-" . ($nextLetterNumber ?? '...') . " /" . $romanMonth . "/" . $currentYear . "/...";
 
     // -- Perbaikan Isi Surat Mulai --
     $defaultBody = "Sehubungan dengan rujukan tersebut di atas, bersama ini kami merencanakan untuk melakukan kegiatan sebagai berikut :\n" .
@@ -191,15 +191,10 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="document_file" class="form-label">File Dokumen</label>
-                        <input type="file" class="form-control" id="document_file" name="document_file">
-                        <small class="text-muted">Format: PDF, DOC, DOCX. Ukuran maksimal: 10MB.</small>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="signature_file" class="form-label">File Tanda Tangan</label>
-                        <input type="file" class="form-control" id="signature_file" name="signature_file">
-                        <small class="text-muted">Format: PNG, JPG, JPEG. Ukuran maksimal: 2MB.</small>
+                    <div class="col-md-12 mb-3">
+                        <label for="document_link" class="form-label">Link File Dokumen</label>
+                        <input type="text" class="form-control" id="document_link" name="document_link" placeholder="Masukkan link menuju file yang tersimpan di cloud (Google Drive, OneDrive, dll)" value="{{ old('document_link') }}">
+                        <small class="text-muted">Pastikan link dapat diakses oleh penerima surat.</small>
                     </div>
                 </div>
 

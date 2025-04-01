@@ -11,7 +11,7 @@
             <div class="row g-0">
                 @auth
                     <!-- Sidebar (only for authenticated users) -->
-                    <div class="col-12 col-md-3 col-lg-2 bg-dark sidebar-wrapper">
+                    <div class="col-12 col-md-3 col-lg-2 sidebar-wrapper">
                         @include('layouts.partials.sidebar')
                     </div>
                     

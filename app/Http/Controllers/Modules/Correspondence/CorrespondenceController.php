@@ -11,8 +11,9 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Dompdf\Dompdf;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -281,9 +282,57 @@ class CorrespondenceController extends Controller
     public function show(string $id)
     {
         $tenant_id = session('tenant_id');
-        $correspondence = Correspondence::with(['tags', 'documents', 'creator'])
+
+        // Debug: enable query logging
+        DB::enableQueryLog();
+
+        $correspondence = Correspondence::with(['tags', 'creator'])
             ->where('tenant_id', $tenant_id)
             ->findOrFail($id);
+
+        // Debug: get query log
+        $queryLog = DB::getQueryLog();
+        Log::debug('Show correspondence query log', $queryLog);
+
+        // Cek apakah sudah ada tag untuk tenant ini
+        $existingTagCount = DB::table('tags')->where('tenant_id', $tenant_id)->count();
+
+        // Jika tidak ada tag, buat satu tag default
+        if ($existingTagCount == 0) {
+            $tag = new Tag();
+            $tag->name = 'Surat Penting';
+            $tag->slug = Str::slug('Surat Penting');
+            $tag->tenant_id = $tenant_id;
+            $tag->order = 1;
+            $tag->save();
+
+            Log::debug('Tag default dibuat karena tidak ada tag', ['tag_id' => $tag->id, 'tag_name' => $tag->name]);
+
+            // Lampirkan tag ke correspondence
+            try {
+                DB::table('document_tag')->insert([
+                    'tag_id' => $tag->id,
+                    'document_id' => $correspondence->id,
+                    'document_type' => 'App\\Models\\Correspondence',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+                Log::debug('Tag default dilampirkan ke correspondence dengan cara manual', [
+                    'tag_id' => $tag->id,
+                    'correspondence_id' => $correspondence->id
+                ]);
+
+                // Muat ulang relasi
+                $correspondence->load('tags');
+            } catch (\Exception $e) {
+                Log::error('Gagal melampirkan tag ke correspondence', [
+                    'tag_id' => $tag->id,
+                    'correspondence_id' => $correspondence->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
 
         return view('modules.Correspondence.letters.show', compact('correspondence'));
     }
@@ -458,16 +507,46 @@ class CorrespondenceController extends Controller
         $tenant_id = session('tenant_id');
         $correspondence = Correspondence::where('tenant_id', $tenant_id)->findOrFail($id);
 
-        $url = route('modules.correspondence.letters.show', $correspondence->id);
+        // Buat konten QR code dalam format teks yang lebih mudah dibaca
+        $qrContent = "=== SURAT / NOTA DINAS ===\n\n";
+        $qrContent .= "Nomor: {$correspondence->document_number}\n";
+        $qrContent .= "Tanggal: " . $correspondence->document_date->format('d-m-Y') . "\n";
+        $qrContent .= "Perihal: {$correspondence->subject}\n";
+        $qrContent .= "Penandatangan: {$correspondence->signatory_name}\n\n";
+        $qrContent .= "URL: " . route('modules.correspondence.letters.show', $correspondence->id);
 
-        // Generate QR code
-        $qrCode = QrCode::format('png')
-            ->size(200)
-            ->generate($url);
+        // Coba alternatif pembuatan QR code (metode #3) - paling sederhana
+        return response(
+            QrCode::format('svg')->size(200)->generate($qrContent)
+        )->header('Content-Type', 'image/svg+xml');
+    }
 
-        // Return the QR code as an image
-        return response($qrCode)
-            ->header('Content-Type', 'image/png');
+    /**
+     * Generate QR code as embedded Base64 for the correspondence.
+     * Route alternatif jika SVG normal tidak berfungsi
+     */
+    public function generateQrBase64(string $id)
+    {
+        $tenant_id = session('tenant_id');
+        $correspondence = Correspondence::where('tenant_id', $tenant_id)->findOrFail($id);
+
+        // Buat konten QR code dalam format teks yang lebih mudah dibaca
+        $qrContent = "=== SURAT / NOTA DINAS ===\n\n";
+        $qrContent .= "Nomor: {$correspondence->document_number}\n";
+        $qrContent .= "Tanggal: " . $correspondence->document_date->format('d-m-Y') . "\n";
+        $qrContent .= "Perihal: {$correspondence->subject}\n";
+        $qrContent .= "Penandatangan: {$correspondence->signatory_name}\n\n";
+        $qrContent .= "URL: " . route('modules.correspondence.letters.show', $correspondence->id);
+
+        // Generate QR code dengan format SVG dan konversi ke base64
+        $svgQrCode = QrCode::format('svg')->size(200)->generate($qrContent);
+        $base64 = base64_encode($svgQrCode);
+        $dataUri = 'data:image/svg+xml;base64,' . $base64;
+
+        return view('modules.Correspondence.letters.qr-embed', [
+            'dataUri' => $dataUri,
+            'correspondence' => $correspondence
+        ]);
     }
 
     /**
@@ -480,8 +559,21 @@ class CorrespondenceController extends Controller
             ->where('tenant_id', $tenant_id)
             ->findOrFail($id);
 
-        // Generate view
-        $html = view('modules.Correspondence.letters.pdf', compact('correspondence'))->render();
+        // Buat QR code untuk surat
+        $qrContent = "=== SURAT / NOTA DINAS ===\n\n";
+        $qrContent .= "Nomor: {$correspondence->document_number}\n";
+        $qrContent .= "Tanggal: " . $correspondence->document_date->format('d-m-Y') . "\n";
+        $qrContent .= "Perihal: {$correspondence->subject}\n";
+        $qrContent .= "Penandatangan: {$correspondence->signatory_name}\n\n";
+        $qrContent .= "URL: " . route('modules.correspondence.letters.show', $correspondence->id);
+
+        // Generate QR code dengan format SVG dan konversi ke base64
+        $svgQrCode = QrCode::format('svg')->size(200)->generate($qrContent);
+        $base64 = base64_encode($svgQrCode);
+        $qrCodeDataUri = 'data:image/svg+xml;base64,' . $base64;
+
+        // Generate view dengan QR code
+        $html = view('modules.Correspondence.letters.pdf', compact('correspondence', 'qrCodeDataUri'))->render();
 
         // Setup PDF
         $dompdf = new Dompdf();

@@ -23,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
         $this->registerGlobalHelpers();
         $this->registerBladeDirectives();
+
+        // Set default pagination view to Bootstrap 5
+        \Illuminate\Pagination\Paginator::useBootstrap();
     }
 
     /**

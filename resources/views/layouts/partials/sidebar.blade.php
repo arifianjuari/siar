@@ -40,60 +40,8 @@
 @endphp
 
 <aside class="sidebar rounded-end p-0 menu-uniform" x-data="{ activeDropdown: null }">
-    <!-- Tenant Information -->
-    <div class="p-4 border-bottom border-secondary">
-        <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-                @php
-                    $tenantInitial = 'T';
-                    $tenantLogo = null;
-                    $tenantName = 'Tenant';
-                    
-                    try {
-                        // Dapatkan tenant_id dari session
-                        $tenant_id = session('tenant_id');
-                        
-                        if ($tenant_id) {
-                            // Dapatkan tenant dari database
-                            $tenant = \App\Models\Tenant::find($tenant_id);
-                            
-                            if ($tenant) {
-                                $tenantName = $tenant->name;
-                                $tenantInitial = strtoupper(substr($tenant->name, 0, 1));
-                                $tenantLogo = $tenant->logo;
-                            }
-                        }
-                    } catch (\Exception $e) {
-                        // Gunakan default
-                    }
-                @endphp
-                
-                @if($tenantLogo)
-                    <div class="rounded overflow-hidden d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background-color: #fff;">
-                        <img src="{{ asset('storage/' . $tenantLogo) }}" alt="{{ $tenantName }}" class="img-fluid" style="max-width: 100%; max-height: 100%; object-fit: contain;">
-                    </div>
-                @else
-                    <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                        <span class="fw-bold menu-text">{{ $tenantInitial }}</span>
-                    </div>
-                @endif
-            </div>
-            <div class="flex-grow-1 ms-3">
-                <h6 class="mb-0 text-white fw-semibold menu-text">{{ $tenantName }}</h6>
-                @php
-                    $roleName = 'Role';
-                    try {
-                        if (auth()->check() && auth()->user()->role) {
-                            $roleName = auth()->user()->role->name ?? 'Role';
-                        }
-                    } catch (\Exception $e) {
-                        // Gunakan default
-                    }
-                @endphp
-                <span class="text-white-50 menu-text">{{ $roleName }}</span>
-            </div>
-        </div>
-    </div>
+    <!-- Load Feather Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
 
     <!-- Sidebar Navigation -->
     <div class="p-3">
@@ -101,78 +49,11 @@
         <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard*') ? 'active' : '' }} mb-2">
             <div class="d-flex align-items-center">
                 <div class="icon-sidebar">
-                    <i class="fas fa-tachometer-alt"></i>
+                    <i data-feather="home"></i>
                 </div>
                 <span class="menu-text">Dashboard</span>
             </div>
         </a>
-
-        <!-- Tenant Management - untuk tenant admin -->
-        @if($isTenantAdmin)
-            <div class="nav-item dropdown mb-2">
-                <button type="button" class="nav-link text-start w-100 {{ request()->is('tenant*') ? 'active' : '' }}" 
-                       onclick="toggleTenantDropdown()" 
-                       style="border: none; background: none; cursor: pointer;">
-                    <div class="d-flex align-items-center">
-                        <div class="icon-sidebar">
-                            <i class="fas fa-building"></i>
-                        </div>
-                        <span class="menu-text">Tenant</span>
-                        <i class="fas fa-chevron-down ms-auto" id="tenant-dropdown-icon"></i>
-                    </div>
-                </button>
-                <div id="tenantSubmenu" class="collapse" style="padding-left: 1.5rem; margin-top: 5px;">
-                    <a href="{{ url('tenant/profile') }}" 
-                       class="nav-link {{ request()->is('tenant/profile*') ? 'active' : '' }} my-1">
-                        <div class="d-flex align-items-center">
-                            <div class="icon-sidebar">
-                                <i class="fas fa-id-card"></i>
-                            </div>
-                            <span class="menu-text">Profil</span>
-                        </div>
-                    </a>
-                    <a href="{{ url('tenant/settings') }}" 
-                       class="nav-link {{ request()->is('tenant/settings*') ? 'active' : '' }} my-1">
-                        <div class="d-flex align-items-center">
-                            <div class="icon-sidebar">
-                                <i class="fas fa-cog"></i>
-                            </div>
-                            <span class="menu-text">Pengaturan</span>
-                        </div>
-                    </a>
-                    <a href="{{ route('tenant.work-units.index') }}" 
-                       class="nav-link {{ request()->is('tenant/work-units*') ? 'active' : '' }} my-1">
-                        <div class="d-flex align-items-center">
-                            <div class="icon-sidebar">
-                                <i class="fas fa-sitemap"></i>
-                            </div>
-                            <span class="menu-text">Unit Kerja</span>
-                        </div>
-                    </a>
-                    <a href="{{ route('tenant.tags.index') }}" 
-                       class="nav-link {{ request()->is('tenant/tags*') ? 'active' : '' }} my-1">
-                        <div class="d-flex align-items-center">
-                            <div class="icon-sidebar">
-                                <i class="fas fa-tags"></i>
-                            </div>
-                            <span class="menu-text">Tag</span>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        @endif
-
-        <!-- Modules Management -->
-        @if($isTenantAdmin)
-        <a href="{{ route('modules.index') }}" class="nav-link {{ request()->routeIs('modules.index') ? 'active' : '' }} mb-2">
-            <div class="d-flex align-items-center">
-                <div class="icon-sidebar">
-                    <i class="fas fa-cubes"></i>
-                </div>
-                <span class="menu-text">Manajemen Modul</span>
-            </div>
-        </a>
-        @endif
 
         <!-- Superadmin section -->
         @if($isSuperAdmin)
@@ -183,7 +64,7 @@
             <a href="{{ route('superadmin.tenants.index') }}" class="nav-link {{ request()->routeIs('superadmin.tenants.*') ? 'active' : '' }} mb-2">
                 <div class="d-flex align-items-center">
                     <div class="icon-sidebar">
-                        <i class="fas fa-building"></i>
+                        <i data-feather="briefcase"></i>
                     </div>
                     <span class="menu-text">Tenant</span>
                 </div>
@@ -192,7 +73,7 @@
             <a href="{{ route('superadmin.modules.index') }}" class="nav-link {{ request()->routeIs('superadmin.modules.*') ? 'active' : '' }} mb-2">
                 <div class="d-flex align-items-center">
                     <div class="icon-sidebar">
-                        <i class="fas fa-puzzle-piece"></i>
+                        <i data-feather="grid"></i>
                     </div>
                     <span class="menu-text">Modul</span>
                 </div>
@@ -227,6 +108,48 @@
                             }
                             
                             $isActive = request()->is('modules/' . $module->slug . '*');
+                            
+                            // Menentukan ikon yang lebih sesuai berdasarkan slug modul
+                            $moduleIcon = '<i data-feather="folder"></i>'; // Default icon
+                            
+                            // Gunakan ikon dari database jika tersedia, jika tidak gunakan ikon berdasarkan jenis modul
+                            if (!empty($module->icon_html)) {
+                                $moduleIcon = $module->icon_html;
+                            } else {
+                                if ($module->slug == 'user-management') {
+                                    $moduleIcon = '<i data-feather="users"></i>';
+                                } elseif ($module->slug == 'document-management') {
+                                    $moduleIcon = '<i data-feather="file-text"></i>';
+                                } elseif ($module->slug == 'risk-management') {
+                                    $moduleIcon = '<i data-feather="alert-triangle"></i>';
+                                } elseif ($module->slug == 'product-management') {
+                                    $moduleIcon = '<i data-feather="shopping-bag"></i>';
+                                } elseif ($module->slug == 'correspondence' || strpos(strtolower($module->name), 'korespondensi') !== false) {
+                                    $moduleIcon = '<i data-feather="mail"></i>';
+                                } elseif (strpos(strtolower($module->name), 'dokumen') !== false) {
+                                    $moduleIcon = '<i data-feather="file-text"></i>';
+                                } elseif (strpos(strtolower($module->name), 'risiko') !== false) {
+                                    $moduleIcon = '<i data-feather="alert-triangle"></i>';
+                                } elseif (strpos(strtolower($module->name), 'task') !== false || strpos(strtolower($module->name), 'tugas') !== false) {
+                                    $moduleIcon = '<i data-feather="check-square"></i>';
+                                } elseif (strpos(strtolower($module->name), 'inventory') !== false || strpos(strtolower($module->name), 'inventaris') !== false) {
+                                    $moduleIcon = '<i data-feather="package"></i>';
+                                } elseif (strpos(strtolower($module->name), 'finance') !== false || strpos(strtolower($module->name), 'keuangan') !== false) {
+                                    $moduleIcon = '<i data-feather="dollar-sign"></i>';
+                                } elseif (strpos(strtolower($module->name), 'report') !== false || strpos(strtolower($module->name), 'laporan') !== false) {
+                                    $moduleIcon = '<i data-feather="bar-chart-2"></i>';
+                                } elseif (strpos(strtolower($module->name), 'dashboard') !== false) {
+                                    $moduleIcon = '<i data-feather="pie-chart"></i>';
+                                } elseif (strpos(strtolower($module->name), 'setting') !== false || strpos(strtolower($module->name), 'pengaturan') !== false) {
+                                    $moduleIcon = '<i data-feather="settings"></i>';
+                                } elseif (strpos(strtolower($module->name), 'notif') !== false) {
+                                    $moduleIcon = '<i data-feather="bell"></i>';
+                                } elseif (strpos(strtolower($module->name), 'chat') !== false || strpos(strtolower($module->name), 'pesan') !== false) {
+                                    $moduleIcon = '<i data-feather="message-circle"></i>';
+                                } elseif (strpos(strtolower($module->name), 'calendar') !== false || strpos(strtolower($module->name), 'kalender') !== false) {
+                                    $moduleIcon = '<i data-feather="calendar"></i>';
+                                }
+                            }
                         } catch (\Exception $e) {
                             $moduleUrl = url('dashboard');
                             $isActive = false;
@@ -241,10 +164,10 @@
                                    style="border: none; background: none; cursor: pointer;">
                                 <div class="d-flex align-items-center">
                                     <div class="icon-sidebar">
-                                        {!! $module->icon_html ?? '<i class="fas fa-users"></i>' !!}
+                                        {!! $moduleIcon !!}
                                     </div>
                                     <span class="menu-text">{{ $module->name }}</span>
-                                    <i class="fas fa-chevron-down ms-auto" id="um-dropdown-icon"></i>
+                                    <i data-feather="chevron-down" class="ms-auto" id="um-dropdown-icon" style="width: 16px; height: 16px;"></i>
                                 </div>
                             </button>
                             <div id="userManagementSubmenu" class="collapse" style="padding-left: 1.5rem; margin-top: 5px;">
@@ -252,7 +175,7 @@
                                    class="nav-link {{ request()->is('*user-management/users*') ? 'active' : '' }} my-1">
                                     <div class="d-flex align-items-center">
                                         <div class="icon-sidebar">
-                                            <i class="fas fa-user"></i>
+                                            <i data-feather="user"></i>
                                         </div>
                                         <span class="menu-text">Pengguna</span>
                                     </div>
@@ -261,7 +184,7 @@
                                    class="nav-link {{ request()->is('*user-management/roles*') ? 'active' : '' }} my-1">
                                     <div class="d-flex align-items-center">
                                         <div class="icon-sidebar">
-                                            <i class="fas fa-user-tag"></i>
+                                            <i data-feather="shield"></i>
                                         </div>
                                         <span class="menu-text">Role</span>
                                     </div>
@@ -272,7 +195,7 @@
                         <a href="{{ $moduleUrl }}" class="nav-link {{ $isActive ? 'active' : '' }} mb-2">
                             <div class="d-flex align-items-center">
                                 <div class="icon-sidebar">
-                                    {!! $module->icon_html ?? '<i class="fas fa-folder"></i>' !!}
+                                    {!! $moduleIcon !!}
                                 </div>
                                 <span class="menu-text">{{ $module->name }}</span>
                             </div>
@@ -284,19 +207,39 @@
     </div>
     
     <!-- Bottom Area -->
-    <div class="mt-auto p-3 border-top border-secondary">
-        <a href="#" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="right" title="Bantuan & Dokumentasi">
+    <div class="mt-auto p-3 border-top border-light bottom-nav">
+        <a href="{{ route('tenant.document-references.index') }}" class="nav-link {{ request()->routeIs('tenant.document-references.*') ? 'active' : '' }} mb-2">
             <div class="d-flex align-items-center">
                 <div class="icon-sidebar">
-                    <i class="fas fa-question-circle"></i>
+                    <i data-feather="file-text"></i>
                 </div>
-                <span class="menu-text">Bantuan</span>
+                <span class="menu-text text-truncate" style="max-width: 140px;">Daftar Referensi</span>
+            </div>
+        </a>
+        <a href="{{ route('pages.help') }}" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="right" title="Bantuan & Dokumentasi">
+            <div class="d-flex align-items-center">
+                <div class="icon-sidebar">
+                    <i data-feather="help-circle"></i>
+                </div>
+                <span class="menu-text text-truncate" style="max-width: 140px;">Bantuan</span>
             </div>
         </a>
     </div>
 </aside>
 
 <style>
+    /* Variabel Warna Baru (Contoh) */
+    :root {
+        --sidebar-bg: #FFFFFF;
+        --sidebar-text-inactive: #6B7280; /* Abu-abu */
+        --sidebar-text-active: #4F46E5; /* Indigo */
+        --sidebar-icon-inactive: #9CA3AF; /* Abu-abu lebih terang */
+        --sidebar-icon-active: #4F46E5; /* Indigo */
+        --sidebar-active-border: #4F46E5; /* Indigo */
+        --sidebar-hover-bg: #F3F4F6; /* Abu-abu sangat terang */
+        --sidebar-heading-text: #6B7280; /* Abu-abu */
+    }
+
     .menu-uniform {
         --menu-font-size: 14px;
     }
@@ -305,108 +248,266 @@
         display: flex;
         flex-direction: column;
         min-height: 100%;
+        background-color: var(--sidebar-bg) !important; /* Latar belakang putih */
+        font-family: Roboto, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif; /* Font bersih */
+        border-right: 1px solid #e5e7eb; /* Optional: border pemisah tipis */
+        padding-bottom: 90px; /* Tambahkan padding bawah lebih besar untuk menghindari tumpukan dengan menu bottom */
     }
+
+    /* Menghapus background pada initial jika tidak ada logo */
     
     .sidebar .nav-link {
         border-radius: 0.5rem;
-        transition: all 0.2s;
-        color: rgba(255, 255, 255, 0.8) !important;
-        padding: 0.75rem 1rem !important;
+        transition: all 0.1s;
+        color: var(--sidebar-text-inactive) !important; /* Warna teks non-aktif */
+        padding: 0.5rem 0.75rem !important; /* Kembalikan padding atau sesuaikan */
         font-size: var(--menu-font-size) !important;
+        margin-bottom: 0.5rem; /* Jarak antar menu (sesuaikan dari mb-2 di HTML jika perlu) */
+        border-left: 3px solid transparent; /* Placeholder untuk border aktif */
     }
-    
+
+    /* Hapus margin bottom dari elemen a jika sudah diatur di .nav-link */
+    .sidebar .p-3 a.mb-2,
+    .sidebar .p-3 div.mb-2 {
+      margin-bottom: 0 !important;
+    }
+     /* Tambahkan margin bottom ke wrapper jika itu dropdown */
+     .sidebar .p-3 > .nav-item.dropdown {
+         margin-bottom: 0.5rem;
+     }
+     /* Tambahkan margin bottom ke link biasa */
+     .sidebar .p-3 > a.nav-link {
+         margin-bottom: 0.5rem;
+     }
+
+
     .sidebar .nav-link:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: #fff !important;
+        background-color: var(--sidebar-hover-bg); /* Latar hover */
+        color: var(--sidebar-text-active) !important; /* Warna teks hover */
+        border-left-color: var(--sidebar-icon-inactive); /* Warna border hover ringan */
     }
     
-    .sidebar .nav-link.active,
-    .sidebar .nav-link.active span,
-    .sidebar .nav-link.active i {
-        background-color: var(--primary-color);
-        color: #fff !important;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        font-size: var(--menu-font-size) !important;
+    .sidebar .nav-link:hover .icon-sidebar svg {
+        color: var(--sidebar-icon-active) !important;
+    }
+    
+    .sidebar .nav-link.active {
+        background-color: transparent !important; /* Hapus background aktif */
+        color: var(--sidebar-text-active) !important; /* Warna teks aktif */
+        font-weight: 600 !important; /* Tebalkan teks aktif */
+        border-left: 3px solid var(--sidebar-active-border) !important; /* Garis aktif */
+        box-shadow: none !important; /* Hapus shadow */
+    }
+
+    .sidebar .nav-link.active .icon-sidebar svg {
+        color: var(--sidebar-icon-active) !important;
+    }
+
+    .sidebar .nav-link.active span.menu-text {
+       color: var(--sidebar-text-active) !important;
+       font-weight: 600 !important;
     }
     
     .icon-sidebar {
         width: 24px !important;
         text-align: center !important;
         margin-right: 12px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
-    .icon-sidebar i {
-        font-size: var(--menu-font-size) !important;
+    .icon-sidebar svg {
+        width: 18px;
+        height: 18px;
+        stroke-width: 2;
+        color: var(--sidebar-icon-inactive) !important;
+        transition: color 0.2s;
     }
     
     .sidebar-heading {
         font-size: 10px !important;
         letter-spacing: 1px !important;
         font-weight: 600 !important;
+        color: var(--sidebar-heading-text) !important; /* Warna heading */
+        text-transform: uppercase !important;
     }
     
-    /* Memastikan teks menu memiliki ukuran yang sama */
+    /* Teks menu dasar */
     .menu-text {
         font-size: var(--menu-font-size) !important;
-        font-weight: normal !important;
-        line-height: 1.5 !important;
+        font-weight: 500 !important; /* Sedikit lebih tebal dari normal */
+        line-height: 1.4 !important; /* Sesuaikan line-height jika perlu */
+        color: inherit !important; /* Mewarisi warna dari .nav-link */
     }
     
-    h6.menu-text {
-        font-size: var(--menu-font-size) !important;
-        font-weight: 600 !important;
-    }
+    /* Hapus referensi ke tenant info */
     
-    /* Reset any inherited styles that might affect font size */
+    /* Hapus !important yang tidak perlu pada font-size */
     .menu-uniform span, 
     .menu-uniform a, 
-    .menu-uniform button,
-    .menu-uniform .menu-text,
+    .menu-uniform button {
+        font-size: inherit;
+    }
     .menu-uniform .nav-link span,
-    .menu-uniform .nav-link i,
-    .menu-uniform .nav-link.active span,
-    .menu-uniform .nav-link.active i {
-        font-size: var(--menu-font-size) !important;
+    .menu-uniform .nav-link i {
+         font-size: inherit;
     }
 
     /* Dropdown styles */
-    .sidebar .dropdown-menu {
-        padding: 0.5rem 0;
-        margin: 0;
-        border-radius: 0.5rem;
+     #tenantSubmenu, #userManagementSubmenu {
+         background-color: var(--sidebar-hover-bg); /* Latar submenu */
+         border-radius: 0.3rem;
+         padding-top: 0.5rem;
+         padding-bottom: 0.5rem;
+         margin-top: 0.25rem;
+     }
+
+     #tenantSubmenu .nav-link,
+     #userManagementSubmenu .nav-link {
+         padding: 0.4rem 1rem !important; /* Padding submenu item (dikurangi) */
+         margin-bottom: 0 !important; /* Menghilangkan margin bottom */
+         border-left: 3px solid transparent !important; /* Reset border */
+         font-size: calc(var(--menu-font-size) - 1px) !important; /* Ukuran font lebih kecil */
+     }
+     
+     #tenantSubmenu .menu-text,
+     #userManagementSubmenu .menu-text {
+         font-size: calc(var(--menu-font-size) - 1px) !important; /* Font submenu lebih kecil */
+         font-weight: 400 !important; /* Font regular, tidak bold */
+         line-height: 1.2 !important; /* Line height lebih kecil */
+     }
+
+     #tenantSubmenu .nav-link:hover,
+     #userManagementSubmenu .nav-link:hover {
+         background-color: rgba(0,0,0,0.05); /* Hover lebih gelap sedikit */
+         border-left-color: transparent !important;
+     }
+
+     #tenantSubmenu .nav-link.active,
+     #userManagementSubmenu .nav-link.active {
+         background-color: transparent !important;
+         border-left-color: transparent !important;
+         color: var(--sidebar-text-active) !important;
+         font-weight: 400 !important; /* Regular weight, tidak bold */
+     }
+
+     #tenantSubmenu .nav-link.active .menu-text,
+     #userManagementSubmenu .nav-link.active .menu-text {
+         font-weight: 500 !important; /* Sedikit bold pada active submenu */
+     }
+
+     /* Atur warna ikon dropdown chevron */
+     .sidebar .nav-link svg[data-feather="chevron-down"] {
+         color: var(--sidebar-icon-inactive);
+         transition: transform 0.3s ease;
+     }
+     
+     .sidebar .nav-link:hover svg[data-feather="chevron-down"] {
+         color: var(--sidebar-icon-active);
+     }
+     
+     .sidebar .nav-link.active svg[data-feather="chevron-down"] {
+         color: var(--sidebar-icon-active);
+     }
+     
+     .fa-rotate-180 {
+         transform: rotate(180deg);
+     }
+
+
+    /* Hapus style dropdown bootstrap default jika ada */
+     .sidebar .dropdown-menu { display: none; } /* Sembunyikan jika tidak pakai collapse */
+
+    /* Bottom Area styles */
+    .sidebar .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        width: calc(100% - 2px); /* Menyesuaikan lebar agar pas dengan sidebar */
+        max-width: inherit;
+        background-color: var(--sidebar-bg);
+        border-top: 1px solid #e5e7eb;
+        z-index: 10;
+        margin-bottom: 30px !important; /* Kurangi margin bawah */
+        left: 0; /* Sesuaikan posisi agar pas di sidebar */
+        padding-left: 1px; /* Sedikit padding kiri untuk alignment */
+        box-sizing: border-box;
+        overflow: hidden; /* Mencegah konten keluar */
+        width: calc(100% - 2px);
+        max-width: 230px; /* Batasi lebar maksimal */
+    }
+
+    /* Menu teks di bottom area */
+    .sidebar .bottom-nav .nav-link .menu-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 150px;
+        display: inline-block;
     }
     
-    .sidebar .dropdown-item {
-        padding: 0.5rem 1rem 0.5rem 2rem;
-        color: rgba(255, 255, 255, 0.8);
+    /* Responsif untuk tampilan mobile */
+    @media (max-width: 767.98px) {
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 260px;
+            height: 100vh;
+            z-index: 1030;
+            transition: all 0.3s ease;
+            overflow-y: auto;
+            padding-bottom: 0 !important; /* Hapus padding bottom pada mobile */
+        }
+        
+        .sidebar-wrapper.show .sidebar {
+            left: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar .bottom-nav {
+            position: static; /* Ubah dari fixed ke static pada mobile */
+            margin-top: auto !important;
+            margin-bottom: 0 !important;
+            width: 100%;
+            max-width: 100%;
+            left: auto;
+        }
+        
+        .sidebar .bottom-nav .nav-link .menu-text {
+            max-width: none; /* Hapus batasan max-width pada mobile */
+        }
+        
+        /* Memastikan tampilan scroll pada mobile dan ukuran minimum */
+        .sidebar-wrapper {
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            z-index: 1040;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-wrapper.show {
+            left: 0;
+        }
     }
-    
-    .sidebar .dropdown-item:hover,
-    .sidebar .dropdown-item:focus {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: #fff;
-    }
-    
-    .sidebar .dropdown-item.active {
-        background-color: var(--primary-color);
-        color: #fff;
-    }
+
 </style>
 
 <!-- Tambahkan script untuk toggle menu dropdown -->
 <script>
     // Auto-expand submenu jika halaman active ada di dalamnya
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Feather Icons
+        feather.replace();
+        
         // User Management dropdown
         if (document.querySelector('#userManagementSubmenu a.active')) {
             document.getElementById('userManagementSubmenu').classList.add('show');
-            document.getElementById('um-dropdown-icon').classList.add('fa-rotate-180');
-        }
-        
-        // Tenant dropdown
-        if (document.querySelector('#tenantSubmenu a.active')) {
-            document.getElementById('tenantSubmenu').classList.add('show');
-            document.getElementById('tenant-dropdown-icon').classList.add('fa-rotate-180');
+            document.getElementById('um-dropdown-icon').style.transform = 'rotate(180deg)';
         }
     });
     
@@ -415,14 +516,10 @@
         const icon = document.getElementById('um-dropdown-icon');
         
         submenu.classList.toggle('show');
-        icon.classList.toggle('fa-rotate-180');
-    }
-    
-    function toggleTenantDropdown() {
-        const submenu = document.getElementById('tenantSubmenu');
-        const icon = document.getElementById('tenant-dropdown-icon');
-        
-        submenu.classList.toggle('show');
-        icon.classList.toggle('fa-rotate-180');
+        if (submenu.classList.contains('show')) {
+            icon.style.transform = 'rotate(180deg)';
+        } else {
+            icon.style.transform = 'rotate(0)';
+        }
     }
 </script>

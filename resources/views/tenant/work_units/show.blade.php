@@ -1,27 +1,21 @@
 @extends('layouts.app')
 
-@section('title', ' | Detail Unit Kerja')
-
-@section('header')
-    <div class="d-flex justify-content-between align-items-center">
-        <h1 class="h3 mb-0">Detail Unit Kerja</h1>
-        <div>
-            <a href="{{ route('tenant.work-units.edit', $workUnit) }}" class="btn btn-warning me-2">
-                <i class="fas fa-edit me-1"></i> Edit
-            </a>
-            <a href="{{ route('tenant.work-units.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Kembali
-            </a>
-        </div>
-    </div>
-@endsection
+@php $hideDefaultHeader = true; @endphp
 
 @section('content')
     <div class="row">
         <div class="col-md-8">
-            <div class="card shadow mb-4">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold"><i class="fas fa-info-circle me-1"></i> Informasi Unit Kerja</h5>
+            <div class="card shadow mb-4 border-top-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0 fw-bold text-primary"><i class="fas fa-info-circle me-1"></i> Detail Unit Kerja</h4>
+                    <div>
+                        <a href="{{ route('tenant.work-units.edit', $workUnit) }}" class="btn btn-warning btn-sm me-2">
+                            <i class="fas fa-edit me-1"></i> Edit
+                        </a>
+                        <a href="{{ route('tenant.work-units.index') }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i> Kembali
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <table class="table table-bordered">
@@ -75,7 +69,7 @@
         <div class="col-md-4">
             <div class="card shadow mb-4">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold"><i class="fas fa-cogs me-1"></i> Aksi</h5>
+                    <h4 class="mb-0 fw-bold text-primary"><i class="fas fa-cogs me-1"></i> Aksi</h4>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
@@ -103,7 +97,7 @@
             <!-- Sub-Unit / Anak Unit -->
             <div class="card shadow">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold"><i class="fas fa-sitemap me-1"></i> Sub-Unit</h5>
+                    <h4 class="mb-0 fw-bold text-primary"><i class="fas fa-sitemap me-1"></i> Sub-Unit</h4>
                 </div>
                 <div class="card-body">
                     @if($workUnit->children->count() > 0)

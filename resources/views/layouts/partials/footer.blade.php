@@ -1,17 +1,26 @@
-<footer class="footer bg-white py-4 mt-auto border-top">
+<footer class="footer bg-white py-1 mt-auto border-top" style="z-index: 5;">
     <div class="container-fluid px-4">
         <div class="d-flex align-items-center justify-content-between small">
-            <div class="text-muted">
+            <div class="text-muted" style="font-size: 11px;">
                 &copy; {{ date('Y') }} {{ config('app.name', 'SIAR') }}. Hak Cipta Dilindungi.
             </div>
-            <div>
-                <a href="#" class="text-decoration-none text-muted me-3">Kebijakan Privasi</a>
-                <a href="#" class="text-decoration-none text-muted me-3">Syarat &amp; Ketentuan</a>
-                <a href="#" class="text-decoration-none text-muted">Bantuan</a>
+            <div class="d-none d-sm-flex">
+                <a href="{{ route('pages.privacy') }}" class="text-decoration-none text-muted me-3" style="font-size: 11px;">Kebijakan Privasi</a>
+                <a href="{{ route('pages.terms') }}" class="text-decoration-none text-muted me-3" style="font-size: 11px;">Syarat &amp; Ketentuan</a>
+                <a href="{{ route('pages.help') }}" class="text-decoration-none text-muted" style="font-size: 11px;">Bantuan</a>
             </div>
         </div>
     </div>
 </footer>
+
+<style>
+    /* Footer responsif */
+    @media (max-width: 767.98px) {
+        .footer {
+            padding: 5px 0 !important;
+        }
+    }
+</style>
 
 <!-- Bootstrap core JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>

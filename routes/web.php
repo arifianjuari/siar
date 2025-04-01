@@ -221,7 +221,7 @@ Route::middleware(['auth', 'tenant'])->prefix('modules')->name('modules.')->grou
     Route::post('/request-activation', [App\Http\Controllers\ModuleController::class, 'requestActivation'])->name('request-activation');
 
     // Route khusus untuk Korespondensi
-    Route::get('/correspondence', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'dashboard'])->name('correspondence.index');
+    Route::get('/correspondence', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'index'])->name('correspondence.index');
 
     Route::get('/{slug}', [App\Http\Controllers\ModuleController::class, 'show'])->name('show');
 
@@ -265,20 +265,21 @@ Route::middleware(['auth', 'tenant'])->prefix('modules')->name('modules.')->grou
      * Correspondence Module
      */
     Route::prefix('correspondence')->name('correspondence.')->middleware('module:correspondence')->group(function () {
-        // Index route - redirect ke dashboard
-        Route::get('/', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'dashboard'])->name('index');
+        // Mengubah route default agar langsung ke daftar surat
+        Route::get('/', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'index'])->name('index');
 
-        // Dashboard
+        // Dashboard tetap dipertahankan jika dibutuhkan
         Route::get('/dashboard', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'dashboard'])->name('dashboard');
 
-        // Surat/Nota Dinas routes
+        // Route resource untuk letters
         Route::resource('letters', App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class);
 
-        // Export routes
+        // Export PDF
         Route::get('letters/{id}/export-pdf', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'exportPdf'])
             ->name('letters.export-pdf')
             ->middleware('check.permission:correspondence,can_export');
 
+        // Export Word
         Route::get('letters/{id}/export-word', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'exportWord'])
             ->name('letters.export-word')
             ->middleware('check.permission:correspondence,can_export');
@@ -575,4 +576,20 @@ Route::middleware(['auth'])->prefix('tenant')->name('tenant.')->group(function (
     Route::post('tags/delete-tag', [App\Http\Controllers\Tenant\TagController::class, 'deleteTag'])->name('tags.delete-tag');
     Route::post('tags/create-and-attach', [App\Http\Controllers\Tenant\TagController::class, 'createAndAttachTag'])->name('tags.create-and-attach');
     Route::get('tags/documents/{slug}', [App\Http\Controllers\Tenant\TagController::class, 'getDocumentsByTag'])->name('tags.documents');
+
+    // Document References Management
+    Route::resource('document-references', App\Http\Controllers\Tenant\DocumentReferenceController::class);
 });
+
+// Static Pages
+Route::get('/privacy-policy', function () {
+    return view('pages.privacy');
+})->name('pages.privacy');
+
+Route::get('/terms-of-service', function () {
+    return view('pages.terms');
+})->name('pages.terms');
+
+Route::get('/help', function () {
+    return view('pages.help');
+})->name('pages.help');

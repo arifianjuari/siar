@@ -1,20 +1,14 @@
 @extends('layouts.app')
 
-@section('title', ' | Tambah Tag')
-
-@section('header')
-    <div class="d-flex justify-content-between align-items-center">
-        <h1 class="h3 mb-0">Tambah Tag Baru</h1>
-        <a href="{{ route('tenant.tags.index') }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left me-1"></i> Kembali
-        </a>
-    </div>
-@endsection
+@php $hideDefaultHeader = true; @endphp
 
 @section('content')
-    <div class="card shadow">
-        <div class="card-header bg-white py-3">
-            <h5 class="mb-0 fw-bold"><i class="fas fa-plus-circle me-1"></i> Form Tambah Tag</h5>
+    <div class="card shadow border-top-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h4 class="mb-0 fw-bold text-primary"><i class="fas fa-plus-circle me-1"></i> Tambah Tag</h4>
+            <a href="{{ route('tenant.tags.index') }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i> Kembali
+            </a>
         </div>
         <div class="card-body">
             <form action="{{ route('tenant.tags.store') }}" method="POST">

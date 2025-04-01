@@ -1,19 +1,17 @@
 @extends('layouts.app')
 
-@section('title', ' | Pengaturan Tenant')
+@section('title', '')
 
-@section('header')
-    <div class="d-flex justify-content-between align-items-center">
-        <h2 class="mb-0">Pengaturan Tenant</h2>
-    </div>
-@endsection
+@php
+$hideDefaultHeader = true;
+@endphp
 
 @section('content')
 <div class="row">
     <div class="col-md-12">
-        <div class="card">
-            <div class="card-header bg-white">
-                <h5 class="mb-0">Pengaturan Umum</h5>
+        <div class="card border-top-0">
+            <div class="card-header bg-white border-top-0">
+                <h4 class="mb-0 font-weight-bold text-primary">Pengaturan Umum</h4>
             </div>
             <div class="card-body">
                 <form action="{{ route('tenant.settings.update') }}" method="POST">

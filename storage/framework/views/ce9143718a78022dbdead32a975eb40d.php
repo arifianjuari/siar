@@ -11,7 +11,7 @@
             <div class="row g-0">
                 <?php if(auth()->guard()->check()): ?>
                     <!-- Sidebar (only for authenticated users) -->
-                    <div class="col-12 col-md-3 col-lg-2 bg-dark sidebar-wrapper">
+                    <div class="col-12 col-md-3 col-lg-2 sidebar-wrapper">
                         <?php echo $__env->make('layouts.partials.sidebar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
                     </div>
                     

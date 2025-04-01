@@ -29,6 +29,14 @@ Route::middleware(['auth', 'tenant', 'module:correspondence'])->prefix('correspo
     // Route untuk melihat QR Code
     Route::get('/letters/{id}/qr-code', [CorrespondenceController::class, 'generateQr'])->name('letters.qr-code');
 
+    // Route alternatif dengan Base64 embedded QR code
+    Route::get('/letters/{id}/qr-code-base64', [CorrespondenceController::class, 'generateQrBase64'])->name('letters.qr-code-base64');
+
+    // QR Code Test
+    Route::get('/qr-test', function () {
+        return view('modules.Correspondence.letters.qr-test');
+    })->name('qr-test');
+
     // Filter dan pencarian
     Route::get('/search', [CorrespondenceController::class, 'search'])->name('search');
 

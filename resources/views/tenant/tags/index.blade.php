@@ -1,44 +1,32 @@
 @extends('layouts.app')
 
-@section('title', ' | Tag')
-
-@section('header')
-    <div class="d-flex justify-content-between align-items-center">
-        <h1 class="h3 mb-0">Daftar Tag</h1>
-        <a href="{{ route('tenant.tags.create') }}" class="btn btn-success">
-            <i class="fas fa-plus-circle me-1"></i> Tambah Tag
-        </a>
-    </div>
-@endsection
+@php $hideDefaultHeader = true; @endphp
 
 @section('content')
     <!-- Card Filter -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-white py-3">
-            <h5 class="mb-0 fw-bold"><i class="fas fa-filter me-1"></i> Filter</h5>
-        </div>
-        <div class="card-body">
-            <form action="{{ route('tenant.tags.index') }}" method="GET">
-                <div class="row g-3">
-                    <div class="col-md-10">
+    <div class="card mb-4 shadow-sm border-top-0">
+        <div class="card-body py-3">
+            <div class="d-flex align-items-center">
+                <h6 class="mb-0 me-3 text-dark"><i class="fas fa-filter me-1 small"></i> Filter</h6>
+                <form action="{{ route('tenant.tags.index') }}" method="GET" class="flex-grow-1">
+                    <div class="input-group">
                         <input type="text" name="search" class="form-control" placeholder="Cari nama tag..." value="{{ request('search') }}">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i> Cari
+                        </button>
                     </div>
-                    <div class="col-md-2">
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-search me-1"></i> Cari
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
     
     <!-- Card Data Tag -->
     <div class="card shadow">
-        <div class="card-header bg-white py-3">
-            <h5 class="mb-0 fw-bold"><i class="fas fa-tags me-1"></i> Daftar Tag</h5>
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h4 class="mb-0 fw-bold text-primary"><i class="fas fa-tags me-1"></i> Daftar Tag</h4>
+            <a href="{{ route('tenant.tags.create') }}" class="btn btn-success btn-sm">
+                <i class="fas fa-plus-circle me-1"></i> Tambah Tag
+            </a>
         </div>
         <div class="card-body">
             @if(session('success'))

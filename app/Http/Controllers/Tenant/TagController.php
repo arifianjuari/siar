@@ -474,7 +474,7 @@ class TagController extends Controller
                 ]);
             }
             // Handle Document
-            else if ($documentType === 'App\\Models\\Document' || $documentType === 'document') {
+            elseif ($documentType === 'App\\Models\\Document' || $documentType === 'document') {
                 $document = Document::where('id', $documentId)
                     ->where('tenant_id', $tenantId)
                     ->firstOrFail();
@@ -485,6 +485,20 @@ class TagController extends Controller
                 $model = 'Document';
 
                 \Illuminate\Support\Facades\Log::info('Tag berhasil dilepaskan dari Document', [
+                    'document_id' => $documentId,
+                    'tag_id' => $tagId
+                ]);
+            }
+            // Handle Correspondence
+            elseif ($documentType === 'App\\Models\\Correspondence' || $documentType === 'correspondence') {
+                $document = \App\Models\Correspondence::where('id', $documentId)
+                    ->where('tenant_id', $tenantId)
+                    ->firstOrFail();
+
+                // Lepaskan tag dari dokumen
+                $document->tags()->detach($tagId);
+
+                \Illuminate\Support\Facades\Log::info('Tag berhasil dihapus dari Correspondence', [
                     'document_id' => $documentId,
                     'tag_id' => $tagId
                 ]);
@@ -625,7 +639,7 @@ class TagController extends Controller
                 ]);
             }
             // Handle Document
-            else if ($documentType === 'App\\Models\\Document' || $documentType === 'document') {
+            elseif ($documentType === 'App\\Models\\Document' || $documentType === 'document') {
                 $document = Document::where('id', $documentId)
                     ->where('tenant_id', $tenantId)
                     ->firstOrFail();
@@ -634,6 +648,20 @@ class TagController extends Controller
                 $document->tags()->detach($tagId);
 
                 \Illuminate\Support\Facades\Log::info('Tag berhasil dihapus dari Document', [
+                    'document_id' => $documentId,
+                    'tag_id' => $tagId
+                ]);
+            }
+            // Handle Correspondence
+            elseif ($documentType === 'App\\Models\\Correspondence' || $documentType === 'correspondence') {
+                $document = \App\Models\Correspondence::where('id', $documentId)
+                    ->where('tenant_id', $tenantId)
+                    ->firstOrFail();
+
+                // Lepaskan tag dari dokumen
+                $document->tags()->detach($tagId);
+
+                \Illuminate\Support\Facades\Log::info('Tag berhasil dihapus dari Correspondence', [
                     'document_id' => $documentId,
                     'tag_id' => $tagId
                 ]);
@@ -713,6 +741,10 @@ class TagController extends Controller
                 $documentModel = RiskReport::class;
             } elseif ($documentType === 'App\\Models\\Document' || $documentType === 'document') {
                 $documentModel = Document::class;
+            }
+            // Tambahkan elseif untuk Correspondence
+            elseif ($documentType === 'App\\Models\\Correspondence' || $documentType === 'correspondence') {
+                $documentModel = \App\Models\Correspondence::class;
             }
             // Tambahkan elseif untuk tipe dokumen lain jika ada
 

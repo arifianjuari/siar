@@ -71,7 +71,7 @@ class Correspondence extends Model
      */
     public function tags()
     {
-        return $this->morphToMany(Tag::class, 'document', 'document_tag')
+        return $this->morphToMany(Tag::class, 'document', 'document_tag', 'document_id', 'tag_id')
             ->withTimestamps()
             ->orderBy('tags.name');
     }
