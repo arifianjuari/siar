@@ -4,143 +4,224 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>{{ $correspondence->document_title }}</title>
     <style>
+        @page {
+            margin: 1.5cm; /* Sesuaikan margin halaman */
+        }
         body {
             font-family: Arial, sans-serif;
-            margin: 30px;
-            font-size: 12pt;
-            line-height: 1.5;
+            font-size: 11pt;
+            line-height: 1.15;
         }
-        .header {
+        p {
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+        .letter-head {
             text-align: center;
             margin-bottom: 20px;
-            border-bottom: 2px solid #000;
+            border-bottom: 1px solid black; /* Garis bawah kop surat */
             padding-bottom: 10px;
+            /* Anda mungkin perlu menambahkan style lebih spesifik untuk kop surat */
+            /* Contoh: */
+            /* font-size: 14pt; */
+            /* font-weight: bold; */
         }
-        .logo {
-            max-height: 80px;
-            margin-bottom: 10px;
-        }
-        .letter-number {
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-        .letter-date {
-            text-align: right;
-            margin-bottom: 20px;
-        }
-        .recipient {
-            margin-bottom: 20px;
-        }
-        .subject {
+        .nota-dinas-title {
+            text-align: center;
             font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 5px; /* Kurangi jarak bawah */
+            font-size: 13pt;
+        }
+        .nomor-surat {
+            text-align: center;
+            margin-bottom: 25px; /* Tambah jarak bawah */
+            font-weight: bold;
+        }
+        .metadata {
             margin-bottom: 20px;
+            line-height: 1.6; /* Sedikit renggangkan baris metadata */
+        }
+        .metadata td {
+            vertical-align: top; /* Pastikan label dan isi sejajar di atas */
+            padding-bottom: 1px; /* Atur jarak minimal antar baris metadata */
+        }
+        .metadata .label {
+            width: 80px; /* Lebar kolom label */
+        }
+        .metadata .separator {
+            width: 10px; /* Lebar kolom pemisah (:) */
+            text-align: center;
+        }
+        .body-content {
+            text-align: justify;
+            margin-top: 20px; /* Jarak dari metadata */
+            margin-bottom: 30px;
+        }
+        .body-content ol {
+            padding-left: 25px; /* Indentasi untuk list */
+            margin-top: 10px;
+            margin-bottom: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .body-content li {
+            margin-bottom: 5px; /* Atur margin bawah list item */
+        }
+        .signature-section {
+            margin-top: 30px; /* Kurangi jarak atas */
+            width: 40%; /* Lebar area tanda tangan */
+            margin-left: 60%; /* Posisikan ke kanan */
+            text-align: center; /* Teks rata tengah di area tanda tangan */
+        }
+        .signature-section p {
+            /* Pastikan margin p di sini juga 0, line-height warisan dari body */
+            /* margin-bottom: 2px; */ 
+            /* line-height: 1.4; */
+        }
+        .signature-qr {
+            margin-top: 5px; /* Kurangi jarak atas QR */
+            margin-bottom: 5px; /* Kurangi jarak bawah QR */
+            text-align: center; /* Pastikan QR Code di tengah */
+        }
+        .signature-qr img {
+            width: 80px; /* Ukuran QR Code */
+            height: 80px;
             text-decoration: underline;
         }
-        .body {
-            text-align: justify;
-            margin-bottom: 20px;
+        .signatory-name {
+            margin-top: 5px; /* Jarak setelah QR Code dikurangi */
+            font-weight: bold;
+            text-decoration: underline;
         }
-        .signature {
-            text-align: right;
-            margin-top: 40px;
+        .signatory-details {
+            /* Ukuran font sudah 11pt (default body), tidak perlu override */
+            /* font-size: 11pt; */
+            /* Atur line-height spesifik jika perlu, atau biarkan mewarisi 1.15 */
+            /* line-height: 1.4; */ 
         }
-        .footer {
+        .tembusan-section {
+            /* Hapus positioning absolut */
+            /* position: absolute; */
+            /* bottom: 1.5cm; */
+            /* left: 1.5cm; */
+            /* Tambahkan margin atas untuk jarak */
             margin-top: 30px;
-            font-size: 10pt;
-            text-align: center;
-            color: #666;
+            /* Ukuran font sudah 11pt (default body), tidak perlu override */
+            /* font-size: 11pt; */
+            /* Biarkan line-height mewarisi dari body (1.15) */
+            /* line-height: 1.4; */
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .tembusan-section ul {
+            list-style: decimal;
+            padding-left: 20px;
+            margin-top: 5px;
+            margin-bottom: 0;
+            padding-top: 0;
+            padding-bottom: 0;
         }
-        table.letter-info {
-            margin-bottom: 20px;
+        hr { /* Style untuk garis pemisah jika diperlukan */
+            border: 0;
+            border-top: 1px solid black;
+            margin: 3px 0; /* Kurangi margin garis */
         }
-        table.letter-info td {
-            vertical-align: top;
-            padding: 3px;
-        }
-        .signature-img {
-            max-width: 150px;
-            max-height: 60px;
-            margin-bottom: 10px;
-        }
+
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2>{{ config('app.name') }}</h2>
-        <p>{{ session('tenant_name', 'Sistem Informasi Arsip') }}</p>
+    {{-- 1. Kop Surat --}}
+    <div class="letter-head">
+        {{-- Asumsi data tenant ada di auth()->user()->tenant --}}
+        {{-- Ganti 'letter_head' dengan nama kolom yang benar di tabel tenants --}}
+        {!! nl2br(e(auth()->user()->tenant->letter_head ?? 'KOP SURAT BELUM DIATUR')) !!}
     </div>
 
-    <div class="letter-number">
-        <strong>Nomor:</strong> {{ $correspondence->document_number ?? 'N/A' }}
-    </div>
+    {{-- 2. Judul Nota Dinas & Nomor --}}
+    <div class="nota-dinas-title">NOTA DINAS</div>
+    <div class="nomor-surat">Nomor : {{ $correspondence->document_number ?? '...' }}</div>
 
-    <table class="letter-info">
+    {{-- 3. Metadata Surat --}}
+    <table class="metadata">
         <tr>
-            <td width="120">Tanggal</td>
-            <td width="10">:</td>
-            <td>{{ $correspondence->document_date->format('d F Y') }}</td>
+            <td class="label">Kepada</td>
+            <td class="separator">:</td>
+            <td>Yth. {{ $correspondence->recipient_position ?? '...' }}</td>
         </tr>
         <tr>
-            <td>Perihal</td>
-            <td>:</td>
-            <td>{{ $correspondence->subject }}</td>
+            <td class="label">Dari</td>
+            <td class="separator">:</td>
+            <td>{{ $correspondence->sender_position ?? '...' }}</td>
         </tr>
         <tr>
-            <td>Lampiran</td>
-            <td>:</td>
-            <td>{{ $correspondence->file_path ? '1 berkas' : '-' }}</td>
+            <td class="label">Perihal</td>
+            <td class="separator">:</td>
+            <td>{{ $correspondence->subject ?? '...' }}</td>
         </tr>
     </table>
+    <hr style="border-top: 1px solid black; margin-bottom: 20px;"> {{-- Garis di bawah Perihal --}}
 
-    <div class="recipient">
-        <p>
-            <strong>Kepada Yth.</strong><br>
-            {{ $correspondence->recipient_name }}<br>
-            {{ $correspondence->recipient_position }}<br>
-            di Tempat
-        </p>
-    </div>
 
-    <div class="subject">
-        <p>{{ strtoupper($correspondence->document_title) }}</p>
-    </div>
-
-    <div class="body">
-        {!! nl2br(e($correspondence->body)) !!}
-    </div>
-
-    <div class="signature">
-        <div class="signature-section">
-            <p>{{ $correspondence->signed_at_location }}, {{ $correspondence->signed_at_date->format('d F Y') }}</p>
-            <p>{{ $correspondence->signatory_position }}</p>
-            <div class="qr-code-container">
-                {!! QrCode::size(100)->generate(route('modules.correspondence.letters.show', $correspondence->id)) !!}
-            </div>
-            <p class="signatory-name">{{ $correspondence->signatory_name }}</p>
-            @if($correspondence->signatory_rank)
-            <p class="signatory-rank">{{ $correspondence->signatory_rank }}</p>
+    {{-- 4. Isi Surat --}}
+    <div class="body-content">
+        <ol>
+            @if($correspondence->reference_to)
+            <li>
+                Rujukan:<br>
+                {!! nl2br(e($correspondence->reference_to)) !!}
+            </li>
             @endif
-            @if($correspondence->signatory_nrp)
-            <p class="signatory-nrp">NRP: {{ $correspondence->signatory_nrp }}</p>
-            @endif
+            <li>
+                {{-- Isi utama surat --}}
+                {!! nl2br(e($correspondence->body ?? 'Isi surat belum dimasukkan.')) !!}
+            </li>
+            <li>
+                Demikian untuk menjadi maklum.
+            </li>
+        </ol>
+    </div>
+
+    {{-- 5. Tanda Tangan --}}
+    <div class="signature-section">
+        {{-- Asumsi data city ada di auth()->user()->tenant --}}
+        {{-- Ganti 'city' dengan nama kolom yang benar di tabel tenants --}}
+        <p>{{ auth()->user()->tenant->city ?? 'Kota' }}, {{ $correspondence->signed_at_date ? $correspondence->signed_at_date->isoFormat('D MMMM Y') : '...' }}</p>
+        <p>{{ $correspondence->signatory_position ?? '...' }}</p>
+        {{-- Ganti nama institusi sesuai kebutuhan --}}
+        <p>RS BHAYANGKARA TK.III HASTA BRATA BATU</p>
+        <div class="signature-qr">
+            {{-- Tampilkan QR Code yang sudah di-generate di controller --}}
+            {{-- Pastikan $qrCodeDataUri dikirim dari controller --}}
+            @isset($qrCodeDataUri)
+            <img src="{{ $qrCodeDataUri }}" alt="QR Code">
+            @else
+            <p>(QR Code)</p> {{-- Fallback jika URI tidak ada --}}
+            @endisset
         </div>
+        <p class="signatory-name">{{ $correspondence->signatory_name ?? '...' }}</p>
+        <p class="signatory-details">
+            {{ $correspondence->signatory_rank ?? '' }}
+            @if($correspondence->signatory_rank && $correspondence->signatory_nrp)/@endif
+            @if($correspondence->signatory_nrp)NRP {{ $correspondence->signatory_nrp }}@endif
+        </p>
     </div>
 
+    {{-- 6. Tembusan --}}
     @if($correspondence->cc_list)
-    <div style="margin-top: 20px;">
-        <p>
-            <strong>Tembusan:</strong><br>
-            {!! nl2br(e($correspondence->cc_list)) !!}
-        </p>
+    <div class="tembusan-section">
+        <strong>Tembusan :</strong>
+        {{-- Gunakan format list untuk baris baru --}}
+        <ul>
+            @foreach(explode("\n", $correspondence->cc_list) as $item)
+                @if(trim($item))
+                <li>{{ trim($item) }}</li>
+                @endif
+            @endforeach
+        </ul>
     </div>
     @endif
 
-    <div class="footer">
-        <p>Dokumen ini dicetak melalui {{ config('app.name') }} pada {{ now()->format('d F Y H:i:s') }}</p>
-    </div>
+    {{-- Hapus Footer Lama --}}
+    {{-- <div class="footer"> ... </div> --}}
+
 </body>
 </html> 

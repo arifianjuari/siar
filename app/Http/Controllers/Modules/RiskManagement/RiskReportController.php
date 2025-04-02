@@ -274,7 +274,7 @@ class RiskReportController extends Controller
         // Get work units
         $workUnits = \App\Models\WorkUnit::where('tenant_id', $tenant_id)
             ->where('is_active', true)
-            ->orderBy('name')
+            ->orderBy('unit_name')
             ->get();
 
         return view('modules.RiskManagement.risk-reports.create', compact('tags', 'documents', 'workUnits'));
@@ -483,7 +483,7 @@ class RiskReportController extends Controller
         // Get available work units
         $workUnits = \App\Models\WorkUnit::where('tenant_id', $tenant_id)
             ->where('is_active', true)
-            ->orderBy('name')
+            ->orderBy('unit_name')
             ->get();
 
         // Get available documents for linking (jika masih diperlukan)

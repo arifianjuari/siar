@@ -2,17 +2,21 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class WorkUnit extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'tenant_id',
-        'name',
-        'code',
+        'unit_code',
+        'unit_name',
+        'unit_type',
+        'head_of_unit_id',
         'description',
         'is_active',
         'parent_id',
@@ -33,19 +37,27 @@ class WorkUnit extends Model
     }
 
     /**
+     * Get the head of the unit for the work unit.
+     */
+    public function headOfUnit(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'head_of_unit_id');
+    }
+
+    /**
      * Get the parent work unit.
      */
-    public function parent()
+    public function parent(): BelongsTo
     {
         return $this->belongsTo(WorkUnit::class, 'parent_id');
     }
 
     /**
-     * Get the child work units.
+     * Get the children work units.
      */
     public function children()
     {
-        return $this->hasMany(WorkUnit::class, 'parent_id')->orderBy('order');
+        return $this->hasMany(WorkUnit::class, 'parent_id');
     }
 
     /**

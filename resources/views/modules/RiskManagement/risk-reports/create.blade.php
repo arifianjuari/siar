@@ -264,8 +264,8 @@
                                     <select name="reporter_unit" id="reporter_unit" class="form-select @error('reporter_unit') is-invalid @enderror" required>
                                         <option value="">-- Pilih Unit Kerja --</option>
                                         @foreach($workUnits as $unit)
-                                            <option value="{{ $unit->name }}" {{ old('reporter_unit') == $unit->name ? 'selected' : '' }}>
-                                                {{ $unit->name }} {{ $unit->code ? '('.$unit->code.')' : '' }}
+                                            <option value="{{ $unit->unit_name }}" {{ old('reporter_unit') == $unit->unit_name ? 'selected' : '' }}>
+                                                {{ $unit->unit_name }} {{ $unit->unit_code ? '('.$unit->unit_code.')' : '' }}
                                             </option>
                                         @endforeach
                                     </select>
