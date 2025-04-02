@@ -41,7 +41,7 @@ class AuthenticatedSessionController extends Controller
             }
 
             Log::info('User reguler, mengarahkan ke dashboard biasa');
-            return redirect()->intended(route('dashboard.debug'));
+            return redirect()->intended(route('dashboard'));
         } catch (\Exception $e) {
             Log::error('Error saat login', [
                 'email' => $request->email,

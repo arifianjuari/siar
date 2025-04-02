@@ -1,4 +1,4 @@
 #!/bin/bash
 
-echo "Menjalankan server SIAR di port 8080..."
-php -S localhost:8080 -t public/ 
+# Menjalankan Laravel development server pada port 8000
+php artisan serve 

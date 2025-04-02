@@ -20,7 +20,15 @@ class ResolveTenantByDomain
         $subdomain = $request->route('tenant');
 
         if (!$subdomain) {
-            return redirect()->route('dashboard')->with('error', 'Tenant tidak valid.');
+            $host = $request->getHost();
+            $urlParts = explode('.', $host);
+
+            // Mendukung berbagai format domain
+            if (count($urlParts) > 1) {
+                $subdomain = $urlParts[0];
+            } else {
+                return redirect()->route('dashboard')->with('error', 'Tenant tidak valid.');
+            }
         }
 
         // Cari tenant berdasarkan domain

@@ -52,16 +52,65 @@
 
 ## Menjalankan Aplikasi
 
-1. Jalankan server pada port 8080:
+### Menggunakan Laravel Valet (Direkomendasikan untuk Development)
+
+1. Pastikan Laravel Valet terinstal:
+   ```bash
+   composer global require laravel/valet
+   valet install
+   ```
+
+2. Link direktori proyek dengan Valet:
+   ```bash
+   cd /path/to/project
+   valet link siar
+   ```
+
+3. Konfigurasi .env untuk Valet:
+   ```
+   APP_URL=http://siar.test
+   APP_URL_SCHEME=http://
+   APP_URL_BASE=siar.test
+   APP_DOMAIN=siar.test
+   SESSION_DOMAIN=.siar.test
+   ```
+
+4. Akses aplikasi di browser melalui `http://siar.test`
+
+### Menggunakan Localhost (Port 8000)
+
+1. Konfigurasi .env untuk localhost:
+   ```
+   APP_URL=http://127.0.0.1:8000
+   APP_URL_SCHEME=http://
+   APP_URL_BASE=127.0.0.1:8000
+   APP_DOMAIN=127.0.0.1
+   SESSION_DOMAIN=127.0.0.1
+   ```
+
+2. Jalankan server development:
    ```bash
    ./serve.sh
    ```
-   atau manual:
+   atau
    ```bash
-   php -S localhost:8080 -t public/
+   php artisan serve
    ```
 
-2. Akses aplikasi melalui browser dengan URL http://localhost:8080
+3. Akses aplikasi melalui browser dengan URL http://127.0.0.1:8000
+
+### Menggunakan Deploy Online (Production)
+
+1. Konfigurasi .env untuk server online:
+   ```
+   APP_URL=https://siar.example.com
+   APP_URL_SCHEME=https://
+   APP_URL_BASE=siar.example.com
+   APP_DOMAIN=example.com
+   SESSION_DOMAIN=.example.com
+   ```
+
+2. Pastikan konfigurasi web server (Apache/Nginx) untuk subdomain wildcard
 
 ## Membuat Tenant Pertama
 

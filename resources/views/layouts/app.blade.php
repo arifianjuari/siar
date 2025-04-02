@@ -96,6 +96,64 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Fungsi untuk menambahkan/menghapus class mobile-view
+        function checkMobileView() {
+            console.log('checkMobileView triggered. Width:', window.innerWidth);
+            if (window.innerWidth <= 767.98) {
+                document.body.classList.add('mobile-view');
+                console.log('Added mobile-view class');
+            } else {
+                document.body.classList.remove('mobile-view');
+                console.log('Removed mobile-view class');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM fully loaded and parsed');
+            // Panggil saat load
+            checkMobileView();
+            
+            // Ambil CSRF token dari meta tag
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            console.log('CSRF Token found:', csrfToken ? 'Yes' : 'No');
+            
+            // Tambahkan ke semua request AJAX
+            const originalFetch = window.fetch;
+            window.fetch = function() {
+                let [resource, config] = arguments;
+                if(config === undefined) {
+                    config = {};
+                }
+                if(config.headers === undefined) {
+                    config.headers = {};
+                }
+                
+                // Hanya tambahkan header jika ini adalah request ke domain yang sama
+                if ((resource.toString().startsWith('/') || resource.toString().startsWith(window.location.origin))) {
+                    config.headers['X-CSRF-TOKEN'] = csrfToken;
+                }
+                
+                return originalFetch.apply(this, [resource, config]);
+            };
+            console.log('Fetch wrapper applied');
+            
+            // Tangani event form submission untuk menambahkan CSRF token
+            document.querySelectorAll('form').forEach(form => {
+                if (!form.querySelector('input[name="_token"]')) {
+                    const tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '_token';
+                    tokenInput.value = csrfToken;
+                    form.appendChild(tokenInput);
+                }
+            });
+            console.log('CSRF token added to forms');
+        });
+        
+        // Panggil saat resize
+        window.addEventListener('resize', checkMobileView); 
+        console.log('Resize listener added');
+        
         // Fungsi toggle menu dropdown user
         function toggleUserDropdown(event) {
             event.preventDefault();

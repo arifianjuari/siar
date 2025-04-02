@@ -21,7 +21,7 @@ class ResolveTenant
         // Ambil subdomain dari host
         $host = $request->getHost();
         $parts = explode('.', $host);
-        $subdomain = count($parts) > 2 ? $parts[0] : null;
+        $subdomain = count($parts) > 1 ? $parts[0] : null;
 
         // Jika tidak ada subdomain, redirect ke domain utama
         if (!$subdomain) {

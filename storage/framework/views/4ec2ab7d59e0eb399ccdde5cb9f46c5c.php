@@ -6,9 +6,12 @@
 <meta name="author" content="SIAR">
 <meta name="theme-color" content="#4285f4">
 
+<!-- Favicon -->
+<link rel="icon" href="<?php echo e(asset('/images/pwa/icon-192.png')); ?>" type="image/png">
+
 <!-- PWA  -->
 <link rel="manifest" href="<?php echo e(asset('/manifest.json')); ?>">
-<link rel="apple-touch-icon" href="<?php echo e(asset('images/icons/icon-192x192.png')); ?>">
+<link rel="apple-touch-icon" href="<?php echo e(asset('/images/pwa/icon-192.png')); ?>">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="<?php echo e(config('app.name', 'SIAR')); ?>">
@@ -195,6 +198,27 @@
         
         .footer {
             left: 0 !important;
+        }
+        
+        /* Gunakan class body .mobile-view untuk target yang lebih kuat */
+        body.mobile-view .navbar .navbar-brand .tenant-branding .tenant-name {
+            display: none !important;
+            /* Hapus properti lain yang mungkin tidak perlu jika display: none sudah cukup */
+        }
+
+        body.mobile-view .navbar .navbar-brand .tenant-branding .tenant-logo,
+        body.mobile-view .navbar .navbar-brand .tenant-branding .tenant-icon {
+            height: 32px !important;
+            width: auto !important;
+            vertical-align: middle !important;
+            margin-right: 0 !important; /* Reset margin jika nama hilang */
+        }
+        
+        /* Pastikan navbar brand tidak terlalu lebar */
+        body.mobile-view .navbar-brand {
+            max-width: calc(100% - 150px); /* Sesuaikan 150px dengan lebar tombol kanan */
+            overflow: hidden;
+            flex-shrink: 1 !important; /* Izinkan menyusut jika perlu */
         }
     }
     

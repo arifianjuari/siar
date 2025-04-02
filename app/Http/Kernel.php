@@ -41,9 +41,7 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \App\Http\Middleware\LogUserActivity::class,
-            // Tenant middleware dinonaktifkan untuk mengatasi masalah login
-            // \App\Http\Middleware\TenantMiddleware::class, // DINONAKTIFKAN!
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ],
 
         'api' => [

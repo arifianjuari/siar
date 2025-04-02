@@ -26,5 +26,18 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
+
+        // Menangani error CSRF token
+        $this->renderable(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+            if ($request->isXmlHttpRequest()) {
+                return response()->json([
+                    'error' => 'CSRF token mismatch. Mohon muat ulang halaman.',
+                ], 419);
+            }
+
+            return redirect()->back()
+                ->withInput($request->except('_token'))
+                ->with('error', 'Session telah kedaluwarsa. Silakan coba lagi.');
+        });
     }
 }

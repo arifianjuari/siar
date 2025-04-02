@@ -308,7 +308,8 @@ Route::middleware(['auth', 'tenant'])->prefix('modules')->name('modules.')->grou
 });
 
 // Tenant routes - akses melalui subdomain
-Route::domain('{tenant}.localhost')->middleware(['tenant.resolve'])->group(function () {
+// Definisi domain tenant yang lebih fleksibel menggunakan env APP_DOMAIN
+Route::domain('{tenant}.' . env('APP_URL_BASE'))->middleware(['tenant.resolve'])->group(function () {
     Route::get('/', function () {
         return redirect('/dashboard');
     });
@@ -525,10 +526,10 @@ Route::prefix('logs')->middleware(['auth'])->group(function () {
     Route::post('/purge', [App\Http\Controllers\ActivityLogController::class, 'purge'])->name('activity-logs.purge');
 });
 
-// Tenant routes - akses melalui subdomain
-Route::domain('{subdomain}.' . env('APP_DOMAIN'))->group(function () {
-    // Register tenant routes here
-});
+// Tenant routes - akses melalui subdomain (old code, commented out for reference)
+// Route::domain('{subdomain}.' . env('APP_DOMAIN'))->group(function () {
+//     // Register tenant routes here
+// });
 
 // Route untuk halaman modul dan permintaan aktivasi
 Route::middleware(['auth', 'tenant'])->group(function () {

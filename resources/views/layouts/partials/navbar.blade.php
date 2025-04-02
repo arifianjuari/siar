@@ -5,36 +5,71 @@
             <i class="fas fa-bars"></i>
         </button>
         
-        <!-- Brand -->
-        <a class="navbar-brand d-flex align-items-center" href="{{ url('/') }}">
+        <!-- Brand - dengan class baru untuk konsistensi mobile -->
+        <a class="navbar-brand d-flex align-items-center flex-shrink-0" href="{{ url('/') }}">
             @php
                 $tenantLogo = null;
                 $tenantName = 'SIAR';
+                $logoExists = false; // Variable baru untuk status logo
                 
                 try {
+                    $tenant = null;
                     if (auth()->check() && auth()->user()->tenant) {
                         $tenant = auth()->user()->tenant;
+                    } else {
+                        $tenant = getCurrentTenant();
+                    }
+                    
+                    if ($tenant) {
                         $tenantLogo = $tenant->logo;
                         $tenantName = $tenant->name;
+                        if ($tenantLogo) {
+                            $logoExists = Storage::disk('public')->exists($tenantLogo);
+                        }
                     }
+
+                    // Logging ditambahkan di sini
+                    Log::info('Navbar Tenant Info:', [
+                        'tenant_id' => $tenant ? $tenant->id : null,
+                        'tenant_name' => $tenantName,
+                        'logo_path' => $tenantLogo,
+                        'logo_exists' => $logoExists,
+                        'asset_url' => $tenantLogo ? asset('storage/' . $tenantLogo) : null,
+                        'app_url' => config('app.url'),
+                        'request_host' => request()->getHost()
+                    ]);
+
                 } catch (\Exception $e) {
-                    // Abaikan error
+                    Log::error('Error getting tenant info in navbar', ['exception' => $e]);
                 }
             @endphp
             
-            @if ($tenantLogo && Storage::disk('public')->exists($tenantLogo))
-                <img src="{{ asset('storage/' . $tenantLogo) }}" alt="{{ $tenantName }}" class="me-2" style="height: 36px; width: auto;">
-            @else
-                <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary me-2" style="height: 36px; width: 36px; color: white;">
-                    <i class="fas fa-hospital-alt"></i>
-                </div>
-            @endif
-            <span class="fw-semibold d-none d-md-inline" style="color: #4F46E5;">{{ $tenantName }}</span>
+            <div class="tenant-branding d-flex align-items-center">
+                @if ($tenantLogo && $logoExists)
+                    <img src="{{ asset('storage/' . $tenantLogo) }}" alt="{{ $tenantName }}" class="tenant-logo d-inline-block align-top me-2" style="height: 36px; width: auto;">
+                @else
+                    @php
+                        if ($tenantLogo && !$logoExists) {
+                            Log::warning('Navbar: Logo path exists but file not found in public storage.', ['logo_path' => $tenantLogo]);
+                        }
+                    @endphp
+                    <div class="tenant-icon d-inline-block align-top d-flex align-items-center justify-content-center rounded-circle bg-primary me-2" style="height: 36px; width: 36px; color: white;">
+                        <i class="fas fa-hospital-alt"></i>
+                    </div>
+                @endif
+                <span class="tenant-name fw-semibold d-none d-md-inline-block align-top" style="color: #4F46E5; line-height: 36px;">{{ $tenantName }}</span>
+            </div>
         </a>
         
         @auth
         <!-- User Controls - Outside Navbar Collapse -->
         <div class="user-controls ms-auto d-flex align-items-center">
+            <!-- Install PWA Button -->
+            <button id="installPWA" onclick="installPWA()" class="btn btn-primary btn-sm me-3 d-none" 
+                style="animation: pulse 2s infinite;">
+                <i class="fas fa-download me-1"></i> Install App
+            </button>
+            
             @php
                 $roleName = 'User';
                 try {

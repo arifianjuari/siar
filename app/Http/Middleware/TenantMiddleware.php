@@ -32,6 +32,7 @@ class TenantMiddleware
 
                 // Simpan tenant_id ke session
                 session(['tenant_id' => $tenant->id]);
+                session(['tenant_name' => $tenant->name]);
 
                 // Share tenant data ke semua view
                 view()->share('current_tenant', $tenant);
@@ -55,43 +56,53 @@ class TenantMiddleware
         // Ambil domain dari request
         $domain = $request->getHost();
 
-        // Cari tenant berdasarkan domain
-        $tenant = Tenant::where('domain', $domain)
-            ->where('is_active', true)
-            ->first();
+        // Untuk mendukung valet (.test), localhost:8000, dan online
+        $parts = explode('.', $domain);
+        $subdomain = null;
 
-        // Jika tenant tidak ditemukan, redirect ke halaman error atau tenant default
-        if (!$tenant) {
-            if (config('app.env') === 'local' && config('app.debug') === true) {
-                // Dalam mode development, gunakan tenant pertama jika ada
-                $tenant = Tenant::where('is_active', true)->first();
+        // Jika ada subdomain dan bukan www
+        if (count($parts) > 1 && $parts[0] !== 'www') {
+            $subdomain = $parts[0];
 
-                if (!$tenant) {
-                    abort(404, 'Tenant tidak ditemukan');
-                }
-            } else {
-                abort(404, 'Tenant tidak ditemukan');
+            // Cari tenant berdasarkan domain subdomain
+            $tenant = \App\Models\Tenant::where('domain', $subdomain)
+                ->where('is_active', true)
+                ->first();
+
+            if ($tenant) {
+                // Set tenant_id ke session
+                session(['tenant_id' => $tenant->id]);
+                session(['tenant_name' => $tenant->name]);
+
+                // Share tenant data ke semua view
+                view()->share('current_tenant', $tenant);
+
+                // Simpan tenant ke request untuk digunakan di controller
+                $request->merge(['tenant' => $tenant]);
+
+                return $next($request);
             }
         }
 
-        // Simpan tenant_id ke session
-        session(['tenant_id' => $tenant->id]);
+        // Khusus untuk localhost tanpa subdomain
+        if ($domain === '127.0.0.1' || $domain === 'localhost' || str_contains($domain, '127.0.0.1:')) {
+            // Ambil tenant terakhir dari session jika ada
+            $tenant_id = session('tenant_id');
+            if ($tenant_id) {
+                $tenant = \App\Models\Tenant::find($tenant_id);
+                if ($tenant && $tenant->is_active) {
+                    // Share tenant data ke semua view
+                    view()->share('current_tenant', $tenant);
 
-        // Share tenant data ke semua view
-        view()->share('current_tenant', $tenant);
+                    // Simpan tenant ke request untuk digunakan di controller
+                    $request->merge(['tenant' => $tenant]);
 
-        // Ambil modul aktif untuk tenant
-        $activeModules = $tenant->modules()
-            ->where('tenant_modules.is_active', true)
-            ->orderBy('name')
-            ->get();
+                    return $next($request);
+                }
+            }
+        }
 
-        // Share modul aktif ke semua view
-        view()->share('activeModules', $activeModules);
-
-        // Simpan tenant ke request untuk digunakan di controller
-        $request->merge(['tenant' => $tenant]);
-
-        return $next($request);
+        // Jika tidak ada tenant yang ditemukan
+        return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu untuk mengakses tenant');
     }
 }

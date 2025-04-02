@@ -69,45 +69,63 @@ Untuk menjalankan scheduler secara manual:
 ./run_scheduler.sh
 ```
 
-## Menjalankan Aplikasi
+## Menjalankan Aplikasi di Berbagai Lingkungan
 
-```bash
-# Instalasi dependencies
-composer install
+SIAR dapat dijalankan di tiga lingkungan berbeda:
 
-# Buat database
-./create_db.sh
+### 1. Laravel Valet (Development)
 
-# Migrasi database
-php artisan migrate
+Untuk menjalankan dengan Laravel Valet:
 
-# Menjalankan seeder
-php artisan db:seed
+1. Pastikan Laravel Valet sudah terinstal dan berjalan
+2. Link direktori proyek: `valet link siar`
+3. Konfigurasi .env:
+   ```
+   APP_URL=http://siar.test
+   APP_URL_SCHEME=http://
+   APP_URL_BASE=siar.test
+   APP_DOMAIN=siar.test
+   SESSION_DOMAIN=.siar.test
+   ```
+4. Akses aplikasi di browser: `http://siar.test`
+5. Untuk tenant: `http://[tenant-domain].siar.test`
 
-# Menjalankan aplikasi pada port 8080
-./serve.sh
+### 2. Localhost (Development)
 
-# Mengakses aplikasi via browser
-http://localhost:8080
-```
+Untuk menjalankan di localhost:
 
-## Pengujian Domain Tenant
+1. Konfigurasi .env:
+   ```
+   APP_URL=http://127.0.0.1:8000
+   APP_URL_SCHEME=http://
+   APP_URL_BASE=127.0.0.1:8000
+   APP_DOMAIN=127.0.0.1
+   SESSION_DOMAIN=127.0.0.1
+   ```
+2. Jalankan server development: `php artisan serve`
+3. Akses aplikasi di browser: `http://127.0.0.1:8000`
+4. Tambahkan entri di file hosts untuk tenant:
+   ```
+   127.0.0.1 [tenant-domain].127.0.0.1
+   ```
+5. Akses tenant di browser: `http://[tenant-domain].127.0.0.1:8000`
 
-Untuk menguji fitur multi-tenant dengan subdomain di macOS, tambahkan entri berikut di file hosts:
+### 3. Online (Production)
 
-```bash
-sudo nano /etc/hosts
-```
+Untuk menjalankan di server online:
 
-Tambahkan baris:
-```
-127.0.0.1    rs-contoh.localhost
-```
-
-Kemudian akses aplikasi melalui browser:
-```
-http://rs-contoh.localhost:8080
-```
+1. Konfigurasi .env:
+   ```
+   APP_URL=https://siar.example.com
+   APP_URL_SCHEME=https://
+   APP_URL_BASE=siar.example.com
+   APP_DOMAIN=example.com
+   SESSION_DOMAIN=.example.com
+   ```
+2. Konfigurasi web server (Apache/Nginx) untuk domain dan subdomain
+3. Pastikan subdomain wildcard dikonfigurasi untuk tenant
+4. Akses aplikasi di browser: `https://siar.example.com`
+5. Akses tenant di browser: `https://[tenant-domain].example.com`
 
 ## Pengembangan Lanjutan
 

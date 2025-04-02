@@ -37,12 +37,19 @@ class AppServiceProvider extends ServiceProvider
             function getCurrentTenant()
             {
                 try {
+                    // Prioritaskan tenant dari user yang login
+                    if (auth()->check() && auth()->user()->tenant) {
+                        return auth()->user()->tenant;
+                    }
+
+                    // Jika tidak, coba ambil dari session
                     $tenant_id = session('tenant_id');
                     if ($tenant_id) {
                         return \App\Models\Tenant::find($tenant_id);
                     }
                 } catch (\Exception $e) {
-                    // Handling error
+                    // Log error jika diperlukan
+                    \Illuminate\Support\Facades\Log::error('Error mendapatkan tenant: ' . $e->getMessage());
                 }
                 return null;
             }
