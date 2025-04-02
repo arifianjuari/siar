@@ -2,6 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\DocumentReferenceController;
+use App\Http\Controllers\Api\CorrespondenceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,4 +18,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+// Document Reference Routes
+Route::get('/document-references', [DocumentReferenceController::class, 'getReferences']);
+
+// Correspondence Routes
+Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
+    Route::get('/letters', [CorrespondenceController::class, 'getLetters']);
 });

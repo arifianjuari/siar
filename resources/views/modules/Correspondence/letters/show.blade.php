@@ -107,11 +107,9 @@ $hideDefaultHeader = true;
                         </div>
                         @endcan
                         
-                        @can('update', $correspondence)
                         <a href="{{ route('modules.correspondence.letters.edit', $correspondence->id) }}" class="btn btn-sm btn-warning btn-action">
                             <i class="fas fa-edit fa-sm mr-1"></i> Edit
                         </a>
-                        @endcan
                         
                         @can('delete', $correspondence)
                         <form action="{{ route('modules.correspondence.letters.destroy', $correspondence->id) }}" method="POST" class="d-inline">
@@ -153,7 +151,7 @@ $hideDefaultHeader = true;
                     </div>
                     
                     <div class="mb-3">
-                        <p class="detail-label">Subjek</p>
+                        <p class="detail-label">Perihal</p>
                         <p class="detail-value">{{ $correspondence->subject }}</p>
                     </div>
                     
@@ -172,7 +170,7 @@ $hideDefaultHeader = true;
                     
                     @if($correspondence->cc_list)
                     <div class="mb-3">
-                        <p class="detail-label">CC</p>
+                        <p class="detail-label">Tembusan</p>
                         <p class="detail-value">{{ $correspondence->cc_list }}</p>
                     </div>
                     @endif
@@ -196,7 +194,7 @@ $hideDefaultHeader = true;
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-8 mb-3">
+                        <div class="col-12 mb-3">
                             <p class="detail-label">Penandatangan</p>
                             <p class="detail-value">
                                 {{ $correspondence->signatory_name }}<br>
@@ -209,19 +207,12 @@ $hideDefaultHeader = true;
                                 @endif
                             </p>
                         </div>
-                        <div class="col-md-4 mb-3 text-center">
-                            @if($correspondence->signature_file)
-                            <img src="{{ asset('storage/' . $correspondence->signature_file) }}" alt="Tanda Tangan" class="img-fluid" style="max-height: 100px;">
-                            @else
-                            <p class="text-muted">Tidak ada file tanda tangan</p>
-                            @endif
-                        </div>
                     </div>
                     
                     @if($correspondence->reference_to)
                     <div class="mb-3">
                         <p class="detail-label">Referensi</p>
-                        <p class="detail-value">{{ $correspondence->reference_to }}</p>
+                        <p class="detail-value">{!! nl2br(e($correspondence->reference_to)) !!}</p>
                     </div>
                     @endif
                 </div>
@@ -294,7 +285,12 @@ $hideDefaultHeader = true;
                     <h4 class="header-title">File Lampiran</h4>
                 </div>
                 <div class="card-content">
-                    @if($correspondence->file_path)
+                    @if($correspondence->document_link)
+                    <a href="{{ $correspondence->document_link }}" class="btn btn-primary btn-block" target="_blank">
+                        <i class="fas fa-external-link-alt mr-1"></i> Buka Link Dokumen
+                    </a>
+                    <p class="small text-muted mt-2">Link menuju file dokumen yang tersimpan di cloud (Google Drive, dll)</p>
+                    @elseif($correspondence->file_path)
                     <a href="{{ asset('storage/' . $correspondence->file_path) }}" class="btn btn-primary btn-block" target="_blank">
                         <i class="fas fa-file-download mr-1"></i> Download File
                     </a>

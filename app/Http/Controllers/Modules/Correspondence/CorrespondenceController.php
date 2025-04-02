@@ -184,6 +184,7 @@ class CorrespondenceController extends Controller
             'signatory_nrp' => 'nullable|string|max:100',
             'document_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
             'signature_file' => 'nullable|file|mimes:png,jpg,jpeg|max:2048',
+            'document_link' => 'nullable|string|url|max:2000',
         ]);
 
         if ($validator->fails()) {
@@ -219,6 +220,7 @@ class CorrespondenceController extends Controller
         $correspondence->created_by = Auth::id();
         $correspondence->file_path = null;
         $correspondence->signature_file = null;
+        $correspondence->document_link = $request->document_link;
 
         // Upload document file if provided
         if ($request->hasFile('document_file')) {
@@ -383,6 +385,7 @@ class CorrespondenceController extends Controller
             'signatory_nrp' => 'nullable|string|max:100',
             'document_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
             'signature_file' => 'nullable|file|mimes:png,jpg,jpeg|max:2048',
+            'document_link' => 'nullable|string|url|max:2000',
         ]);
 
         if ($validator->fails()) {
@@ -413,6 +416,7 @@ class CorrespondenceController extends Controller
         $correspondence->signatory_position = $request->signatory_position;
         $correspondence->signatory_rank = $request->signatory_rank;
         $correspondence->signatory_nrp = $request->signatory_nrp;
+        $correspondence->document_link = $request->document_link;
 
         // Upload document file if provided
         if ($request->hasFile('document_file')) {

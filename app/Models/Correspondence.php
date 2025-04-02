@@ -19,6 +19,7 @@ class Correspondence extends Model
         'document_date',
         'confidentiality_level',
         'file_path',
+        'document_link',
         'next_review',
         'origin_module',
         'origin_record_id',

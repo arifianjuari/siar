@@ -89,6 +89,9 @@ $hideDefaultHeader = true;
     .table td {
         text-align: left;
         vertical-align: middle;
+        white-space: nowrap; 
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .table td:last-child {
         text-align: center;

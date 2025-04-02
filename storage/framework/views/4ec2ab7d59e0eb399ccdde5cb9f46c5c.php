@@ -4,6 +4,14 @@
 <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
 <meta name="description" content="Sistem Informasi Administrasi Risiko">
 <meta name="author" content="SIAR">
+<meta name="theme-color" content="#4285f4">
+
+<!-- PWA  -->
+<link rel="manifest" href="<?php echo e(asset('/manifest.json')); ?>">
+<link rel="apple-touch-icon" href="<?php echo e(asset('images/icons/icon-192x192.png')); ?>">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="<?php echo e(config('app.name', 'SIAR')); ?>">
 
 <title><?php echo e(config('app.name', 'SIAR')); ?><?php echo $__env->yieldContent('title'); ?></title>
 

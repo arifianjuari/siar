@@ -86,7 +86,10 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="document_number" class="form-label">Nomor Surat</label>
-                        <input type="text" class="form-control" id="document_number" name="document_number" value="{{ $oldDocumentNumber }}">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="document_number" name="document_number" value="{{ old('document_number', $correspondence->document_number) }}">
+                            <button class="btn btn-outline-secondary" type="button" id="select-letter-btn">Pilih dari Daftar</button>
+                        </div>
                     </div>
                 </div>
 
@@ -121,7 +124,7 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="subject" class="form-label">Perihal <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="subject" name="subject" value="{{ $oldSubject }}" required>
+                        <input type="text" class="form-control" id="subject" name="subject" value="{{ old('subject', $correspondence->subject) }}" required>
                     </div>
                 </div>
 
@@ -165,8 +168,14 @@
                 <div class="row">
                     <div class="col-md-12 mb-3">
                         <label for="reference_to" class="form-label">Referensi</label>
-                        <input type="text" class="form-control" id="reference_to" name="reference_to" value="{{ $oldReferenceTo }}">
-                        <small class="text-muted">Contoh: Surat No. XXX atau referensi lainnya.</small>
+                        <div class="input-group mb-2">
+                            <textarea class="form-control" id="reference_to" name="reference_to" rows="3">{{ $oldReferenceTo }}</textarea>
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="select-reference-btn">Pilih Referensi</button>
+                                <button class="btn btn-outline-secondary" type="button" id="select-letter-for-ref-btn">Pilih Surat</button>
+                            </div>
+                        </div>
+                        <small class="text-muted">Anda dapat menuliskan referensi secara bebas atau memilih dari daftar referensi/surat yang tersedia.</small>
                     </div>
                 </div>
             </div>
@@ -218,22 +227,14 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="document_file" class="form-label">File Dokumen</label>
-                        <input type="file" class="form-control" id="document_file" name="document_file">
-                        <small class="text-muted">Format: PDF, DOC, DOCX. Ukuran maksimal: 10MB.</small>
+                    <div class="col-md-12 mb-3">
+                        <label for="document_link" class="form-label">Link File Dokumen</label>
+                        <input type="text" class="form-control" id="document_link" name="document_link" 
+                               placeholder="Masukkan link menuju file yang tersimpan di cloud (Google Drive, OneDrive, dll)" 
+                               value="{{ old('document_link', $correspondence->document_link) }}">
+                        <small class="text-muted">Pastikan link dapat diakses oleh penerima surat.</small>
                         @if($correspondence->file_path)
-                            <small>File saat ini: <a href="{{ asset('storage/' . $correspondence->file_path) }}" target="_blank">Lihat</a>. Upload file baru akan menggantikan file ini.</small>
-                        @endif
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="signature_file" class="form-label">File Tanda Tangan</label>
-                        <input type="file" class="form-control" id="signature_file" name="signature_file">
-                        <small class="text-muted">Format: PNG, JPG, JPEG. Ukuran maksimal: 2MB.</small>
-                        @if($correspondence->signature_file)
-                            <small>Tanda tangan saat ini:</small>
-                            <img src="{{ asset('storage/' . $correspondence->signature_file) }}" alt="Tanda Tangan" class="img-thumbnail mt-1" style="max-height: 50px;">
-                            <small>Upload file baru akan menggantikan file ini.</small>
+                            <small class="d-block mt-1">File saat ini: <a href="{{ asset('storage/' . $correspondence->file_path) }}" target="_blank">Lihat</a></small>
                         @endif
                     </div>
                 </div>
@@ -356,6 +357,329 @@
                 removeTag(button.closest('.badge'));
             });
         });
+
+        // === Logika Referensi Dokumen ===
+        const selectReferenceBtn = document.getElementById('select-reference-btn');
+        const referenceToInput = document.getElementById('reference_to');
+        let currentCursorPosition = 0;
+        
+        // Simpan posisi kursor saat text area difokuskan atau diubah
+        if (referenceToInput) {
+            referenceToInput.addEventListener('focus', function() {
+                currentCursorPosition = this.selectionStart;
+            });
+            
+            referenceToInput.addEventListener('click', function() {
+                currentCursorPosition = this.selectionStart;
+            });
+            
+            referenceToInput.addEventListener('keyup', function() {
+                currentCursorPosition = this.selectionStart;
+            });
+        }
+        
+        if (selectReferenceBtn) {
+            selectReferenceBtn.addEventListener('click', function() {
+                // Simpan posisi kursor saat ini
+                currentCursorPosition = referenceToInput.selectionStart;
+                
+                // Tampilkan modal untuk memilih referensi
+                const modal = new bootstrap.Modal(document.getElementById('reference-selector-modal'));
+                modal.show();
+                
+                // Load data referensi saat modal dibuka
+                loadReferences();
+            });
+        }
+        
+        function loadReferences(searchTerm = '') {
+            const referenceList = document.getElementById('reference-list');
+            referenceList.innerHTML = '<tr><td colspan="3" class="text-center">Memuat data...</td></tr>';
+            
+            fetch(`/api/document-references?search=${searchTerm}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        referenceList.innerHTML = '<tr><td colspan="3" class="text-center">Tidak ada data yang sesuai.</td></tr>';
+                        return;
+                    }
+                    
+                    referenceList.innerHTML = '';
+                    data.forEach(reference => {
+                        const row = document.createElement('tr');
+                        row.style.cursor = 'pointer';
+                        row.addEventListener('click', function() {
+                            selectReference(reference.reference_number, reference.title);
+                        });
+                        
+                        const numberCell = document.createElement('td');
+                        numberCell.textContent = reference.reference_number;
+                        row.appendChild(numberCell);
+                        
+                        const titleCell = document.createElement('td');
+                        titleCell.textContent = reference.title;
+                        row.appendChild(titleCell);
+                        
+                        const actionCell = document.createElement('td');
+                        const selectBtn = document.createElement('button');
+                        selectBtn.className = 'btn btn-sm btn-primary';
+                        selectBtn.textContent = 'Pilih';
+                        selectBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            selectReference(reference.reference_number, reference.title);
+                        });
+                        actionCell.appendChild(selectBtn);
+                        row.appendChild(actionCell);
+                        
+                        referenceList.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading references:', error);
+                    referenceList.innerHTML = '<tr><td colspan="3" class="text-center">Terjadi kesalahan saat memuat data.</td></tr>';
+                });
+        }
+        
+        function selectReference(referenceNumber, title) {
+            // Format teks yang akan disisipkan
+            const referenceText = `${referenceNumber} - ${title}`;
+            
+            // Sisipkan teks pada posisi kursor
+            const currentValue = referenceToInput.value;
+            const beforeCursor = currentValue.substring(0, currentCursorPosition);
+            const afterCursor = currentValue.substring(currentCursorPosition);
+            
+            // Tambahkan baris baru jika bukan di awal dan baris sebelumnya tidak kosong
+            const insertText = (beforeCursor.length > 0 && !beforeCursor.endsWith('\n')) ? 
+                               '\n' + referenceText : referenceText;
+            
+            // Set nilai baru
+            referenceToInput.value = beforeCursor + insertText + afterCursor;
+            
+            // Perbarui posisi kursor
+            const newPosition = currentCursorPosition + insertText.length;
+            referenceToInput.setSelectionRange(newPosition, newPosition);
+            
+            // Fokus kembali ke textarea
+            referenceToInput.focus();
+            
+            // Perbarui currentCursorPosition
+            currentCursorPosition = newPosition;
+            
+            // Sembunyikan modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('reference-selector-modal'));
+            modal.hide();
+        }
+        
+        // Event listener untuk pencarian referensi
+        const searchReferenceInput = document.getElementById('search-reference');
+        if (searchReferenceInput) {
+            searchReferenceInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    loadReferences(this.value);
+                }
+            });
+            
+            document.getElementById('search-reference-btn').addEventListener('click', function() {
+                loadReferences(searchReferenceInput.value);
+            });
+        }
+
+        // === Logika Pemilihan Surat untuk Referensi ===
+        const selectLetterForRefBtn = document.getElementById('select-letter-for-ref-btn');
+        
+        if (selectLetterForRefBtn) {
+            selectLetterForRefBtn.addEventListener('click', function() {
+                // Simpan posisi kursor saat ini
+                currentCursorPosition = referenceToInput.selectionStart;
+                
+                // Tampilkan modal untuk memilih surat
+                const modal = new bootstrap.Modal(document.getElementById('letter-selector-modal'));
+                modal.show();
+                
+                // Load data surat saat modal dibuka
+                loadLettersForRef();
+            });
+        }
+        
+        function loadLettersForRef(searchTerm = '') {
+            const letterList = document.getElementById('letter-list');
+            letterList.innerHTML = '<tr><td colspan="4" class="text-center">Memuat data...</td></tr>';
+            
+            fetch(`/api/letters?search=${searchTerm}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        letterList.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data yang sesuai.</td></tr>';
+                        return;
+                    }
+                    
+                    letterList.innerHTML = '';
+                    data.forEach(letter => {
+                        const row = document.createElement('tr');
+                        row.style.cursor = 'pointer';
+                        row.addEventListener('click', function() {
+                            selectLetterForRef(letter.document_number, letter.subject);
+                        });
+                        
+                        const numberCell = document.createElement('td');
+                        numberCell.textContent = letter.document_number;
+                        row.appendChild(numberCell);
+                        
+                        const subjectCell = document.createElement('td');
+                        subjectCell.textContent = letter.subject;
+                        row.appendChild(subjectCell);
+                        
+                        const actionCell = document.createElement('td');
+                        const selectBtn = document.createElement('button');
+                        selectBtn.className = 'btn btn-sm btn-primary';
+                        selectBtn.textContent = 'Pilih';
+                        selectBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            selectLetterForRef(letter.document_number, letter.subject);
+                        });
+                        actionCell.appendChild(selectBtn);
+                        row.appendChild(actionCell);
+                        
+                        letterList.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading letters:', error);
+                    letterList.innerHTML = '<tr><td colspan="4" class="text-center">Terjadi kesalahan saat memuat data.</td></tr>';
+                });
+        }
+        
+        function selectLetterForRef(documentNumber, subject) {
+            // Format teks yang akan disisipkan
+            const referenceText = `${documentNumber} - ${subject}`;
+            
+            // Sisipkan teks pada posisi kursor
+            const currentValue = referenceToInput.value;
+            const beforeCursor = currentValue.substring(0, currentCursorPosition);
+            const afterCursor = currentValue.substring(currentCursorPosition);
+            
+            // Tambahkan baris baru jika bukan di awal dan baris sebelumnya tidak kosong
+            const insertText = (beforeCursor.length > 0 && !beforeCursor.endsWith('\n')) ? 
+                               '\n' + referenceText : referenceText;
+            
+            // Set nilai baru
+            referenceToInput.value = beforeCursor + insertText + afterCursor;
+            
+            // Perbarui posisi kursor
+            const newPosition = currentCursorPosition + insertText.length;
+            referenceToInput.setSelectionRange(newPosition, newPosition);
+            
+            // Fokus kembali ke textarea
+            referenceToInput.focus();
+            
+            // Perbarui currentCursorPosition
+            currentCursorPosition = newPosition;
+            
+            // Sembunyikan modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('letter-selector-modal'));
+            modal.hide();
+        }
+        
+        // Event listener untuk pencarian surat
+        const searchLetterInput = document.getElementById('search-letter');
+        if (searchLetterInput) {
+            searchLetterInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    if (document.getElementById('letter-selector-modal').classList.contains('show')) {
+                        loadLettersForRef(this.value);
+                    }
+                }
+            });
+            
+            document.getElementById('search-letter-btn').addEventListener('click', function() {
+                if (document.getElementById('letter-selector-modal').classList.contains('show')) {
+                    loadLettersForRef(searchLetterInput.value);
+                }
+            });
+        }
     });
 </script>
+
+<!-- Modal untuk Pemilihan Referensi -->
+<div class="modal fade" id="reference-selector-modal" tabindex="-1" aria-labelledby="reference-selector-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reference-selector-label">Pilih Dokumen Referensi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="input-group">
+                        <input type="text" id="search-reference" class="form-control" placeholder="Cari nomor atau judul dokumen...">
+                        <button class="btn btn-outline-secondary" type="button" id="search-reference-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nomor Referensi</th>
+                                <th>Judul</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reference-list">
+                            <tr>
+                                <td colspan="3" class="text-center">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal untuk Pemilihan Surat -->
+<div class="modal fade" id="letter-selector-modal" tabindex="-1" aria-labelledby="letter-selector-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="letter-selector-label">Pilih dari Daftar Surat</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="input-group">
+                        <input type="text" id="search-letter" class="form-control" placeholder="Cari nomor surat atau perihal...">
+                        <button class="btn btn-outline-secondary" type="button" id="search-letter-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nomor Surat</th>
+                                <th>Perihal</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="letter-list">
+                            <tr>
+                                <td colspan="4" class="text-center">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection 

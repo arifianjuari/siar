@@ -114,29 +114,19 @@
     </div>
 
     <div class="signature">
-        <p>
-            {{ $correspondence->signed_at_location }}, {{ $correspondence->signed_at_date->format('d F Y') }}<br>
-            {{ $correspondence->signatory_position }}<br>
-            @if($correspondence->signature_file)
-            <img src="{{ public_path('storage/' . $correspondence->signature_file) }}" alt="Tanda Tangan" class="signature-img"><br>
-            @else
-            <br><br><br>
-            @endif
-            <strong>{{ $correspondence->signatory_name }}</strong><br>
+        <div class="signature-section">
+            <p>{{ $correspondence->signed_at_location }}, {{ $correspondence->signed_at_date->format('d F Y') }}</p>
+            <p>{{ $correspondence->signatory_position }}</p>
+            <div class="qr-code-container">
+                {!! QrCode::size(100)->generate(route('modules.correspondence.letters.show', $correspondence->id)) !!}
+            </div>
+            <p class="signatory-name">{{ $correspondence->signatory_name }}</p>
             @if($correspondence->signatory_rank)
-            {{ $correspondence->signatory_rank }}<br>
+            <p class="signatory-rank">{{ $correspondence->signatory_rank }}</p>
             @endif
             @if($correspondence->signatory_nrp)
-            NRP: {{ $correspondence->signatory_nrp }}
+            <p class="signatory-nrp">NRP: {{ $correspondence->signatory_nrp }}</p>
             @endif
-        </p>
-        
-        <!-- QR Code untuk validasi surat -->
-        <div style="margin-top: 10px; text-align: center;">
-            @isset($qrCodeDataUri)
-            <img src="{{ $qrCodeDataUri }}" alt="QR Code Validasi" style="width: 100px; height: 100px;"><br>
-            <small style="font-size: 8pt;">Scan QR Code untuk validasi surat</small>
-            @endisset
         </div>
     </div>
 
