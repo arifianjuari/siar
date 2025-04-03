@@ -63,6 +63,23 @@
             @enderror
         </div>
 
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="parent_id">
+                Unit Induk (Opsional)
+            </label>
+            <select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('parent_id') border-red-500 @enderror" id="parent_id" name="parent_id">
+                <option value="">-- Tidak Ada Induk --</option>
+                @foreach ($potentialParents as $parent)
+                    <option value="{{ $parent->id }}" {{ old('parent_id', $workUnit->parent_id ?? '') == $parent->id ? 'selected' : '' }}>
+                        {{ $parent->unit_name }} ({{ $parent->unit_code }})
+                    </option>
+                @endforeach
+            </select>
+            @error('parent_id')
+                <p class="text-red-500 text-xs italic">{{ $message }}</p>
+            @enderror
+        </div>
+
         <div class="mb-6">
             <label class="block text-gray-700 text-sm font-bold mb-2" for="description">
                 Deskripsi

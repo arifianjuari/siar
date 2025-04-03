@@ -15,10 +15,10 @@
                 @csrf
                 
                 <div class="mb-3 row">
-                    <label for="name" class="col-sm-2 col-form-label">Nama Unit <span class="text-danger">*</span></label>
+                    <label for="unit_name" class="col-sm-2 col-form-label">Nama Unit <span class="text-danger">*</span></label>
                     <div class="col-sm-10">
-                        <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name') }}" required autofocus>
-                        @error('name')
+                        <input type="text" class="form-control @error('unit_name') is-invalid @enderror" id="unit_name" name="unit_name" value="{{ old('unit_name') }}" required autofocus>
+                        @error('unit_name')
                             <div class="invalid-feedback">
                                 {{ $message }}
                             </div>
@@ -27,11 +27,47 @@
                 </div>
                 
                 <div class="mb-3 row">
-                    <label for="code" class="col-sm-2 col-form-label">Kode Unit</label>
+                    <label for="unit_code" class="col-sm-2 col-form-label">Kode Unit</label>
                     <div class="col-sm-10">
-                        <input type="text" class="form-control @error('code') is-invalid @enderror" id="code" name="code" value="{{ old('code') }}">
+                        <input type="text" class="form-control @error('unit_code') is-invalid @enderror" id="unit_code" name="unit_code" value="{{ old('unit_code') }}">
                         <div class="form-text">Kode ini akan digunakan sebagai identifikasi singkat unit (opsional)</div>
-                        @error('code')
+                        @error('unit_code')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
+                </div>
+                
+                <div class="mb-3 row">
+                    <label for="unit_type" class="col-sm-2 col-form-label">Tipe Unit <span class="text-danger">*</span></label>
+                    <div class="col-sm-10">
+                        <select class="form-select @error('unit_type') is-invalid @enderror" id="unit_type" name="unit_type" required>
+                            <option value="">-- Pilih Tipe Unit --</option>
+                            <option value="medical" {{ old('unit_type') == 'medical' ? 'selected' : '' }}>Medical</option>
+                            <option value="non-medical" {{ old('unit_type') == 'non-medical' ? 'selected' : '' }}>Non-Medical</option>
+                            <option value="supporting" {{ old('unit_type') == 'supporting' ? 'selected' : '' }}>Supporting</option>
+                        </select>
+                        @error('unit_type')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
+                </div>
+                
+                <div class="mb-3 row">
+                    <label for="head_of_unit_id" class="col-sm-2 col-form-label">Kepala Unit <span class="text-danger">*</span></label>
+                    <div class="col-sm-10">
+                        <select class="form-select @error('head_of_unit_id') is-invalid @enderror" id="head_of_unit_id" name="head_of_unit_id" required>
+                            <option value="">-- Pilih Kepala Unit --</option>
+                            @foreach($users ?? [] as $user)
+                                <option value="{{ $user->id }}" {{ old('head_of_unit_id') == $user->id ? 'selected' : '' }}>
+                                    {{ $user->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('head_of_unit_id')
                             <div class="invalid-feedback">
                                 {{ $message }}
                             </div>
@@ -46,7 +82,7 @@
                             <option value="">-- Pilih Parent Unit (opsional) --</option>
                             @foreach($parentUnits as $parent)
                                 <option value="{{ $parent->id }}" {{ old('parent_id') == $parent->id ? 'selected' : '' }}>
-                                    {{ $parent->name }} {{ $parent->code ? '('.$parent->code.')' : '' }}
+                                    {{ $parent->unit_name }} {{ $parent->unit_code ? '('.$parent->unit_code.')' : '' }}
                                 </option>
                             @endforeach
                         </select>

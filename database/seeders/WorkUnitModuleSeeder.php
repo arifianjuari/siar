@@ -18,12 +18,12 @@ class WorkUnitModuleSeeder extends Seeder
     public function run(): void
     {
         // 1. Tambahkan modul ke tabel modules
-        $module = Module::firstOrCreate(
+        $module = Module::updateOrCreate(
             ['slug' => 'work-units'],
             [
                 'name' => 'Unit Kerja',
                 'description' => 'Modul untuk mengelola unit kerja.',
-                'icon' => 'fa-building', // Ganti dengan ikon yang sesuai
+                'icon' => 'archive', // Menggunakan icon feather
                 'code' => 'WORKUNIT',
                 'order' => 99, // Sesuaikan dengan urutan yang diinginkan
                 'is_active' => true
@@ -39,10 +39,9 @@ class WorkUnitModuleSeeder extends Seeder
             );
         }
 
-        // 3. Tambahkan permission default untuk role Super Admin
-        // Asumsi role Super Admin memiliki ID 1 atau slug 'super-admin'
-        $superAdminRole = Role::where('slug', 'super-admin')->first();
-
+        // 3. Tambahkan permission default untuk berbagai role
+        // Role Superadmin
+        $superAdminRole = Role::where('slug', 'superadmin')->first();
         if ($superAdminRole) {
             RoleModulePermission::updateOrCreate(
                 ['role_id' => $superAdminRole->id, 'module_id' => $module->id],
@@ -51,25 +50,41 @@ class WorkUnitModuleSeeder extends Seeder
                     'can_create' => true,
                     'can_edit' => true,
                     'can_delete' => true,
-                    // Tambahkan permission custom lain jika ada
                 ]
             );
         }
 
-        // Anda bisa menambahkan permission untuk role lain (misal: Admin) di sini
-        $adminRole = Role::where('slug', 'admin')->first();
-        if ($adminRole) {
+        // Role Tenant Admin
+        $tenantAdminRoles = Role::where('slug', 'tenant-admin')->get();
+        foreach ($tenantAdminRoles as $adminRole) {
             RoleModulePermission::updateOrCreate(
                 ['role_id' => $adminRole->id, 'module_id' => $module->id],
                 [
                     'can_view' => true,
                     'can_create' => true,
                     'can_edit' => true,
-                    'can_delete' => false, // Contoh: Admin tidak bisa hapus
+                    'can_delete' => true,
                 ]
             );
         }
 
-        $this->command->info('Work Unit module seeded successfully.');
+        // Role Admin reguler
+        $adminRoles = Role::where('slug', 'admin')->get();
+        foreach ($adminRoles as $adminRole) {
+            RoleModulePermission::updateOrCreate(
+                ['role_id' => $adminRole->id, 'module_id' => $module->id],
+                [
+                    'can_view' => true,
+                    'can_create' => true,
+                    'can_edit' => true,
+                    'can_delete' => false, // Admin reguler tidak bisa hapus
+                ]
+            );
+        }
+
+        // 4. Pastikan rute telah diatur dengan benar di sidebar
+        // Sidebar menggunakan rute tenant.work-units.* untuk akses ke modul ini
+
+        $this->command->info('Modul Work Unit berhasil diseeded.');
     }
 }

@@ -177,6 +177,40 @@
         justify-content: center;
     }
     
+    /* Fix untuk warna Tailwind */
+    .bg-blue-500 { background-color: #3b82f6 !important; }
+    .bg-blue-700 { background-color: #1d4ed8 !important; }
+    .bg-green-500 { background-color: #22c55e !important; }
+    .bg-green-700 { background-color: #15803d !important; }
+    .bg-red-500 { background-color: #ef4444 !important; }
+    .bg-red-700 { background-color: #b91c1c !important; }
+    .bg-indigo-500 { background-color: #6366f1 !important; }
+    .bg-indigo-700 { background-color: #4338ca !important; }
+    .bg-yellow-500 { background-color: #eab308 !important; }
+    .bg-yellow-700 { background-color: #a16207 !important; }
+    .bg-gray-100 { background-color: #f3f4f6 !important; }
+    .bg-gray-200 { background-color: #e5e7eb !important; }
+    .bg-gray-300 { background-color: #d1d5db !important; }
+    .bg-gray-500 { background-color: #6b7280 !important; }
+    .bg-gray-800 { background-color: #1f2937 !important; }
+    
+    .bg-green-100 { background-color: #dcfce7 !important; }
+    .bg-blue-100 { background-color: #dbeafe !important; }
+    .bg-red-100 { background-color: #fee2e2 !important; }
+    .bg-yellow-100 { background-color: #fef3c7 !important; }
+    
+    .text-green-800 { color: #166534 !important; }
+    .text-blue-800 { color: #1e40af !important; }
+    .text-red-800 { color: #991b1b !important; }
+    .text-white { color: #ffffff !important; }
+    
+    .hover\:bg-blue-700:hover { background-color: #1d4ed8 !important; }
+    .hover\:bg-green-700:hover { background-color: #15803d !important; }
+    .hover\:bg-red-700:hover { background-color: #b91c1c !important; }
+    .hover\:bg-indigo-700:hover { background-color: #4338ca !important; }
+    .hover\:bg-gray-50:hover { background-color: #f9fafb !important; }
+    .hover\:bg-blue-50:hover { background-color: #eff6ff !important; }
+    
     /* Responsive Utilities */
     @media (max-width: 767.98px) {
         .sidebar-wrapper {

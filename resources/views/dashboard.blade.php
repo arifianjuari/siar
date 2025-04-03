@@ -2,472 +2,389 @@
 
 @section('title', ' | Dashboard')
 
+@php
+$hideDefaultHeader = true;
+@endphp
+
 @push('styles')
 <style>
-    .dashboard-stat-card {
-        transition: all 0.3s;
-        border-radius: 0.75rem;
-        overflow: hidden;
+    .dashboard-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid;
+        height: 100%;
     }
-    
-    .dashboard-stat-card:hover {
+    .dashboard-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
-    
-    .stat-icon {
-        width: 48px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 12px;
+    .dashboard-card.risk-low {
+        border-left-color: #10B981;
+    }
+    .dashboard-card.risk-medium {
+        border-left-color: #F59E0B;
+    }
+    .dashboard-card.risk-high {
+        border-left-color: #EF4444;
+    }
+    .dashboard-card.risk-extreme {
+        border-left-color: #7F1D1D;
+    }
+    .dashboard-card.corr-incoming {
+        border-left-color: #3B82F6;
+    }
+    .dashboard-card.corr-outgoing {
+        border-left-color: #8B5CF6;
+    }
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+    }
+    .risk-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 4px;
+    }
+    .risk-indicator.low {
+        background-color: #10B981;
+    }
+    .risk-indicator.medium {
+        background-color: #F59E0B;
+    }
+    .risk-indicator.high {
+        background-color: #EF4444;
+    }
+    .risk-indicator.extreme {
+        background-color: #7F1D1D;
+    }
+    .chart-container {
+        height: 250px;
+        position: relative;
+    }
+    .status-badge {
+        font-size: 0.75rem;
+        font-weight: 500;
     }
 </style>
 @endpush
 
-@php
-    // Helper functions for functionality support
-    if (!function_exists('getCurrentTenant')) {
-        function getCurrentTenant() {
-            try {
-                $tenant_id = session('tenant_id');
-                if ($tenant_id) {
-                    return \App\Models\Tenant::find($tenant_id);
-                }
-            } catch (\Exception $e) {
-                // Do nothing
-            }
-            return null;
-        }
-    }
-
-    if (!function_exists('hasModulePermission')) {
-        function hasModulePermission($moduleCode, $permission = 'can_view') {
-            return auth()->user()->hasPermission($moduleCode, $permission);
-        }
-    }
-    
-    $userRole = auth()->user()->role->slug ?? '';
-    $isSuperAdmin = $userRole === 'superadmin';
-    $isTenantAdmin = $userRole === 'tenant-admin';
-@endphp
-
-@section('header')
-    <div class="d-flex justify-content-between align-items-center flex-wrap">
-        <div>
-            <h2 class="mb-0 fw-bold">Dashboard</h2>
-            <p class="text-muted mb-0">Selamat datang kembali, {{ auth()->user()->name }}</p>
-        </div>
-        <div class="d-flex gap-2">
-            <div class="dropdown">
-                <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <i class="fas fa-calendar me-1"></i> Periode: 30 Hari Terakhir
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="#"><i class="fas fa-calendar-day me-2"></i> Hari Ini</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="fas fa-calendar-week me-2"></i> Minggu Ini</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="fas fa-calendar-alt me-2"></i> Bulan Ini</a></li>
-                    <li><a class="dropdown-item active" href="#"><i class="fas fa-calendar me-2"></i> 30 Hari Terakhir</a></li>
-                </ul>
-            </div>
-            
-            <button class="btn btn-primary">
-                <i class="fas fa-sync-alt me-1"></i> Refresh
-            </button>
-        </div>
-    </div>
-@endsection
-
 @section('content')
-    @if(app()->environment('local'))
-    <!-- Info Autentikasi - hanya ditampilkan di environment local -->
-    <div class="card mb-4">
-        <div class="card-header bg-success text-white">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> Info Autentikasi</h5>
-                <button class="btn btn-sm btn-outline-light" data-bs-toggle="collapse" data-bs-target="#authInfoCollapse">
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-            </div>
-        </div>
-        <div class="card-body collapse show" id="authInfoCollapse">
-            <div class="row">
-                <div class="col-md-4">
-                    <p class="mb-2"><strong><i class="fas fa-user me-2"></i> User:</strong></p>
-                    <p class="ps-4 mb-0">{{ auth()->user()->name }} ({{ auth()->user()->email }})</p>
-                </div>
-                <div class="col-md-4">
-                    <p class="mb-2"><strong><i class="fas fa-user-tag me-2"></i> Role:</strong></p>
-                    <p class="ps-4 mb-0">{{ auth()->user()->role->name ?? 'Tidak ada role' }} ({{ auth()->user()->role->slug ?? '-' }})</p>
-                </div>
-                <div class="col-md-4">
-                    <p class="mb-2"><strong><i class="fas fa-building me-2"></i> Tenant:</strong></p>
-                    <p class="ps-4 mb-0">{{ auth()->user()->tenant->name ?? 'Tidak ada tenant' }}</p>
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="h3 mb-1">Dashboard</h1>
+                            <p class="text-muted mb-0">
+                                <span class="badge bg-primary">{{ auth()->user()->tenant->name ?? 'System' }}</span>
+                                <span class="ms-2"><i class="fas fa-user me-1"></i> {{ auth()->user()->name }}</span>
+                                <span class="ms-2"><i class="fas fa-shield-alt me-1"></i> {{ auth()->user()->role->name ?? 'User' }}</span>
+                            </p>
+                        </div>
+                        <button id="refreshDashboard" class="btn btn-primary">
+                            <i class="fas fa-sync-alt me-1"></i> Refresh
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    @endif
 
-    @if($isSuperAdmin)
-        <!-- Superadmin Dashboard -->
-        <div class="row">
-            @if(hasModulePermission('tenant_management'))
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="card dashboard-stat-card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted text-uppercase small fw-semibold">Total Tenant</h6>
-                                @php
-                                    $totalTenants = \App\Models\Tenant::count();
-                                    $newTenants = \App\Models\Tenant::where('created_at', '>=', now()->subDays(30))->count();
-                                @endphp
-                                <h3 class="mb-0 fw-bold">{{ $totalTenants }}</h3>
-                                <p class="mb-0 small {{ $newTenants > 0 ? 'text-success' : 'text-muted' }}">
-                                    @if($newTenants > 0)
-                                        <i class="fas fa-arrow-up me-1"></i> {{ $newTenants }} baru
-                                    @else
-                                        <i class="fas fa-minus me-1"></i> Tidak ada tenant baru
-                                    @endif
-                                </p>
-                            </div>
-                            <div class="stat-icon bg-primary text-white">
-                                <i class="fas fa-building"></i>
-                            </div>
+    <!-- Filter Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form action="{{ route('dashboard') }}" method="GET" class="row g-2 align-items-center">
+                        <div class="col-auto">
+                            <label for="period" class="col-form-label">Periode:</label>
                         </div>
-                    </div>
-                    <div class="card-footer bg-transparent border-0">
-                        <a href="{{ route('superadmin.tenants.index') }}" class="text-decoration-none stretched-link">
-                            Kelola Tenant <i class="fas fa-arrow-right ms-1"></i>
-                        </a>
+                        <div class="col-md-3 col-sm-6">
+                            <select id="period" name="period" class="form-select">
+                                <option value="all" {{ request('period') == 'all' ? 'selected' : '' }}>Semua</option>
+                                <option value="this_month" {{ request('period', 'this_month') == 'this_month' ? 'selected' : '' }}>Bulan Ini</option>
+                                <option value="last_month" {{ request('period') == 'last_month' ? 'selected' : '' }}>Bulan Lalu</option>
+                                <option value="this_year" {{ request('period') == 'this_year' ? 'selected' : '' }}>Tahun Ini</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter me-1"></i> Filter
+                            </button>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-sync-alt me-1"></i> Reset
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistik Ringkasan -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="fw-bold mb-3"><i class="fas fa-chart-pie me-2"></i> Statistik Ringkasan</h5>
+        </div>
+        
+        <!-- Total Laporan Risiko -->
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card dashboard-card risk-low h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Total Laporan Risiko</h6>
+                    <div class="stat-value text-dark mb-1">{{ $stats['risk_reports'] ?? 0 }}</div>
+                    <div class="text-success small">
+                        <i class="fas fa-check-circle me-1"></i> {{ $stats['risk_resolved'] ?? 0 }} terselesaikan
                     </div>
                 </div>
             </div>
-            @endif
-
-            @if(hasModulePermission('module_management'))
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="card dashboard-stat-card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted text-uppercase small fw-semibold">Total Modul</h6>
-                                @php
-                                    $totalModules = \App\Models\Module::count();
-                                    $newModules = \App\Models\Module::where('created_at', '>=', now()->subDays(30))->count();
-                                @endphp
-                                <h3 class="mb-0 fw-bold">{{ $totalModules }}</h3>
-                                <p class="mb-0 small {{ $newModules > 0 ? 'text-success' : 'text-muted' }}">
-                                    @if($newModules > 0)
-                                        <i class="fas fa-arrow-up me-1"></i> {{ $newModules }} baru
-                                    @else
-                                        <i class="fas fa-cube me-1"></i> Tersedia
-                                    @endif
-                                </p>
-                            </div>
-                            <div class="stat-icon bg-success text-white">
-                                <i class="fas fa-cube"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-transparent border-0">
-                        <a href="{{ route('superadmin.modules.index') }}" class="text-decoration-none stretched-link">
-                            Kelola Modul <i class="fas fa-arrow-right ms-1"></i>
-                        </a>
+        </div>
+        
+        <!-- Total Unit Kerja -->
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card dashboard-card border-0 shadow-sm h-100" style="border-left-color: #8B5CF6;">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Unit Kerja</h6>
+                    <div class="stat-value text-dark mb-1">{{ $stats['work_units'] ?? 0 }}</div>
+                    <div class="text-primary small">
+                        <i class="fas fa-building me-1"></i> Sudah terdaftar
                     </div>
                 </div>
             </div>
-            @endif
-
-            @if(hasModulePermission('tenant_management'))
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="card dashboard-stat-card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted text-uppercase small fw-semibold">Tenant Aktif</h6>
-                                @php
-                                    $activeTenants = \App\Models\Tenant::where('is_active', true)->count();
-                                    $percentage = $totalTenants > 0 ? round(($activeTenants / $totalTenants) * 100) : 0;
-                                @endphp
-                                <h3 class="mb-0 fw-bold">{{ $activeTenants }}</h3>
-                                <p class="mb-0 small text-muted">
-                                    <i class="fas fa-percentage me-1"></i> {{ $percentage }}% aktif
-                                </p>
-                            </div>
-                            <div class="stat-icon bg-info text-white">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                        </div>
+        </div>
+        
+        <!-- Total Korespondensi -->
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card dashboard-card corr-incoming h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Total Korespondensi</h6>
+                    <div class="stat-value text-dark mb-1">{{ $stats['correspondence'] ?? 0 }}</div>
+                    <div class="text-primary small">
+                        <i class="fas fa-calendar-alt me-1"></i> {{ $stats['correspondence_this_month'] ?? 0 }} dokumen bulan ini
                     </div>
-                    <div class="card-footer bg-transparent border-0">
-                        <span class="text-decoration-none">
-                            Status <i class="fas fa-info-circle ms-1"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Total Users -->
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card dashboard-card border-0 shadow-sm h-100" style="border-left-color: #6366F1;">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Total Users</h6>
+                    <div class="stat-value text-dark mb-1">{{ $stats['users'] ?? 0 }}</div>
+                    <div class="text-primary small">
+                        <i class="fas fa-users me-1"></i> Aktif dalam sistem
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Grafik Visualisasi -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Distribusi Tingkat Risiko</h5>
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-calendar me-1"></i> {{ isset($periodLabel) ? $periodLabel : 'Semua data' }}
                         </span>
                     </div>
+                    <div class="chart-container">
+                        <canvas id="riskChart"></canvas>
+                    </div>
                 </div>
             </div>
-            @endif
-
-            @if(hasModulePermission('user_management'))
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="card dashboard-stat-card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted text-uppercase small fw-semibold">Total Admin</h6>
-                                @php
-                                    $tenantAdmins = \App\Models\User::whereHas('role', function($q) {
-                                        $q->where('slug', 'tenant-admin');
-                                    })->count();
-                                @endphp
-                                <h3 class="mb-0 fw-bold">{{ $tenantAdmins }}</h3>
-                                <p class="mb-0 small text-muted"><i class="fas fa-user-shield me-1"></i> Tenant Admins</p>
-                            </div>
-                            <div class="stat-icon bg-warning text-white">
-                                <i class="fas fa-user-shield"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-transparent border-0">
-                        <span class="text-decoration-none">
-                            Tenant Admins <i class="fas fa-users-cog ms-1"></i>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Distribusi Jenis Surat</h5>
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-calendar me-1"></i> {{ isset($periodLabel) ? $periodLabel : 'Semua data' }}
                         </span>
                     </div>
+                    <div class="chart-container">
+                        <canvas id="corrChart"></canvas>
+                    </div>
                 </div>
             </div>
-            @endif
         </div>
+    </div>
 
-        <!-- Charts & Visualisasi Data -->
-        <div class="row mt-2">
-            @if(hasModulePermission('tenant_management'))
-            <!-- Chart Tenant Growth -->
-            <div class="col-lg-8 mb-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-transparent border-0">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Pertumbuhan Tenant</h5>
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-sm btn-outline-secondary active">Bulanan</button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary">Tahunan</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        @php
-                            $hasData = \App\Models\Tenant::count() > 0;
-                        @endphp
-                        @if($hasData)
-                            <canvas id="tenantGrowthChart" height="300"></canvas>
-                        @else
-                            <div class="text-center py-5">
-                                <div class="mb-3">
-                                    <i class="fas fa-chart-line fa-3x text-muted"></i>
-                                </div>
-                                <h6 class="text-muted">Belum ada data pertumbuhan tenant</h6>
-                                <p class="small text-muted mb-0">Data akan muncul saat tenant mulai terdaftar dalam sistem</p>
-                            </div>
-                        @endif
-                    </div>
+    <div class="row">
+        <!-- Manajemen Risiko -->
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-bottom">
+                    <h5 class="mb-0">Manajemen Risiko (Terbaru)</h5>
+                    <a href="{{ route('modules.risk-management.risk-reports.index') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-external-link-alt me-1"></i> Lihat semua
+                    </a>
                 </div>
-            </div>
-            @endif
-            
-            @if(hasModulePermission('module_management'))
-            <!-- Chart Module Popularity -->
-            <div class="col-lg-4 mb-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-transparent border-0">
-                        <h5 class="mb-0">Popularitas Modul</h5>
-                    </div>
-                    <div class="card-body">
-                        @php
-                            $hasModuleData = \App\Models\TenantModule::count() > 0;
-                        @endphp
-                        @if($hasModuleData)
-                            <canvas id="modulePopularityChart" height="300"></canvas>
-                        @else
-                            <div class="text-center py-5">
-                                <div class="mb-3">
-                                    <i class="fas fa-chart-pie fa-3x text-muted"></i>
+                <div class="card-body">
+                    @if(isset($recentRiskReports) && $recentRiskReports->count() > 0)
+                        <div class="list-group list-group-flush">
+                            @foreach ($recentRiskReports as $report)
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <a href="{{ route('modules.risk-management.risk-reports.show', $report->id) }}" class="text-decoration-none fw-medium">{{ $report->document_title }}</a>
+                                    <span class="badge {{ $report->status == 'open' ? 'bg-primary' : ($report->status == 'in_review' ? 'bg-warning' : 'bg-success') }} rounded-pill">
+                                        {{ $report->status == 'open' ? 'Terbuka' : ($report->status == 'in_review' ? 'Ditinjau' : 'Selesai') }}
+                                    </span>
                                 </div>
-                                <h6 class="text-muted">Belum ada data popularitas modul</h6>
-                                <p class="small text-muted mb-0">Data akan muncul saat modul diaktifkan oleh tenant</p>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-            @endif
-        </div>
-
-        <!-- Superadmin Activity & Stats -->
-        <div class="row">
-            @if(hasModulePermission('tenant_management'))
-            <div class="col-lg-8 mb-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-transparent border-0">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Tenant Terbaru</h5>
-                            <a href="{{ route('superadmin.tenants.index') }}" class="btn btn-sm btn-primary">Lihat Semua</a>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        @php
-                            $recentTenants = \App\Models\Tenant::orderBy('created_at', 'desc')->take(5)->get();
-                        @endphp
-                        
-                        @if($recentTenants->count() > 0)
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0">
-                                    <thead class="bg-light">
-                                        <tr>
-                                            <th class="border-0">Nama</th>
-                                            <th class="border-0">Domain</th>
-                                            <th class="border-0">Status</th>
-                                            <th class="border-0">Dibuat</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($recentTenants as $tenant)
-                                        <tr>
-                                            <td>{{ $tenant->name }}</td>
-                                            <td>{{ $tenant->domain }}</td>
-                                            <td>
-                                                @if($tenant->is_active)
-                                                    <span class="badge bg-success">Aktif</span>
-                                                @else
-                                                    <span class="badge bg-secondary">Nonaktif</span>
-                                                @endif
-                                            </td>
-                                            <td>{{ $tenant->created_at->format('d/m/Y') }}</td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        @else
-                            <div class="text-center py-5">
-                                <div class="mb-3">
-                                    <i class="fas fa-building fa-3x text-muted"></i>
-                                </div>
-                                <h6 class="text-muted">Belum ada tenant dalam sistem</h6>
-                                <p class="small text-muted mb-0">Tenant yang Anda buat akan muncul di sini</p>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-            @endif
-            
-            @if(hasModulePermission('module_management'))
-            <div class="col-lg-4 mb-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-transparent border-0">
-                        <h5 class="mb-0">Modul Populer</h5>
-                    </div>
-                    <div class="card-body p-0">
-                        <ul class="list-group list-group-flush">
-                            @foreach(\App\Models\Module::withCount(['tenants' => function($q) { $q->where('tenant_modules.is_active', true); }])->orderBy('tenants_count', 'desc')->take(5)->get() as $module)
-                                <li class="list-group-item border-0 px-3 py-3 d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center">
-                                        <div class="me-3 bg-light rounded p-2">
-                                            <i class="fas {{ $module->icon ?? 'fa-cube' }}"></i>
-                                        </div>
-                                        <div>
-                                            <p class="mb-0 fw-medium">{{ $module->name }}</p>
-                                            <p class="mb-0 small text-muted">{{ $module->description ?? 'Modul '.$module->name }}</p>
-                                        </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small class="text-muted">{{ $report->created_at->format('d M Y') }}</small>
+                                        @php
+                                            $riskClass = 'bg-success text-white';
+                                            $riskLevel = strtolower($report->risk_level);
+                                            if (in_array($riskLevel, ['sedang', 'medium'])) {
+                                                $riskClass = 'bg-warning text-dark';
+                                            } elseif (in_array($riskLevel, ['tinggi', 'high'])) {
+                                                $riskClass = 'bg-danger text-white';
+                                            } elseif (in_array($riskLevel, ['ekstrem', 'extreme'])) {
+                                                $riskClass = 'bg-dark text-white';
+                                            }
+                                        @endphp
+                                        <span class="badge {{ $riskClass }} ms-1">{{ $report->risk_level }}</span>
                                     </div>
-                                    <span class="badge bg-primary rounded-pill">{{ $module->tenants_count }}</span>
-                                </li>
+                                </div>
+                            </div>
                             @endforeach
-                        </ul>
-                    </div>
+                        </div>
+                    @else
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>Belum ada laporan risiko.</p>
+                        </div>
+                    @endif
                 </div>
             </div>
-            @endif
         </div>
-        
-        <!-- Other Superadmin widgets can be included here -->
-    @elseif($isTenantAdmin)
-        <!-- Include dasboard_widgets for Tenant Admin -->
-        @include('layouts.partials.dashboard_widgets')
-        
-        <!-- Tambahan widgets untuk Tenant Admin bisa ditambahkan di sini -->
-    @else
-        <!-- Regular User Dashboard -->
-        @include('layouts.partials.dashboard_widgets')
-    @endif
+
+        <!-- Korespondensi -->
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-bottom">
+                    <h5 class="mb-0">Korespondensi (Terbaru)</h5>
+                    <a href="{{ route('modules.correspondence.letters.index') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-external-link-alt me-1"></i> Lihat semua
+                    </a>
+                </div>
+                <div class="card-body">
+                    @if(isset($recentCorrespondences) && $recentCorrespondences->count() > 0)
+                        <div class="list-group list-group-flush">
+                            @foreach ($recentCorrespondences as $correspondence)
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <a href="{{ route('modules.correspondence.letters.show', $correspondence->id) }}" class="text-decoration-none fw-medium">
+                                        {{ $correspondence->subject ?? $correspondence->document_title ?? 'Surat #' . $correspondence->id }}
+                                    </a>
+                                    @if(isset($correspondence->document_number))
+                                        <span class="badge bg-light text-dark">{{ $correspondence->document_number }}</span>
+                                    @endif
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">{{ $correspondence->document_date ? $correspondence->document_date->format('d M Y') : $correspondence->created_at->format('d M Y') }}</small>
+                                    <div>
+                                        @if(isset($correspondence->type))
+                                            @if($correspondence->type == 'incoming')
+                                                <span class="badge bg-primary">Masuk</span>
+                                            @else
+                                                <span class="badge bg-info">Keluar</span>
+                                            @endif
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-envelope fa-3x mb-3"></i>
+                            <p>Belum ada surat dalam sistem.</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Unit Kerja -->
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-bottom">
+                    <h5 class="mb-0">Unit Kerja</h5>
+                    <a href="{{ route('work-units.index') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-external-link-alt me-1"></i> Lihat semua
+                    </a>
+                </div>
+                <div class="card-body">
+                    @if(isset($recentWorkUnits) && $recentWorkUnits->count() > 0)
+                        <div class="list-group list-group-flush">
+                            @foreach ($recentWorkUnits as $unit)
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <a href="{{ route('work-units.dashboard', $unit->id) }}" class="text-decoration-none fw-medium">
+                                        {{ $unit->unit_name }}
+                                    </a>
+                                    <span class="badge bg-light text-dark">{{ $unit->unit_code }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Kepala: {{ $unit->headOfUnit->name ?? 'Belum ditentukan' }}</small>
+                                    <div>
+                                        <span class="badge {{ $unit->unit_type == 'medical' ? 'bg-success' : 'bg-info' }}">
+                                            {{ $unit->unit_type }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-building fa-3x mb-3"></i>
+                            <p>Belum ada unit kerja dalam sistem.</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-<script src="{{ asset('js/dashboard.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize Superadmin Charts
-        @if($isSuperAdmin)
-        @if(hasModulePermission('tenant_management'))
-        // Tenant Growth Chart
-        const tenantGrowthCtx = document.getElementById('tenantGrowthChart').getContext('2d');
-        new Chart(tenantGrowthCtx, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                datasets: [{
-                    label: 'Tenant baru',
-                    data: [12, 19, 13, 15, 22, 27, 30, 25, 18, 23, 26, 31],
-                    borderColor: 'rgb(79, 70, 229)',
-                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            drawBorder: false
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
-        });
-        @endif
-        
-        @if(hasModulePermission('module_management'))
-        // Module Popularity Chart
-        const modulePopularityCtx = document.getElementById('modulePopularityChart').getContext('2d');
-        new Chart(modulePopularityCtx, {
+        // Chart untuk Tingkat Risiko
+        const riskCtx = document.getElementById('riskChart').getContext('2d');
+        const riskChart = new Chart(riskCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Manajemen User', 'Manajemen Risiko', 'Laporan', 'Keuangan', 'Lainnya'],
+                labels: ['Rendah', 'Sedang', 'Tinggi', 'Ekstrem'],
                 datasets: [{
-                    data: [25, 20, 30, 15, 10],
+                    data: [
+                        {{ $riskStats['low'] ?? 0 }}, 
+                        {{ $riskStats['medium'] ?? 0 }}, 
+                        {{ $riskStats['high'] ?? 0 }}, 
+                        {{ $riskStats['extreme'] ?? 0 }}
+                    ],
                     backgroundColor: [
-                        'rgba(79, 70, 229, 0.8)',
-                        'rgba(16, 185, 129, 0.8)',
-                        'rgba(245, 158, 11, 0.8)',
-                        'rgba(59, 130, 246, 0.8)',
-                        'rgba(239, 68, 68, 0.8)'
+                        '#10B981', // Hijau untuk Rendah
+                        '#F59E0B', // Kuning untuk Sedang
+                        '#EF4444', // Merah untuk Tinggi
+                        '#7F1D1D'  // Merah gelap untuk Ekstrem
                     ],
                     borderWidth: 0
                 }]
@@ -475,20 +392,85 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: '70%',
                 plugins: {
                     legend: {
-                        position: 'right',
+                        position: 'bottom',
                         labels: {
-                            boxWidth: 15,
-                            padding: 15
+                            font: {
+                                size: 12
+                            },
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
                         }
                     }
-                },
-                cutout: '70%'
+                }
             }
         });
-        @endif
-        @endif
+
+        // Chart untuk Jenis Surat
+        const corrCtx = document.getElementById('corrChart').getContext('2d');
+        const corrChart = new Chart(corrCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Surat Masuk', 'Surat Keluar', 'Regulasi'],
+                datasets: [{
+                    data: [
+                        {{ $corrStats['incoming'] ?? 0 }}, 
+                        {{ $corrStats['outgoing'] ?? 0 }},
+                        {{ $corrStats['regulasi'] ?? 0 }}
+                    ],
+                    backgroundColor: [
+                        '#3B82F6', // Biru untuk Surat Masuk
+                        '#8B5CF6', // Ungu untuk Surat Keluar
+                        '#6B7280'  // Abu-abu untuk Regulasi
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                size: 12
+                            },
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Refresh Dashboard
+        document.getElementById('refreshDashboard').addEventListener('click', function() {
+            window.location.reload();
+        });
     });
 </script>
 @endpush 

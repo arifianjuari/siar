@@ -100,6 +100,8 @@
                                     $moduleUrl = url('modules/risk-management/dashboard');
                                 } elseif ($module->slug == 'document-management') {
                                     $moduleUrl = url('modules/document-management/dashboard');
+                                } elseif ($module->slug == 'work-units') {
+                                    $moduleUrl = url('work-units-dashboard'); // URL ke dashboard unit kerja
                                 } else {
                                     $moduleUrl = url('modules/' . $module->slug);
                                 }
@@ -109,12 +111,19 @@
                             
                             $isActive = request()->is('modules/' . $module->slug . '*');
                             
+                            // Sesuaikan $isActive khusus untuk work-units jika perlu
+                            if ($module->slug == 'work-units') {
+                                $isActive = request()->is('work-units*') || request()->is('work-units-dashboard*');
+                            }
+                            
                             // Menentukan ikon yang lebih sesuai berdasarkan slug modul
                             $moduleIcon = '<i data-feather="folder"></i>'; // Default icon
                             
                             // Gunakan ikon dari database jika tersedia, jika tidak gunakan ikon berdasarkan jenis modul
                             if (!empty($module->icon_html)) {
                                 $moduleIcon = $module->icon_html;
+                            } elseif (!empty($module->icon)) { // Tambahkan cek untuk kolom icon
+                                $moduleIcon = '<i data-feather="' . $module->icon . '"></i>'; // Atau gunakan class icon jika bukan feather
                             } else {
                                 if ($module->slug == 'user-management') {
                                     $moduleIcon = '<i data-feather="users"></i>';
@@ -126,6 +135,8 @@
                                     $moduleIcon = '<i data-feather="shopping-bag"></i>';
                                 } elseif ($module->slug == 'correspondence' || strpos(strtolower($module->name), 'korespondensi') !== false) {
                                     $moduleIcon = '<i data-feather="mail"></i>';
+                                } elseif ($module->slug == 'work-units') {
+                                    $moduleIcon = '<i data-feather="archive"></i>'; // Ikon untuk Unit Kerja
                                 } elseif (strpos(strtolower($module->name), 'dokumen') !== false) {
                                     $moduleIcon = '<i data-feather="file-text"></i>';
                                 } elseif (strpos(strtolower($module->name), 'risiko') !== false) {
@@ -189,6 +200,43 @@
                                         <span class="menu-text">Role</span>
                                     </div>
                                 </a>
+                            </div>
+                        </div>
+                    @elseif($module->slug == 'work-units')
+                        <!-- Menu Unit Kerja dengan submenu -->
+                        <div class="nav-item dropdown mb-2">
+                            <button type="button" class="nav-link text-start w-100 {{ $isActive ? 'active' : '' }}" 
+                                   onclick="toggleWorkUnitDropdown()" 
+                                   style="border: none; background: none; cursor: pointer;">
+                                <div class="d-flex align-items-center">
+                                    <div class="icon-sidebar">
+                                        {!! $moduleIcon !!}
+                                    </div>
+                                    <span class="menu-text">{{ $module->name }}</span>
+                                    <i data-feather="chevron-down" class="ms-auto" id="wu-dropdown-icon" style="width: 16px; height: 16px;"></i>
+                                </div>
+                            </button>
+                            <div id="workUnitSubmenu" class="collapse" style="padding-left: 1.5rem; margin-top: 5px;">
+                                </a>
+                                @php
+                                try {
+                                    $userWorkUnitId = auth()->user()->work_unit_id ?? null;
+                                } catch (\Exception $e) {
+                                    $userWorkUnitId = null;
+                                }
+                                @endphp
+                                
+                                @if($userWorkUnitId)
+                                <a href="{{ route('work-units.dashboard', $userWorkUnitId) }}" 
+                                   class="nav-link {{ request()->is('work-units/*/dashboard') ? 'active' : '' }} my-1">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-sidebar">
+                                            <i data-feather="clipboard"></i>
+                                        </div>
+                                        <span class="menu-text">Profil Unit Saya</span>
+                                    </div>
+                                </a>
+                                @endif
                             </div>
                         </div>
                     @else
@@ -509,11 +557,29 @@
             document.getElementById('userManagementSubmenu').classList.add('show');
             document.getElementById('um-dropdown-icon').style.transform = 'rotate(180deg)';
         }
+        
+        // Work Unit dropdown
+        if (document.querySelector('#workUnitSubmenu a.active')) {
+            document.getElementById('workUnitSubmenu').classList.add('show');
+            document.getElementById('wu-dropdown-icon').style.transform = 'rotate(180deg)';
+        }
     });
     
     function toggleUserManagementDropdown() {
         const submenu = document.getElementById('userManagementSubmenu');
         const icon = document.getElementById('um-dropdown-icon');
+        
+        submenu.classList.toggle('show');
+        if (submenu.classList.contains('show')) {
+            icon.style.transform = 'rotate(180deg)';
+        } else {
+            icon.style.transform = 'rotate(0)';
+        }
+    }
+
+    function toggleWorkUnitDropdown() {
+        const submenu = document.getElementById('workUnitSubmenu');
+        const icon = document.getElementById('wu-dropdown-icon');
         
         submenu.classList.toggle('show');
         if (submenu.classList.contains('show')) {

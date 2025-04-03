@@ -25,15 +25,33 @@
                         </tr>
                         <tr>
                             <th class="bg-light">Nama Unit</th>
-                            <td>{{ $workUnit->name }}</td>
+                            <td>{{ $workUnit->unit_name }}</td>
                         </tr>
                         <tr>
                             <th class="bg-light">Kode Unit</th>
-                            <td>{{ $workUnit->code ?? '-' }}</td>
+                            <td>{{ $workUnit->unit_code ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Tipe Unit</th>
+                            <td>
+                                @if($workUnit->unit_type == 'medical')
+                                    <span class="badge bg-success">Medical</span>
+                                @elseif($workUnit->unit_type == 'non-medical')
+                                    <span class="badge bg-info">Non-Medical</span>
+                                @elseif($workUnit->unit_type == 'supporting')
+                                    <span class="badge bg-secondary">Supporting</span>
+                                @else
+                                    -
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">Kepala Unit</th>
+                            <td>{{ $workUnit->headOfUnit->name ?? '-' }}</td>
                         </tr>
                         <tr>
                             <th class="bg-light">Parent Unit</th>
-                            <td>{{ $workUnit->parent ? $workUnit->parent->name : '-' }}</td>
+                            <td>{{ $workUnit->parent ? $workUnit->parent->unit_name : '-' }}</td>
                         </tr>
                         <tr>
                             <th class="bg-light">Deskripsi</th>
@@ -105,7 +123,7 @@
                             @foreach($workUnit->children as $child)
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     <div>
-                                        {{ $child->name }}
+                                        {{ $child->unit_name }}
                                         @if(!$child->is_active)
                                             <span class="badge bg-danger ms-2">Non-Aktif</span>
                                         @endif

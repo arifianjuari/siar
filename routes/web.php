@@ -71,6 +71,8 @@ Route::get('/dashboard', function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/photo', [App\Http\Controllers\ProfileController::class, 'updatePhoto'])->name('profile.update-photo');
+    Route::get('/profile/photo/remove', [App\Http\Controllers\ProfileController::class, 'removePhoto'])->name('profile.remove-photo');
 });
 
 // Route khusus Superadmin
@@ -594,3 +596,8 @@ Route::get('/terms-of-service', function () {
 Route::get('/help', function () {
     return view('pages.help');
 })->name('pages.help');
+
+// Unit Kerja routes (dashboard terletak di modules/WorkUnit.php)
+Route::middleware(['web', 'auth', 'tenant', 'check.permission:work-units,can_view'])
+    ->get('/work-units-dashboard', [App\Http\Controllers\Modules\WorkUnitController::class, 'globalDashboard'])
+    ->name('work-units.global-dashboard');

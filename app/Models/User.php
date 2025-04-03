@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Module;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -24,8 +25,12 @@ class User extends Authenticatable
     protected $fillable = [
         'tenant_id',
         'role_id',
+        'work_unit_id',
+        'supervisor_id',
+        'employment_status',
         'name',
         'email',
+        'profile_photo',
         'password',
         'is_active',
         'last_login_at',
@@ -57,6 +62,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
         'is_active' => 'boolean',
+        'employment_status' => 'string',
     ];
 
     /**
@@ -73,6 +79,30 @@ class User extends Authenticatable
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Relasi dengan work unit
+     */
+    public function workUnit(): BelongsTo
+    {
+        return $this->belongsTo(WorkUnit::class);
+    }
+
+    /**
+     * Relasi dengan supervisor (atasan)
+     */
+    public function supervisor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'supervisor_id');
+    }
+
+    /**
+     * Relasi dengan subordinates (bawahan)
+     */
+    public function subordinates(): HasMany
+    {
+        return $this->hasMany(User::class, 'supervisor_id');
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\WorkUnit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,12 +19,17 @@ class WorkUnitController extends Controller
     {
         $tenantId = session('tenant_id');
         $search = $request->get('search');
+        $unitType = $request->get('unit_type');
 
         $workUnits = WorkUnit::forTenant($tenantId)
             ->when($search, function ($query) use ($search) {
-                return $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
+                return $query->where('unit_name', 'like', "%{$search}%")
+                    ->orWhere('unit_code', 'like', "%{$search}%");
             })
+            ->when($unitType, function ($query) use ($unitType) {
+                return $query->where('unit_type', $unitType);
+            })
+            ->with(['parent', 'headOfUnit']) // Eager load parent and head of unit
             ->orderBy('order')
             ->paginate(10);
 
@@ -46,11 +52,15 @@ class WorkUnitController extends Controller
         // Get parent units for dropdown
         $parentUnits = WorkUnit::forTenant($tenantId)
             ->active()
-            ->whereNull('parent_id')
+            ->orderBy('unit_name')
+            ->get();
+
+        // Get users for head of unit dropdown
+        $users = User::where('tenant_id', $tenantId)
             ->orderBy('name')
             ->get();
 
-        return view('tenant.work_units.create', compact('parentUnits'));
+        return view('tenant.work_units.create', compact('parentUnits', 'users'));
     }
 
     /**
@@ -61,7 +71,7 @@ class WorkUnitController extends Controller
         $tenantId = session('tenant_id');
 
         $validatedData = $request->validate([
-            'name' => [
+            'unit_name' => [
                 'required',
                 'string',
                 'max:255',
@@ -69,7 +79,7 @@ class WorkUnitController extends Controller
                     return $query->where('tenant_id', $tenantId);
                 })
             ],
-            'code' => [
+            'unit_code' => [
                 'nullable',
                 'string',
                 'max:50',
@@ -77,6 +87,8 @@ class WorkUnitController extends Controller
                     return $query->where('tenant_id', $tenantId);
                 })
             ],
+            'unit_type' => 'required|string|in:medical,non-medical,supporting',
+            'head_of_unit_id' => 'required|exists:users,id',
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:work_units,id',
             'is_active' => 'boolean',
@@ -118,7 +130,7 @@ class WorkUnitController extends Controller
         }
 
         // Load children and parent
-        $workUnit->load(['children', 'parent']);
+        $workUnit->load(['children', 'parent', 'headOfUnit']);
 
         return view('tenant.work_units.show', compact('workUnit'));
     }
@@ -139,11 +151,15 @@ class WorkUnitController extends Controller
         $parentUnits = WorkUnit::forTenant($tenantId)
             ->active()
             ->where('id', '!=', $workUnit->id)
-            ->whereNotIn('parent_id', [$workUnit->id])
+            ->orderBy('unit_name')
+            ->get();
+
+        // Get users for head of unit dropdown
+        $users = User::where('tenant_id', $tenantId)
             ->orderBy('name')
             ->get();
 
-        return view('tenant.work_units.edit', compact('workUnit', 'parentUnits'));
+        return view('tenant.work_units.edit', compact('workUnit', 'parentUnits', 'users'));
     }
 
     /**
@@ -159,7 +175,7 @@ class WorkUnitController extends Controller
         }
 
         $validatedData = $request->validate([
-            'name' => [
+            'unit_name' => [
                 'required',
                 'string',
                 'max:255',
@@ -167,7 +183,7 @@ class WorkUnitController extends Controller
                     return $query->where('tenant_id', $tenantId);
                 })->ignore($workUnit->id)
             ],
-            'code' => [
+            'unit_code' => [
                 'nullable',
                 'string',
                 'max:50',
@@ -175,6 +191,8 @@ class WorkUnitController extends Controller
                     return $query->where('tenant_id', $tenantId);
                 })->ignore($workUnit->id)
             ],
+            'unit_type' => 'required|string|in:medical,non-medical,supporting',
+            'head_of_unit_id' => 'required|exists:users,id',
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:work_units,id',
             'is_active' => 'boolean',
@@ -226,7 +244,7 @@ class WorkUnitController extends Controller
 
         try {
             $workUnitId = $workUnit->id;
-            $workUnitName = $workUnit->name;
+            $workUnitName = $workUnit->unit_name;
 
             $workUnit->delete();
 

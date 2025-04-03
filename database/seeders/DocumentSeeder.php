@@ -2,62 +2,65 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Document;
-use App\Models\Tag;
+use App\Models\Tenant;
+use App\Models\User;
 
 class DocumentSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Membuat dokumen contoh
-        $doc = Document::create([
-            'tenant_id' => 1,
-            'document_number' => 'DOC/RS/2025/001',
-            'document_title' => 'Laporan Risiko Unit Rawat Jalan',
-            'document_date' => now(),
-            'category' => 'risiko',
-            'description' => 'Laporan risiko untuk unit rawat jalan',
-            'confidentiality_level' => 'internal',
-            'uploaded_by' => 1
-        ]);
+        // Ambil tenant RS Bhayangkara
+        $tenant = Tenant::where('name', 'RS Bhayangkara Tk.III Batu')->first();
 
-        // Membuat tag
-        $tag = Tag::firstOrCreate([
-            'tenant_id' => 1,
-            'slug' => 'pmkp-3-1',
-        ], [
-            'name' => 'PMKP 3.1',
-        ]);
+        // Ambil salah satu user dengan role "Staf"
+        $user = User::where('tenant_id', $tenant->id)
+            ->whereHas('roles', function ($q) {
+                $q->where('name', 'Staf');
+            })
+            ->first();
 
-        // Melampirkan tag ke dokumen
-        $doc->tags()->attach($tag->id);
+        if (!$user) {
+            $this->command->warn('User dengan role "Staf" di RS Bhayangkara belum ada.');
+            return;
+        }
 
-        // Membuat contoh dokumen lain
-        $doc2 = Document::create([
-            'tenant_id' => 1,
-            'document_number' => 'DOC/RS/2025/002',
-            'document_title' => 'Prosedur Audit Internal',
-            'document_date' => now()->subDays(7),
-            'category' => 'audit',
-            'description' => 'Prosedur untuk melakukan audit internal',
-            'confidentiality_level' => 'confidential',
-            'uploaded_by' => 1
-        ]);
+        $documents = [
+            [
+                'title' => 'Pedoman Mutu Rumah Sakit',
+                'number' => 'DOC/PM/001',
+                'type' => 'Pedoman',
+                'status' => 'Aktif',
+            ],
+            [
+                'title' => 'SOP Kegiatan Visite Pasien',
+                'number' => 'DOC/SOP/014',
+                'type' => 'SOP',
+                'status' => 'Aktif',
+            ],
+            [
+                'title' => 'Instruksi Kerja Penggunaan Alat USG',
+                'number' => 'DOC/IK/007',
+                'type' => 'Instruksi Kerja',
+                'status' => 'Aktif',
+            ],
+        ];
 
-        // Membuat tag lain
-        $tag2 = Tag::firstOrCreate([
-            'tenant_id' => 1,
-            'slug' => 'rsk-1-2',
-        ], [
-            'name' => 'RSK 1.2',
-        ]);
-
-        // Melampirkan tag ke dokumen
-        $doc2->tags()->attach($tag2->id);
+        foreach ($documents as $doc) {
+            Document::updateOrCreate(
+                [
+                    'tenant_id' => $tenant->id,
+                    'number' => $doc['number']
+                ],
+                [
+                    'title' => $doc['title'],
+                    'type' => $doc['type'],
+                    'status' => $doc['status'],
+                    'created_by' => $user->id,
+                    'tenant_id' => $tenant->id
+                ]
+            );
+        }
     }
 }

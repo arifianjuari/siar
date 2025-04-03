@@ -92,6 +92,15 @@
                             </select>
                         </div>
                         <div class="col-md-2">
+                            <label for="work_unit_id" class="form-label small">Unit Kerja</label>
+                            <select name="work_unit_id" id="work_unit_id" class="form-select form-select-sm">
+                                <option value="">Semua Unit</option>
+                                @foreach(App\Models\WorkUnit::where('tenant_id', session('tenant_id'))->where('is_active', true)->orderBy('unit_name')->get() as $unit)
+                                    <option value="{{ $unit->id }}" {{ request('work_unit_id') == $unit->id ? 'selected' : '' }}>{{ $unit->unit_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
                             <label for="tag" class="form-label small">Tag</label>
                             <select name="tag" id="tag" class="form-select form-select-sm">
                                 <option value="">Semua Tag</option>
@@ -151,7 +160,7 @@
                                     <td class="text-center">{{ $index + 1 }}</td>
                                     <td>{{ $report->document_number }}</td>
                                     <td>{{ $report->document_title }}</td>
-                                    <td>{{ $report->reporter_unit }}</td>
+                                    <td>{{ $report->workUnit->unit_name ?? 'N/A' }}</td>
                                     <td>{{ $report->risk_type ?? 'N/A' }}</td>
                                     <td>{{ $report->risk_category }}</td>
                                     <td>{{ $report->occurred_at->format('d/m/Y') }}</td>
@@ -300,7 +309,7 @@
         });
         
         // Auto-submit form saat select berubah
-        const autoSubmitFields = document.querySelectorAll('#status, #risk_level, #tag');
+        const autoSubmitFields = document.querySelectorAll('#status, #risk_level, #work_unit_id, #tag');
         
         autoSubmitFields.forEach(function(field) {
             field.addEventListener('change', function() {

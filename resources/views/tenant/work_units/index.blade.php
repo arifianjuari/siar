@@ -9,11 +9,26 @@
             <div class="d-flex align-items-center">
                 <h6 class="mb-0 me-3 text-dark"><i class="fas fa-filter me-1 small"></i> Filter</h6>
                 <form action="{{ route('tenant.work-units.index') }}" method="GET" class="flex-grow-1">
-                    <div class="input-group">
-                        <input type="text" name="search" class="form-control" placeholder="Cari nama atau kode unit kerja..." value="{{ request('search') }}">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-search me-1"></i> Cari
-                        </button>
+                    <div class="row">
+                        <div class="col-md-5">
+                            <input type="text" name="search" class="form-control" placeholder="Cari nama atau kode unit kerja..." value="{{ request('search') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <select name="unit_type" class="form-select">
+                                <option value="">Semua Tipe Unit</option>
+                                <option value="medical" {{ request('unit_type') == 'medical' ? 'selected' : '' }}>Medical</option>
+                                <option value="non-medical" {{ request('unit_type') == 'non-medical' ? 'selected' : '' }}>Non-Medical</option>
+                                <option value="supporting" {{ request('unit_type') == 'supporting' ? 'selected' : '' }}>Supporting</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i> Cari
+                            </button>
+                            <a href="{{ route('tenant.work-units.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-sync-alt me-1"></i> Reset
+                            </a>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -29,20 +44,6 @@
             </a>
         </div>
         <div class="card-body">
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="fas fa-check-circle me-1"></i> {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-            
-            @if(session('error'))
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="fas fa-exclamation-circle me-1"></i> {{ session('error') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-            
             @if($workUnits->isEmpty())
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-1"></i> Belum ada data unit kerja. Silakan tambahkan unit kerja baru.
@@ -52,21 +53,35 @@
                     <table class="table table-hover table-bordered">
                         <thead class="table-light">
                             <tr>
-                                <th width="5%">No</th>
-                                <th width="15%">Kode</th>
-                                <th width="25%">Nama Unit</th>
-                                <th width="20%">Parent Unit</th>
-                                <th width="10%">Status</th>
-                                <th width="25%">Aksi</th>
+                                <th width="3%">No</th>
+                                <th width="10%">Kode</th>
+                                <th width="20%">Nama Unit</th>
+                                <th width="15%">Tipe</th>
+                                <th width="15%">Kepala Unit</th>
+                                <th width="15%">Parent Unit</th>
+                                <th width="7%">Status</th>
+                                <th width="15%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($workUnits as $index => $unit)
                                 <tr>
                                     <td class="text-center">{{ $workUnits->firstItem() + $index }}</td>
-                                    <td>{{ $unit->code ?? '-' }}</td>
-                                    <td>{{ $unit->name }}</td>
-                                    <td>{{ $unit->parent ? $unit->parent->name : '-' }}</td>
+                                    <td>{{ $unit->unit_code ?? '-' }}</td>
+                                    <td>{{ $unit->unit_name }}</td>
+                                    <td>
+                                        @if($unit->unit_type == 'medical')
+                                            <span class="badge bg-success">Medical</span>
+                                        @elseif($unit->unit_type == 'non-medical')
+                                            <span class="badge bg-info">Non-Medical</span>
+                                        @elseif($unit->unit_type == 'supporting')
+                                            <span class="badge bg-secondary">Supporting</span>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                    <td>{{ $unit->headOfUnit->name ?? '-' }}</td>
+                                    <td>{{ $unit->parent ? $unit->parent->unit_name : '-' }}</td>
                                     <td class="text-center">
                                         @if($unit->is_active)
                                             <span class="badge bg-success">Aktif</span>
@@ -104,7 +119,7 @@
                 </div>
                 
                 <div class="d-flex justify-content-end mt-3">
-                    {{ $workUnits->links() }}
+                    {{ $workUnits->appends(request()->query())->links() }}
                 </div>
             @endif
         </div>

@@ -261,15 +261,18 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="reporter_unit" class="form-label required-field">Unit Pelapor</label>
-                                    <select name="reporter_unit" id="reporter_unit" class="form-select @error('reporter_unit') is-invalid @enderror" required>
+                                    <select name="work_unit_id" id="work_unit_id" class="form-select @error('work_unit_id') is-invalid @enderror" required>
                                         <option value="">-- Pilih Unit Kerja --</option>
                                         @foreach($workUnits as $unit)
-                                            <option value="{{ $unit->unit_name }}" {{ old('reporter_unit') == $unit->unit_name ? 'selected' : '' }}>
+                                            <option value="{{ $unit->id }}" 
+                                                    data-unit-name="{{ $unit->unit_name }}"
+                                                    {{ old('work_unit_id') == $unit->id ? 'selected' : '' }}>
                                                 {{ $unit->unit_name }} {{ $unit->unit_code ? '('.$unit->unit_code.')' : '' }}
                                             </option>
                                         @endforeach
                                     </select>
-                                    @error('reporter_unit')
+                                    <input type="hidden" name="reporter_unit" id="reporter_unit_name" value="{{ old('reporter_unit') }}">
+                                    @error('work_unit_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -570,11 +573,34 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Update risk level marker position
-        const riskLevelSelect = document.getElementById('risk_level');
-        const riskLevelMarker = document.getElementById('riskLevelMarker');
+        // Set reporter_unit_name saat halaman dimuat
+        const workUnitSelect = document.getElementById('work_unit_id');
+        const reporterUnitNameInput = document.getElementById('reporter_unit_name');
+        
+        if (workUnitSelect && reporterUnitNameInput) {
+            // Set nilai awal
+            if (workUnitSelect.selectedIndex > 0) {
+                const selectedOption = workUnitSelect.options[workUnitSelect.selectedIndex];
+                reporterUnitNameInput.value = selectedOption.dataset.unitName;
+            }
+            
+            // Listener untuk perubahan dropdown
+            workUnitSelect.addEventListener('change', function() {
+                if (this.selectedIndex > 0) {
+                    const selectedOption = this.options[this.selectedIndex];
+                    reporterUnitNameInput.value = selectedOption.dataset.unitName;
+                } else {
+                    reporterUnitNameInput.value = '';
+                }
+            });
+        }
+        
+        // Risk Level Logic
         const impactSelect = document.getElementById('impact');
         const probabilitySelect = document.getElementById('probability');
+        const riskLevelSelect = document.getElementById('risk_level');
+        const riskLevelMarker = document.getElementById('riskLevelMarker');
+        const riskLevelDisplay = document.getElementById('risk_level_display');
         
         function updateRiskMarker() {
             const level = riskLevelSelect.value;
@@ -600,7 +626,6 @@
         function calculateRiskLevel() {
             const impact = impactSelect.value;
             const probability = probabilitySelect.value;
-            const riskLevelDisplay = document.getElementById('risk_level_display');
             
             // Hapus semua kelas warna sebelumnya
             riskLevelDisplay.classList.remove('risk-level-display-rendah', 'risk-level-display-sedang', 'risk-level-display-tinggi', 'risk-level-display-ekstrem');

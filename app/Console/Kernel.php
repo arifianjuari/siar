@@ -2,7 +2,7 @@
 
 namespace App\Console;
 
-use App\Console\Commands\DatabaseBackup;
+use App\Console\Commands\BackupDatabaseCommand;
 use App\Console\Commands\TenantProvisionCommand;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -16,7 +16,7 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         TenantProvisionCommand::class,
-        DatabaseBackup::class,
+        BackupDatabaseCommand::class,
         Commands\CreateTenant::class,
         Commands\FixRolePermissions::class,
         Commands\FixRoleSlugs::class,
@@ -27,8 +27,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Database backup setiap hari jam 2 pagi (WIB = UTC+7)
-        $schedule->command('db:backup')->dailyAt('02:00')->timezone('Asia/Jakarta');
+        // Jalankan backup database setiap hari jam 2 pagi
+        $schedule->command('db:backup')
+            ->dailyAt('02:00')
+            ->appendOutputTo(storage_path('logs/backup-database.log'));
     }
 
     /**

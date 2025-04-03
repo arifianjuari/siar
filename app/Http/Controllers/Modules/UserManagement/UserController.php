@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Modules\UserManagement;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\WorkUnit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -92,7 +93,13 @@ class UserController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('modules.UserManagement.users.create', compact('roles'));
+        // Ambil work unit yang aktif dalam tenant yang sama
+        $workUnits = WorkUnit::where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->orderBy('unit_name')
+            ->get();
+
+        return view('modules.UserManagement.users.create', compact('roles', 'workUnits'));
     }
 
     /**
@@ -123,7 +130,8 @@ class UserController extends Controller
                 })
             ],
             'password' => 'required|string|min:8|confirmed',
-            'role_id' => 'required|exists:roles,id'
+            'role_id' => 'required|exists:roles,id',
+            'work_unit_id' => 'nullable|exists:work_units,id'
         ]);
 
         // Pastikan role yang dipilih masih dalam tenant yang sama
@@ -132,9 +140,18 @@ class UserController extends Controller
             return redirect()->back()->withErrors(['role_id' => 'Role tidak valid'])->withInput();
         }
 
+        // Pastikan work unit yang dipilih dalam tenant yang sama jika ada
+        if (!empty($validated['work_unit_id'])) {
+            $workUnit = WorkUnit::findOrFail($validated['work_unit_id']);
+            if ($workUnit->tenant_id != $tenantId) {
+                return redirect()->back()->withErrors(['work_unit_id' => 'Unit kerja tidak valid'])->withInput();
+            }
+        }
+
         $user = User::create([
             'tenant_id' => $tenantId,
             'role_id' => $validated['role_id'],
+            'work_unit_id' => $validated['work_unit_id'] ?? null,
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
@@ -218,7 +235,13 @@ class UserController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('modules.UserManagement.users.edit', compact('user', 'roles'));
+        // Ambil work unit yang aktif dalam tenant yang sama
+        $workUnits = WorkUnit::where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->orderBy('unit_name')
+            ->get();
+
+        return view('modules.UserManagement.users.edit', compact('user', 'roles', 'workUnits'));
     }
 
     /**
@@ -263,7 +286,8 @@ class UserController extends Controller
                 })->ignore($user->id)
             ],
             'password' => 'nullable|string|min:8|confirmed',
-            'role_id' => 'required|exists:roles,id'
+            'role_id' => 'required|exists:roles,id',
+            'work_unit_id' => 'nullable|exists:work_units,id'
         ]);
 
         // Pastikan role yang dipilih masih dalam tenant yang sama
@@ -272,7 +296,16 @@ class UserController extends Controller
             return redirect()->back()->withErrors(['role_id' => 'Role tidak valid'])->withInput();
         }
 
+        // Pastikan work unit yang dipilih dalam tenant yang sama jika ada
+        if (!empty($validated['work_unit_id'])) {
+            $workUnit = WorkUnit::findOrFail($validated['work_unit_id']);
+            if ($workUnit->tenant_id != $tenantId) {
+                return redirect()->back()->withErrors(['work_unit_id' => 'Unit kerja tidak valid'])->withInput();
+            }
+        }
+
         $user->role_id = $validated['role_id'];
+        $user->work_unit_id = $validated['work_unit_id'] ?? null;
         $user->name = $validated['name'];
         $user->email = $validated['email'];
         $user->is_active = $request->has('is_active') ? 1 : 0;

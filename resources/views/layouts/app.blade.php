@@ -93,6 +93,16 @@
         @endauth
     </div>
 
+    <!-- Bootstrap core JavaScript-->
+    <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="{{ asset('vendor/jquery-easing/jquery.easing.min.js') }}"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="{{ asset('js/sb-admin-2.min.js') }}"></script>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -148,6 +158,11 @@
                 }
             });
             console.log('CSRF token added to forms');
+            
+            // Inisialisasi feather icons jika tersedia
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
         });
         
         // Panggil saat resize
@@ -225,16 +240,110 @@
                 const menu = document.getElementById('userManagementSubmenu');
                 const icon = document.getElementById('um-dropdown-icon');
                 
-                if (menu) {
+                // Jika menggunakan Bootstrap 5 collapse
+                if (typeof bootstrap !== 'undefined' && menu) {
+                    var bsCollapse = new bootstrap.Collapse(menu, {toggle: false});
+                    bsCollapse.toggle();
+                } else if (menu) {
+                    // Fallback untuk toggle manual
                     menu.classList.toggle('collapse');
-                    if (icon) {
+                }
+                
+                // Update icon jika ada
+                if (icon) {
+                    if (typeof feather !== 'undefined') {
+                        // Jika menggunakan feather icons
+                        if (menu.classList.contains('show')) {
+                            icon.setAttribute('data-feather', 'chevron-up');
+                        } else {
+                            icon.setAttribute('data-feather', 'chevron-down');
+                        }
+                        feather.replace();
+                    } else {
+                        // Jika menggunakan font awesome
+                        icon.classList.toggle('fa-chevron-up');
+                        icon.classList.toggle('fa-chevron-down');
+                    }
+                }
+            };
+            
+            // Toggle untuk Work Unit Dropdown
+            window.toggleWorkUnitDropdown = function() {
+                const menu = document.getElementById('workUnitSubmenu');
+                const icon = document.getElementById('wu-dropdown-icon');
+                
+                // Jika menggunakan Bootstrap 5 collapse
+                if (typeof bootstrap !== 'undefined' && menu) {
+                    var bsCollapse = new bootstrap.Collapse(menu, {toggle: false});
+                    bsCollapse.toggle();
+                } else if (menu) {
+                    // Fallback untuk toggle manual
+                    menu.classList.toggle('collapse');
+                }
+                
+                // Update icon jika ada
+                if (icon) {
+                    if (typeof feather !== 'undefined') {
+                        // Jika menggunakan feather icons
+                        if (menu.classList.contains('show')) {
+                            icon.setAttribute('data-feather', 'chevron-up');
+                        } else {
+                            icon.setAttribute('data-feather', 'chevron-down');
+                        }
+                        feather.replace();
+                    } else {
+                        // Jika menggunakan font awesome
                         icon.classList.toggle('fa-chevron-up');
                         icon.classList.toggle('fa-chevron-down');
                     }
                 }
             };
         });
+
+        // Tenant dropdown function
+        function toggleTenantDropdown() {
+            const submenu = document.getElementById('tenantSubmenu');
+            if(submenu) {
+                submenu.classList.toggle('show');
+                const icon = document.getElementById('tenant-dropdown-icon');
+                if(icon) {
+                    if (submenu.classList.contains('show')) {
+                        icon.style.transform = 'rotate(180deg)';
+                    } else {
+                        icon.style.transform = 'rotate(0)';
+                    }
+                }
+            }
+        }
+        
+        // Work Unit dropdown function
+        function toggleWorkUnitDropdown() {
+            const submenu = document.getElementById('workUnitSubmenu');
+            if(submenu) {
+                submenu.classList.toggle('show');
+                const icon = document.getElementById('wu-dropdown-icon');
+                if(icon) {
+                    if (submenu.classList.contains('show')) {
+                        icon.style.transform = 'rotate(180deg)';
+                    } else {
+                        icon.style.transform = 'rotate(0)';
+                    }
+                }
+            }
+            
+            // Jika menggunakan Bootstrap collapse, gabungkan dengan kode berikut
+            try {
+                const collapse = new bootstrap.Collapse(submenu, {
+                    toggle: false
+                });
+                collapse.toggle();
+            } catch (e) {
+                // Fallback jika bootstrap collapse tidak tersedia
+                console.log('Bootstrap collapse not available, using manual toggle');
+            }
+        }
     </script>
+
     @stack('scripts')
 </body>
 </html> 

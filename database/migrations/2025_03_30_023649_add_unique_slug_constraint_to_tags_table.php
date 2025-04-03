@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('tags', function (Blueprint $table) {
-            // Tambahkan unique constraint untuk tenant_id + slug
-            $table->unique(['tenant_id', 'slug'], 'tags_tenant_id_slug_unique');
-        });
+        // Dinonaktifkan karena indeks unik sudah ada
+        // Schema::table('tags', function (Blueprint $table) {
+        //     $table->unique(['tenant_id', 'slug']);
+        // });
     }
 
     /**
@@ -22,9 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('tags', function (Blueprint $table) {
-            // Hapus unique constraint
-            $table->dropUnique('tags_tenant_id_slug_unique');
-        });
+        // Dinonaktifkan
+        // Schema::table('tags', function (Blueprint $table) {
+        //     $table->dropUnique(['tenant_id', 'slug']);
+        // });
     }
 };

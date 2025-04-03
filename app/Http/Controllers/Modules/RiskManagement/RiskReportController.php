@@ -76,6 +76,10 @@ class RiskReportController extends Controller
             $query->where('risk_level', $request->risk_level);
         }
 
+        if ($request->filled('work_unit_id')) {
+            $query->where('work_unit_id', $request->work_unit_id);
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -298,6 +302,7 @@ class RiskReportController extends Controller
         $validator = Validator::make($request->all(), [
             'document_title' => 'required|string|max:255',
             'reporter_unit' => 'required|string|max:100',
+            'work_unit_id' => 'required|exists:work_units,id',
             'chronology' => 'required|string',
             'description' => 'required|string',
             'immediate_action' => 'required|string',
@@ -348,6 +353,7 @@ class RiskReportController extends Controller
         $riskReport->immediate_action = $request->immediate_action;
         $riskReport->recommendation = $request->recommendation;
         $riskReport->reporter_unit = $request->reporter_unit;
+        $riskReport->work_unit_id = $request->work_unit_id;
         $riskReport->risk_type = $request->risk_type;
         $riskReport->risk_category = $request->risk_category;
         $riskReport->occurred_at = $request->occurred_at;
@@ -517,6 +523,7 @@ class RiskReportController extends Controller
             'document_title' => 'required|string|max:255',
             'document_number' => 'required|string|max:50',
             'reporter_unit' => 'required|string|max:100',
+            'work_unit_id' => 'required|exists:work_units,id',
             'chronology' => 'required|string',
             'description' => 'required|string',
             'immediate_action' => 'required|string',
@@ -556,6 +563,7 @@ class RiskReportController extends Controller
         $riskReport->immediate_action = $request->immediate_action;
         $riskReport->recommendation = $request->recommendation;
         $riskReport->reporter_unit = $request->reporter_unit;
+        $riskReport->work_unit_id = $request->work_unit_id;
         $riskReport->risk_type = $request->risk_type;
         $riskReport->risk_category = $request->risk_category;
         $riskReport->occurred_at = $request->occurred_at;

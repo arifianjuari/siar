@@ -29,6 +29,7 @@
                                         <th>Nama</th>
                                         <th>Email</th>
                                         <th>Role</th>
+                                        <th>Unit Kerja</th>
                                         <th>Status</th>
                                         <th class="text-center">Aksi</th>
                                     </tr>
@@ -40,6 +41,7 @@
                                         <td>{{ $user->name }}</td>
                                         <td>{{ $user->email }}</td>
                                         <td>{{ $user->role->name ?? 'Tidak ada role' }}</td>
+                                        <td>{{ $user->workUnit->unit_name ?? '-' }}</td>
                                         <td>
                                             @if($user->is_active)
                                                 <span class="badge bg-success">Aktif</span>

@@ -67,6 +67,19 @@
                         </div>
                         
                         <div class="mb-3">
+                            <label for="work_unit_id" class="form-label">Unit Kerja</label>
+                            <select class="form-select @error('work_unit_id') is-invalid @enderror" id="work_unit_id" name="work_unit_id">
+                                <option value="">Pilih Unit Kerja</option>
+                                @foreach($workUnits as $workUnit)
+                                    <option value="{{ $workUnit->id }}" {{ old('work_unit_id') == $workUnit->id ? 'selected' : '' }}>{{ $workUnit->unit_name }}</option>
+                                @endforeach
+                            </select>
+                            @error('work_unit_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        
+                        <div class="mb-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', '1') == '1' ? 'checked' : '' }}>
                                 <label class="form-check-label" for="is_active">

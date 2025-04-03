@@ -41,6 +41,10 @@
                                     <td>{{ $user->role->name ?? 'Tidak ada role' }}</td>
                                 </tr>
                                 <tr>
+                                    <th>Unit Kerja</th>
+                                    <td>{{ $user->workUnit->unit_name ?? '-' }}</td>
+                                </tr>
+                                <tr>
                                     <th>Status</th>
                                     <td>
                                         @if($user->is_active)

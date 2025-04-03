@@ -12,6 +12,7 @@ class Correspondence extends Model
 
     protected $fillable = [
         'tenant_id',
+        'work_unit_id',
         'document_number',
         'document_title',
         'document_type',
@@ -106,5 +107,13 @@ class Correspondence extends Model
             ->where('documents.tenant_id', $this->tenant_id)
             ->withPivot('relation_type')
             ->withTimestamps();
+    }
+
+    /**
+     * Get the work unit for the correspondence.
+     */
+    public function workUnit()
+    {
+        return $this->belongsTo(WorkUnit::class, 'work_unit_id');
     }
 }

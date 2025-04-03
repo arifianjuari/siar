@@ -61,6 +61,22 @@ class WorkUnit extends Model
     }
 
     /**
+     * Get the risk reports for the work unit.
+     */
+    public function riskReports()
+    {
+        return $this->hasMany(RiskReport::class, 'work_unit_id');
+    }
+
+    /**
+     * Get the correspondences for the work unit.
+     */
+    public function correspondences()
+    {
+        return $this->hasMany(Correspondence::class, 'work_unit_id');
+    }
+
+    /**
      * Scope a query to only include active work units.
      */
     public function scopeActive($query)
@@ -73,6 +89,6 @@ class WorkUnit extends Model
      */
     public function scopeForTenant($query, $tenantId)
     {
-        return $query->where('work_units.tenant_id', $tenantId);
+        return $query->where('tenant_id', $tenantId);
     }
 }

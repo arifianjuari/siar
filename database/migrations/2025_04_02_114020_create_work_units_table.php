@@ -11,16 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('work_units', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
-            $table->string('unit_code')->unique();
-            $table->string('unit_name');
-            $table->enum('unit_type', ['medical', 'non-medical', 'supporting']);
-            $table->foreignId('head_of_unit_id')->constrained('users')->onDelete('restrict');
-            $table->text('description')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('work_units')) {
+            Schema::create('work_units', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
+                $table->string('unit_code')->unique();
+                $table->string('unit_name');
+                $table->enum('unit_type', ['medical', 'non-medical', 'supporting']);
+                $table->foreignId('head_of_unit_id')->constrained('users')->onDelete('restrict');
+                $table->text('description')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**

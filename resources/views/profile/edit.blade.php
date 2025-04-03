@@ -14,7 +14,7 @@
                 <h5 class="card-title mb-0">Informasi Profil</h5>
             </div>
             <div class="card-body">
-                <form action="{{ route('profile.update') }}" method="POST">
+                <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
                     
@@ -63,6 +63,22 @@
                         @enderror
                     </div>
                     
+                    <div class="mb-3">
+                        <label for="work_unit_id" class="form-label">Unit Kerja</label>
+                        <select class="form-select @error('work_unit_id') is-invalid @enderror" 
+                            id="work_unit_id" name="work_unit_id">
+                            <option value="">Pilih Unit Kerja</option>
+                            @foreach($workUnits as $workUnit)
+                                <option value="{{ $workUnit->id }}" {{ old('work_unit_id', $user->work_unit_id) == $workUnit->id ? 'selected' : '' }}>
+                                    {{ $workUnit->unit_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('work_unit_id')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    
                     <hr>
                     <h5 class="mb-3">Ubah Password</h5>
                     <p class="text-muted small mb-3">Biarkan kosong jika tidak ingin mengubah password</p>
@@ -107,13 +123,44 @@
                 <h5 class="card-title mb-0">Foto Profil</h5>
             </div>
             <div class="card-body text-center py-4">
-                <div class="avatar bg-primary text-white rounded-circle mx-auto mb-3" 
-                     style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem;">
-                    {{ substr($user->name, 0, 1) }}
-                </div>
+                @if($user->profile_photo)
+                    <div class="mb-3">
+                        <img src="{{ asset('storage/'.$user->profile_photo) }}" alt="{{ $user->name }}" 
+                             class="rounded-circle img-thumbnail" style="width: 100px; height: 100px; object-fit: cover;">
+                    </div>
+                @else
+                    <div class="avatar bg-primary text-white rounded-circle mx-auto mb-3" 
+                         style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem;">
+                        {{ substr($user->name, 0, 1) }}
+                    </div>
+                @endif
                 
                 <h5 class="mb-1">{{ $user->name }}</h5>
                 <p class="text-muted mb-3">{{ $user->role->name ?? 'User' }}</p>
+                
+                <form action="{{ route('profile.update-photo') }}" method="POST" enctype="multipart/form-data" class="mb-3">
+                    @csrf
+                    @method('POST')
+                    <div class="mb-3">
+                        <input type="file" class="form-control form-control-sm @error('profile_photo') is-invalid @enderror" 
+                               id="profile_photo" name="profile_photo" accept="image/*">
+                        @error('profile_photo')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <div class="form-text text-muted">Format: JPG, PNG. Maks: 2MB</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-upload me-1"></i> Upload Foto
+                    </button>
+                    
+                    @if($user->profile_photo)
+                        <a href="{{ route('profile.remove-photo') }}" class="btn btn-outline-danger btn-sm ms-1"
+                           onclick="return confirm('Yakin ingin menghapus foto profil?')">
+                            <i class="fas fa-trash me-1"></i> Hapus
+                        </a>
+                    @endif
+                </form>
                 
                 <div class="mb-3">
                     <p class="text-muted mb-1">
@@ -135,6 +182,12 @@
                     <span>Status Akun</span>
                     <span class="badge bg-success">Aktif</span>
                 </div>
+                @if($user->workUnit)
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Unit Kerja</span>
+                    <span>{{ $user->workUnit->unit_name }}</span>
+                </div>
+                @endif
                 @if($user->position)
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <span>Jabatan</span>
