@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\SPO;
+use App\Policies\SPOPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -14,6 +16,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         \App\Models\RiskAnalysis::class => \App\Policies\RiskAnalysisPolicy::class,
+        SPO::class => SPOPolicy::class,
     ];
 
     /**

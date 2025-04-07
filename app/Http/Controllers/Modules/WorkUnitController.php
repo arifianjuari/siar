@@ -203,222 +203,106 @@ class WorkUnitController extends Controller
      */
     public function dashboard(string $id)
     {
-        $tenantId = Auth::user()->tenant_id;
-        $workUnit = WorkUnit::with(['headOfUnit', 'parent'])
-            ->where('tenant_id', $tenantId)
+        $workUnit = WorkUnit::with([
+            'parent.headOfUnit',
+            'parent.users.role',
+            'children.headOfUnit',
+            'children.users.role',
+            'children.children.headOfUnit',
+            'children.children.users.role',
+            'children.children.children.headOfUnit',
+            'children.children.children.users.role',
+            'headOfUnit',
+            'users.role'
+        ])
+            ->where('tenant_id', Auth::user()->tenant_id)
             ->findOrFail($id);
 
-        // Menentukan periode waktu berdasarkan parameter
-        $period = request('period', 'this_month');
-        $periodLabel = 'Bulan Ini';
-
-        $startDate = now()->startOfMonth();
-        $endDate = now()->endOfMonth();
-
-        if ($period === 'all') {
-            $startDate = null;
-            $endDate = null;
-            $periodLabel = 'Semua Data';
-        } elseif ($period === 'last_month') {
-            $startDate = now()->subMonth()->startOfMonth();
-            $endDate = now()->subMonth()->endOfMonth();
-            $periodLabel = 'Bulan Lalu';
-        } elseif ($period === 'this_year') {
-            $startDate = now()->startOfYear();
-            $endDate = now()->endOfYear();
-            $periodLabel = 'Tahun Ini';
-        }
-
-        // Statistik Risiko
+        // Ambil statistik risiko
         $riskStats = [
-            'total' => 0,
-            'low' => 0,
-            'medium' => 0,
-            'high' => 0,
-            'extreme' => 0,
-            'open' => 0,
-            'in_review' => 0,
-            'resolved' => 0
+            'total' => $workUnit->riskReports()->count(),
+            // ... existing stats ...
         ];
 
-        // Statistik Korespondensi
+        // Ambil statistik korespondensi
         $correspondenceStats = [
-            'total' => 0,
-            'incoming' => 0,
-            'outgoing' => 0,
-            'regulasi' => 0,
-            'this_month' => 0
+            'total' => $workUnit->correspondences()->count(),
+            // ... existing stats ...
         ];
 
-        // Statistik Dokumen
-        $documentStats = [
-            'total' => 0,
-            'public' => 0,
-            'internal' => 0,
-            'confidential' => 0
-        ];
+        // Ambil data risiko terbaru
+        $riskReports = $workUnit->riskReports()
+            ->latest()
+            ->take(5)
+            ->get();
 
-        $recentActivities = collect();
-        $riskReports = collect();
-        $correspondences = collect();
+        // Ambil data korespondensi terbaru
+        $correspondences = $workUnit->correspondences()
+            ->latest()
+            ->take(5)
+            ->get();
 
-        // Mendapatkan data dari Modul Manajemen Risiko
-        try {
-            if (class_exists('\\App\\Models\\RiskReport')) {
-                $query = \App\Models\RiskReport::where('work_unit_id', $id);
+        // Ambil aktivitas terbaru
+        $period = request('period', 'this_month');
+        $recentActivities = $this->getRecentActivities($workUnit, $period);
+        $periodLabel = $this->getPeriodLabel($period);
 
-                if ($startDate && $endDate) {
-                    $query->whereBetween('created_at', [$startDate, $endDate]);
-                }
-
-                $riskReports = $query->latest()->limit(5)->get();
-
-                // Statistik risiko
-                $allRiskReports = \App\Models\RiskReport::where('work_unit_id', $id);
-                if ($startDate && $endDate) {
-                    $allRiskReports->whereBetween('created_at', [$startDate, $endDate]);
-                }
-
-                $riskStats['total'] = $allRiskReports->count();
-                $riskStats['low'] = $allRiskReports->where('risk_level', 'rendah')->orWhere('risk_level', 'low')->count();
-                $riskStats['medium'] = $allRiskReports->where('risk_level', 'sedang')->orWhere('risk_level', 'medium')->count();
-                $riskStats['high'] = $allRiskReports->where('risk_level', 'tinggi')->orWhere('risk_level', 'high')->count();
-                $riskStats['extreme'] = $allRiskReports->where('risk_level', 'ekstrem')->orWhere('risk_level', 'extreme')->count();
-                $riskStats['open'] = $allRiskReports->where('status', 'open')->count();
-                $riskStats['in_review'] = $allRiskReports->where('status', 'in_review')->count();
-                $riskStats['resolved'] = $allRiskReports->where('status', 'resolved')->count();
-
-                // Menambahkan aktivitas terbaru dari risiko
-                foreach ($riskReports as $report) {
-                    $statusClass = 'bg-primary';
-                    $statusText = 'Terbuka';
-
-                    if ($report->status == 'in_review') {
-                        $statusClass = 'bg-warning';
-                        $statusText = 'Dalam Peninjauan';
-                    } elseif ($report->status == 'resolved') {
-                        $statusClass = 'bg-success';
-                        $statusText = 'Selesai';
-                    }
-
-                    $recentActivities->push((object)[
-                        'title' => $report->document_title,
-                        'description' => 'Laporan risiko ' . strtolower($report->risk_level),
-                        'module' => 'Manajemen Risiko',
-                        'created_at' => $report->created_at,
-                        'status' => $report->status,
-                        'status_class' => $statusClass,
-                        'status_text' => $statusText,
-                        'url' => route('modules.risk-management.risk-reports.show', $report->id)
-                    ]);
-                }
-            }
-        } catch (\Exception $e) {
-            // Jika modul tidak tersedia, lanjutkan saja
+        // Kelompokkan pengguna berdasarkan peran untuk setiap unit
+        $workUnit->users_by_role = $this->groupUsersByRole($workUnit->users);
+        if ($workUnit->parent) {
+            $workUnit->parent->users_by_role = $this->groupUsersByRole($workUnit->parent->users);
         }
 
-        // Mendapatkan data dari Modul Korespondensi
-        try {
-            if (class_exists('\\App\\Models\\Correspondence')) {
-                $query = \App\Models\Correspondence::where('work_unit_id', $id);
-
-                if ($startDate && $endDate) {
-                    $query->whereBetween('created_at', [$startDate, $endDate]);
-                }
-
-                $correspondences = $query->latest()->limit(5)->get();
-
-                // Statistik korespondensi
-                $allCorrespondences = \App\Models\Correspondence::where('work_unit_id', $id);
-
-                if ($startDate && $endDate) {
-                    $allCorrespondences->whereBetween('created_at', [$startDate, $endDate]);
-                }
-
-                $correspondenceStats['total'] = $allCorrespondences->count();
-                $correspondenceStats['incoming'] = $allCorrespondences->where('type', 'incoming')->count();
-                $correspondenceStats['outgoing'] = $allCorrespondences->where('type', 'outgoing')->count();
-                $correspondenceStats['regulasi'] = $allCorrespondences->where('document_type', 'regulasi')->count();
-
-                // Surat bulan ini
-                $thisMonthCorrespondences = \App\Models\Correspondence::where('work_unit_id', $id)
-                    ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
-                    ->count();
-                $correspondenceStats['this_month'] = $thisMonthCorrespondences;
-
-                // Menambahkan aktivitas terbaru dari korespondensi
-                foreach ($correspondences as $correspondence) {
-                    $title = $correspondence->subject ?? $correspondence->document_title ?? 'Surat #' . $correspondence->id;
-                    $type = $correspondence->type == 'incoming' ? 'Surat Masuk' : 'Surat Keluar';
-
-                    $recentActivities->push((object)[
-                        'title' => $title,
-                        'description' => $type . ($correspondence->document_number ? ' - ' . $correspondence->document_number : ''),
-                        'module' => 'Korespondensi',
-                        'created_at' => $correspondence->created_at,
-                        'status' => $correspondence->type,
-                        'status_class' => $correspondence->type == 'incoming' ? 'bg-primary' : 'bg-info',
-                        'status_text' => $correspondence->type == 'incoming' ? 'Masuk' : 'Keluar',
-                        'url' => route('modules.correspondence.letters.show', $correspondence->id)
-                    ]);
-                }
-            }
-        } catch (\Exception $e) {
-            // Jika modul tidak tersedia, lanjutkan saja
-        }
-
-        // Mendapatkan data dari Modul Manajemen Dokumen
-        try {
-            if (class_exists('\\App\\Models\\Document')) {
-                // Statistik dokumen
-                $allDocuments = \App\Models\Document::where('work_unit_id', $id);
-
-                if ($startDate && $endDate) {
-                    $allDocuments->whereBetween('created_at', [$startDate, $endDate]);
-                }
-
-                $documentStats['total'] = $allDocuments->count();
-                $documentStats['public'] = $allDocuments->where('confidentiality', 'public')->count();
-                $documentStats['internal'] = $allDocuments->where('confidentiality', 'internal')->count();
-                $documentStats['confidential'] = $allDocuments->where('confidentiality', 'confidential')->count();
-
-                // Mendapatkan dokumen terbaru untuk aktivitas
-                $recentDocuments = \App\Models\Document::where('work_unit_id', $id)
-                    ->latest()
-                    ->limit(5)
-                    ->get();
-
-                // Menambahkan aktivitas terbaru dari dokumen
-                foreach ($recentDocuments as $document) {
-                    $recentActivities->push((object)[
-                        'title' => $document->title,
-                        'description' => 'Dokumen ' . ($document->document_type ?? 'baru'),
-                        'module' => 'Manajemen Dokumen',
-                        'created_at' => $document->created_at,
-                        'status' => $document->confidentiality,
-                        'status_class' => $document->confidentiality == 'public' ? 'bg-success' : ($document->confidentiality == 'internal' ? 'bg-warning' : 'bg-danger'),
-                        'status_text' => ucfirst($document->confidentiality),
-                        'url' => route('modules.document-management.documents.show', $document->id)
-                    ]);
-                }
-            }
-        } catch (\Exception $e) {
-            // Jika modul tidak tersedia, lanjutkan saja
-        }
-
-        // Urutkan aktivitas terbaru berdasarkan waktu
-        $recentActivities = $recentActivities->sortByDesc('created_at')->take(10);
+        // Rekursif untuk semua anak dan turunannya
+        $this->processUnitHierarchy($workUnit->children);
 
         return view('modules.WorkUnit.dashboard', compact(
             'workUnit',
             'riskStats',
             'correspondenceStats',
-            'documentStats',
             'riskReports',
             'correspondences',
             'recentActivities',
             'periodLabel'
         ));
+    }
+
+    /**
+     * Memproses hierarki unit kerja secara rekursif.
+     */
+    private function processUnitHierarchy($units)
+    {
+        if ($units->isEmpty()) {
+            return;
+        }
+
+        foreach ($units as $unit) {
+            // Kelompokkan pengguna untuk unit ini
+            $unit->users_by_role = $this->groupUsersByRole($unit->users);
+
+            // Proses anak-anaknya secara rekursif
+            if ($unit->children && $unit->children->isNotEmpty()) {
+                $this->processUnitHierarchy($unit->children);
+            }
+        }
+    }
+
+    /**
+     * Mengelompokkan pengguna berdasarkan peran mereka.
+     */
+    private function groupUsersByRole($users)
+    {
+        $groupedUsers = [];
+        foreach ($users as $user) {
+            if ($user->role) {
+                $roleName = $user->role->name;
+                if (!isset($groupedUsers[$roleName])) {
+                    $groupedUsers[$roleName] = [];
+                }
+                $groupedUsers[$roleName][] = $user;
+            }
+        }
+        return $groupedUsers;
     }
 
     /**
@@ -468,5 +352,113 @@ class WorkUnitController extends Controller
             $ids = array_merge($ids, $this->getUnitAndSubunitIds($child));
         }
         return $ids;
+    }
+
+    /**
+     * Mendapatkan aktivitas terbaru berdasarkan periode.
+     */
+    private function getRecentActivities(WorkUnit $workUnit, string $period)
+    {
+        $startDate = null;
+        $endDate = null;
+
+        switch ($period) {
+            case 'this_month':
+                $startDate = now()->startOfMonth();
+                $endDate = now()->endOfMonth();
+                break;
+            case 'last_month':
+                $startDate = now()->subMonth()->startOfMonth();
+                $endDate = now()->subMonth()->endOfMonth();
+                break;
+            case 'this_year':
+                $startDate = now()->startOfYear();
+                $endDate = now()->endOfYear();
+                break;
+        }
+
+        $recentActivities = collect();
+
+        // Mendapatkan data dari Modul Manajemen Risiko
+        try {
+            if (class_exists('\\App\\Models\\RiskReport')) {
+                $query = $workUnit->riskReports();
+                if ($startDate && $endDate) {
+                    $query->whereBetween('created_at', [$startDate, $endDate]);
+                }
+                $riskReports = $query->latest()->take(5)->get();
+
+                foreach ($riskReports as $report) {
+                    $statusClass = match ($report->status) {
+                        'in_review' => 'bg-warning',
+                        'resolved' => 'bg-success',
+                        default => 'bg-primary'
+                    };
+
+                    $statusText = match ($report->status) {
+                        'in_review' => 'Dalam Peninjauan',
+                        'resolved' => 'Selesai',
+                        default => 'Terbuka'
+                    };
+
+                    $recentActivities->push((object)[
+                        'title' => $report->document_title,
+                        'description' => 'Laporan risiko ' . strtolower($report->risk_level),
+                        'module' => 'Manajemen Risiko',
+                        'created_at' => $report->created_at,
+                        'status' => $report->status,
+                        'status_class' => $statusClass,
+                        'status_text' => $statusText,
+                        'url' => route('modules.risk-management.risk-reports.show', $report->id)
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            // Jika modul tidak tersedia, lanjutkan saja
+        }
+
+        // Mendapatkan data dari Modul Korespondensi
+        try {
+            if (class_exists('\\App\\Models\\Correspondence')) {
+                $query = $workUnit->correspondences();
+                if ($startDate && $endDate) {
+                    $query->whereBetween('created_at', [$startDate, $endDate]);
+                }
+                $correspondences = $query->latest()->take(5)->get();
+
+                foreach ($correspondences as $correspondence) {
+                    $title = $correspondence->subject ?? $correspondence->document_title ?? 'Surat #' . $correspondence->id;
+                    $type = $correspondence->type == 'incoming' ? 'Surat Masuk' : 'Surat Keluar';
+
+                    $recentActivities->push((object)[
+                        'title' => $title,
+                        'description' => $type . ($correspondence->document_number ? ' - ' . $correspondence->document_number : ''),
+                        'module' => 'Korespondensi',
+                        'created_at' => $correspondence->created_at,
+                        'status' => $correspondence->type,
+                        'status_class' => $correspondence->type == 'incoming' ? 'bg-primary' : 'bg-info',
+                        'status_text' => $correspondence->type == 'incoming' ? 'Masuk' : 'Keluar',
+                        'url' => route('modules.correspondence.letters.show', $correspondence->id)
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            // Jika modul tidak tersedia, lanjutkan saja
+        }
+
+        return $recentActivities->sortByDesc('created_at')->take(10);
+    }
+
+    /**
+     * Mendapatkan label periode berdasarkan filter yang dipilih.
+     */
+    private function getPeriodLabel(string $period): string
+    {
+        return match ($period) {
+            'all' => 'Semua Data',
+            'last_month' => 'Bulan Lalu',
+            'this_year' => 'Tahun Ini',
+            default => 'Bulan Ini'
+        };
     }
 }

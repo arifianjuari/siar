@@ -37,6 +37,22 @@
                             <td>{{ $tenant->address ?? '-' }}</td>
                         </tr>
                         <tr>
+                            <th scope="row">Kota</th>
+                            <td>{{ $tenant->city ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Pimpinan RS</th>
+                            <td>{{ $tenant->ceo ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Pangkat</th>
+                            <td>{{ $tenant->ceo_rank ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">NRP/NIK</th>
+                            <td>{{ $tenant->ceo_nrp ?? '-' }}</td>
+                        </tr>
+                        <tr>
                             <th scope="row">Email</th>
                             <td>{{ $tenant->email ?? '-' }}</td>
                         </tr>
@@ -101,9 +117,49 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label for="ceo" class="form-label">Pimpinan RS</label>
+                        <input type="text" class="form-control @error('ceo') is-invalid @enderror" id="ceo" name="ceo" value="{{ old('ceo', $tenant->ceo) }}">
+                        <div class="form-text">Nama lengkap Direktur / Pimpinan utama rumah sakit.</div>
+                        @error('ceo')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ceo_rank" class="form-label">Pangkat</label>
+                                <input type="text" class="form-control @error('ceo_rank') is-invalid @enderror" id="ceo_rank" name="ceo_rank" value="{{ old('ceo_rank', $tenant->ceo_rank) }}">
+                                <div class="form-text">Pangkat Direktur / Pimpinan RS.</div>
+                                @error('ceo_rank')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ceo_nrp" class="form-label">NRP/NIK</label>
+                                <input type="text" class="form-control @error('ceo_nrp') is-invalid @enderror" id="ceo_nrp" name="ceo_nrp" value="{{ old('ceo_nrp', $tenant->ceo_nrp) }}">
+                                <div class="form-text">NRP/NIK Direktur / Pimpinan RS.</div>
+                                @error('ceo_nrp')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label for="address" class="form-label">Alamat</label>
                         <textarea class="form-control @error('address') is-invalid @enderror" id="address" name="address" rows="2">{{ old('address', $tenant->address) }}</textarea>
                         @error('address')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="city" class="form-label">Kota</label>
+                        <input type="text" class="form-control @error('city') is-invalid @enderror" id="city" name="city" value="{{ old('city', $tenant->city) }}">
+                        @error('city')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
@@ -113,6 +169,15 @@
                         <input type="file" class="form-control @error('logo') is-invalid @enderror" id="logo" name="logo">
                         <div class="form-text">Format yang diizinkan: JPG, PNG, GIF. Ukuran maksimal: 2MB.</div>
                         @error('logo')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="letter_head" class="form-label">Kop Surat</label>
+                        <textarea class="form-control @error('letter_head') is-invalid @enderror" id="letter_head" name="letter_head" rows="3">{{ old('letter_head', $tenant->letter_head) }}</textarea>
+                        <div class="form-text">Masukkan teks untuk kop surat yang akan ditampilkan pada dokumen resmi.</div>
+                        @error('letter_head')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>

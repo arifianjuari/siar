@@ -210,17 +210,27 @@ class TenantController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'address' => 'nullable|string',
+            'city' => 'nullable|string|max:100',
+            'ceo' => 'nullable|string|max:255',
+            'ceo_rank' => 'nullable|string|max:100',
+            'ceo_nrp' => 'nullable|string|max:50',
             'phone' => 'nullable|string|max:15',
             'email' => 'nullable|email|max:255',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'letter_head' => 'nullable|string',
         ]);
 
         // Update data tenant
         $tenant->name = $validated['name'];
         $tenant->description = $validated['description'];
         $tenant->address = $validated['address'];
+        $tenant->city = $validated['city'];
+        $tenant->ceo = $validated['ceo'];
+        $tenant->ceo_rank = $validated['ceo_rank'];
+        $tenant->ceo_nrp = $validated['ceo_nrp'];
         $tenant->phone = $validated['phone'];
         $tenant->email = $validated['email'];
+        $tenant->letter_head = $validated['letter_head'];
 
         // Upload logo jika ada
         if ($request->hasFile('logo')) {

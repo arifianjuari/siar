@@ -217,7 +217,16 @@
                                 </div>
                             </button>
                             <div id="workUnitSubmenu" class="collapse" style="padding-left: 1.5rem; margin-top: 5px;">
+                                <a href="{{ route('work-units.index') }}" 
+                                   class="nav-link {{ request()->routeIs('work-units.index') ? 'active' : '' }} my-1">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-sidebar">
+                                            <i data-feather="list"></i>
+                                        </div>
+                                        <span class="menu-text">Daftar Unit Kerja</span>
+                                    </div>
                                 </a>
+                                
                                 @php
                                 try {
                                     $userWorkUnitId = auth()->user()->work_unit_id ?? null;
@@ -237,6 +246,16 @@
                                     </div>
                                 </a>
                                 @endif
+                                
+                                <a href="{{ route('work-units.spo.index') }}" 
+                                   class="nav-link {{ request()->routeIs('work-units.spo.*') ? 'active' : '' }} my-1">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-sidebar">
+                                            <i data-feather="file-text"></i>
+                                        </div>
+                                        <span class="menu-text">SPO</span>
+                                    </div>
+                                </a>
                             </div>
                         </div>
                     @else

@@ -14,9 +14,9 @@ $hideDefaultHeader = true;
         border-bottom: none !important;
     }
     .main-container {
-        max-width: 1250px;
+        width: 100%;
         margin: 0.5rem auto;
-        padding: 0;
+        padding: 0 1rem;
     }
     .detail-card {
         border-radius: 8px;
@@ -24,6 +24,7 @@ $hideDefaultHeader = true;
         background: #fff;
         border: none;
         margin-bottom: 1rem;
+        width: 100%;
     }
     .card-header-custom {
         display: flex;

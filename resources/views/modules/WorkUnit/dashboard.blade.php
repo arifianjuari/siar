@@ -140,6 +140,190 @@ $hideDefaultHeader = true;
         border-bottom-right-radius: 0;
         border-bottom-left-radius: 0;
     }
+    
+    /* Styles untuk Struktur Organisasi (Tree View) */
+    .orgchart-container {
+        overflow-x: auto;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+    }
+
+    .orgchart {
+        display: inline-block;
+        min-width: 100%;
+    }
+
+    /* Basic tree styling */
+    .orgchart ul {
+        padding-top: 20px;
+        position: relative;
+        transition: all 0.5s;
+        -webkit-transition: all 0.5s;
+        -moz-transition: all 0.5s;
+    }
+
+    .orgchart li {
+        float: left;
+        text-align: center;
+        list-style-type: none;
+        position: relative;
+        padding: 20px 5px 0 5px;
+        transition: all 0.5s;
+        -webkit-transition: all 0.5s;
+        -moz-transition: all 0.5s;
+    }
+
+    /* Connector lines */
+    .orgchart li::before, .orgchart li::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 50%;
+        border-top: 2px solid #ccc;
+        width: 50%;
+        height: 20px;
+    }
+    .orgchart li::after {
+        right: auto;
+        left: 50%;
+        border-left: 2px solid #ccc;
+    }
+
+    /* Remove left line from first child and right line from last child */
+    .orgchart li:only-child::after, .orgchart li:only-child::before {
+        display: none;
+    }
+    .orgchart li:only-child { padding-top: 0; }
+    .orgchart li:first-child::before, .orgchart li:last-child::after {
+        border: 0 none;
+    }
+    .orgchart li:last-child::before {
+        border-right: 2px solid #ccc;
+        border-radius: 0 5px 0 0;
+        -webkit-border-radius: 0 5px 0 0;
+        -moz-border-radius: 0 5px 0 0;
+    }
+    .orgchart li:first-child::after {
+        border-radius: 5px 0 0 0;
+        -webkit-border-radius: 5px 0 0 0;
+        -moz-border-radius: 5px 0 0 0;
+    }
+
+    /* Vertical line */
+    .orgchart ul ul::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        border-left: 2px solid #ccc;
+        width: 0;
+        height: 20px;
+    }
+
+    /* Node styling */
+    .orgchart li .node {
+        border: 2px solid #ccc;
+        padding: 10px;
+        text-decoration: none;
+        color: #333;
+        background-color: #fff;
+        display: inline-block;
+        border-radius: 8px;
+        min-width: 180px;
+        transition: all 0.3s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    .orgchart li .node:hover {
+        background: #f5f5f5;
+        border-color: #aaa;
+    }
+
+    /* Style for different levels */
+    .node.level-ceo { 
+        background-color: #f8faff; 
+        border-color: #4169E1; 
+        box-shadow: 0 2px 4px rgba(65, 105, 225, 0.15);
+    }
+    .node.level-director { 
+        background-color: #fffcf0; 
+        border-color: #FFA500; 
+        box-shadow: 0 2px 4px rgba(255, 165, 0, 0.15);
+    }
+    .node.level-manager { 
+        background-color: #f0f8ff; 
+        border-color: #4682B4; 
+        box-shadow: 0 2px 4px rgba(70, 130, 180, 0.15);
+    }
+    .node.level-staff { 
+        background-color: #fff5f5; 
+        border-color: #E75480; 
+        box-shadow: 0 2px 4px rgba(231, 84, 128, 0.15);
+    }
+
+    .node-unit {
+        font-weight: bold;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+        color: #333;
+        padding-bottom: 5px;
+    }
+    
+    .node-divider {
+        border-top: 1px solid #ddd;
+        margin: 5px 0;
+    }
+    
+    .node-name {
+        font-size: 0.85rem;
+        color: #555;
+    }
+    
+    .node-type {
+        font-size: 0.7rem;
+        color: #777;
+        font-style: italic;
+        display: block;
+        margin-bottom: 2px;
+    }
+    
+    /* Toggle button styling */
+    .toggle-btn {
+        border: none;
+        background: none;
+        float: right;
+        cursor: pointer;
+        color: #666;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        padding: 0;
+        margin-left: 5px;
+        background-color: rgba(0,0,0,0.05);
+    }
+    
+    .toggle-btn:hover {
+        background-color: rgba(0,0,0,0.1);
+        color: #333;
+    }
+    
+    /* Collapsed state */
+    .collapsed .toggle-btn i {
+        transform: rotate(90deg);
+    }
+    
+    .collapsed + ul.children-container {
+        display: none;
+    }
+    
+    /* Animation for expand/collapse */
+    .children-container {
+        transition: height 0.3s ease-out;
+    }
 </style>
 @endpush
 
@@ -160,14 +344,58 @@ $hideDefaultHeader = true;
         </div>
         
         <div class="d-flex align-items-center">
-            <img src="{{ $workUnit->headOfUnit && $workUnit->headOfUnit->profile_photo ? asset('storage/'.$workUnit->headOfUnit->profile_photo) : asset('images/default-avatar.png') }}" alt="Profile" class="profile-img">
+            @php
+                $nameInitial = $workUnit->headOfUnit ? substr($workUnit->headOfUnit->name, 0, 1) : 'U';
+                $avatarUrl = $workUnit->headOfUnit && $workUnit->headOfUnit->profile_photo 
+                    ? asset('storage/'.$workUnit->headOfUnit->profile_photo) 
+                    : "https://ui-avatars.com/api/?name=" . urlencode($workUnit->headOfUnit ? $workUnit->headOfUnit->name : $workUnit->unit_name) . "&background=4F46E5&color=fff&bold=true&size=128";
+            @endphp
+            <img src="{{ $avatarUrl }}" alt="Profile" class="profile-img">
             
             <div class="profile-cover-content">
-                <h1 class="text-white mb-0 fw-bold">{{ $workUnit->unit_name }}</h1>
+                <h1 class="text-white mb-0 fw-bold">{{ $workUnit->headOfUnit->name ?? 'Kepala Unit Belum Ditentukan' }}</h1>
                 <p class="text-white-50 mb-0">
-                    <span class="badge bg-white text-primary me-2">{{ $workUnit->headOfUnit->name ?? 'Kepala Unit Belum Ditentukan' }}</span>
+                    <span class="badge bg-white text-primary me-2">{{ $workUnit->unit_name }}</span>
                     <span><i class="fas fa-sitemap me-1"></i> {{ ucfirst($workUnit->unit_type) }}</span>
                 </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Struktur Organisasi -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Struktur Organisasi</h5>
+            <div class="btn-group">
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleAllNodes(true)" title="Tampilkan Semua">
+                    <i class="fas fa-expand"></i> Tampilkan Semua
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleAllNodes(false)" title="Sembunyikan Semua">
+                    <i class="fas fa-compress"></i> Sembunyikan Semua
+                </button>
+            </div>
+        </div>
+        <div class="card-body orgchart-container">
+            <div class="orgchart">
+                <ul>
+                    <li>
+                        <div class="node level-director">
+                            <div class="node-unit">{{ $workUnit->unit_name }}</div>
+                            <div class="node-divider"></div>
+                            @if($workUnit->headOfUnit)
+                                <div class="node-name">{{ $workUnit->headOfUnit->name }}</div>
+                            @endif
+                        </div>
+                        
+                        @if($workUnit->children && $workUnit->children->count() > 0)
+                            <ul>
+                                @foreach($workUnit->children as $child)
+                                    @include('modules.WorkUnit.partials.org-tree-node', ['node' => $child])
+                                @endforeach
+                            </ul>
+                        @endif
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
@@ -401,7 +629,12 @@ $hideDefaultHeader = true;
                 @if($workUnit->headOfUnit)
                 <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
                     <div class="flex-shrink-0">
-                        <img src="{{ $workUnit->headOfUnit->profile_photo ? asset('storage/'.$workUnit->headOfUnit->profile_photo) : asset('images/default-avatar.png') }}" alt="Profile" width="50" height="50" class="rounded-circle">
+                        @php
+                            $avatarUrl = $workUnit->headOfUnit->profile_photo 
+                                ? asset('storage/'.$workUnit->headOfUnit->profile_photo) 
+                                : "https://ui-avatars.com/api/?name=" . urlencode($workUnit->headOfUnit->name) . "&background=4F46E5&color=fff&bold=true&size=128";
+                        @endphp
+                        <img src="{{ $avatarUrl }}" alt="Profile" width="50" height="50" class="rounded-circle">
                     </div>
                     <div class="ms-3">
                         <h6 class="mb-0">{{ $workUnit->headOfUnit->name }}</h6>
@@ -444,5 +677,42 @@ $hideDefaultHeader = true;
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
     });
+
+    function toggleChildren(button) {
+        // Toggle collapsed class on parent node
+        const nodeElement = button.closest('.node');
+        nodeElement.classList.toggle('collapsed');
+        
+        // Toggle icon
+        const icon = button.querySelector('i');
+        if (nodeElement.classList.contains('collapsed')) {
+            icon.classList.remove('fa-minus');
+            icon.classList.add('fa-plus');
+        } else {
+            icon.classList.remove('fa-plus');
+            icon.classList.add('fa-minus');
+        }
+    }
+    
+    // Expand/collapse all nodes function
+    function toggleAllNodes(expand) {
+        const nodes = document.querySelectorAll('.orgchart .node');
+        nodes.forEach(node => {
+            const button = node.querySelector('.toggle-btn');
+            if (button) {
+                const icon = button.querySelector('i');
+                
+                if (expand) {
+                    node.classList.remove('collapsed');
+                    icon.classList.remove('fa-plus');
+                    icon.classList.add('fa-minus');
+                } else {
+                    node.classList.add('collapsed');
+                    icon.classList.remove('fa-minus');
+                    icon.classList.add('fa-plus');
+                }
+            }
+        });
+    }
 </script>
 @endpush 

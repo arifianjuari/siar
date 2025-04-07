@@ -38,9 +38,9 @@ $hideDefaultHeader = true;
         padding: 0.5rem 1.5rem;
     }
     .main-container {
-        max-width: 1250px;
+        width: 100%;
         margin: 0.5rem auto;
-        padding: 0;
+        padding: 0 1rem;
     }
     .main-card {
         border-radius: 8px;
@@ -48,6 +48,7 @@ $hideDefaultHeader = true;
         background: #fff;
         border: none;
         margin-bottom: 1rem;
+        width: 100%;
     }
     .card-header-custom {
         display: flex;
@@ -75,10 +76,12 @@ $hideDefaultHeader = true;
     }
     .table-container {
         margin-top: 0.5rem;
+        width: 100%;
     }
     /* Perkecil ukuran teks pada tabel */
     .table {
         font-size: 0.85rem;
+        width: 100%;
         table-layout: fixed;
     }
     /* Styling untuk kolom yang dapat di-resize */

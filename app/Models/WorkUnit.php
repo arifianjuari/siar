@@ -77,6 +77,14 @@ class WorkUnit extends Model
     }
 
     /**
+     * Get the users assigned to this work unit.
+     */
+    public function users()
+    {
+        return $this->hasMany(User::class, 'work_unit_id');
+    }
+
+    /**
      * Scope a query to only include active work units.
      */
     public function scopeActive($query)

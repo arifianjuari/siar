@@ -45,9 +45,14 @@ class Tenant extends Model
         'database',
         'description',
         'address',
+        'city',
+        'ceo',
+        'ceo_rank',
+        'ceo_nrp',
         'phone',
         'email',
         'logo',
+        'letter_head',
         'settings',
         'is_active',
     ];
@@ -160,7 +165,7 @@ class Tenant extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'domain', 'database', 'description', 'address', 'phone', 'email', 'logo', 'is_active', 'settings'])
+            ->logOnly(['name', 'domain', 'database', 'description', 'address', 'city', 'ceo', 'ceo_rank', 'ceo_nrp', 'phone', 'email', 'logo', 'letter_head', 'is_active', 'settings'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->setDescriptionForEvent(function (string $eventName) {
