@@ -2,24 +2,42 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
-use Laravel\Telescope\IncomingEntry;
-use Laravel\Telescope\Telescope;
-use Laravel\Telescope\TelescopeApplicationServiceProvider;
 
-class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
+class TelescopeServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
      */
     public function register(): void
     {
+        // Hanya register jika Laravel Telescope tersedia (dev dependency)
+        if (!class_exists(\Laravel\Telescope\TelescopeApplicationServiceProvider::class)) {
+            return;
+        }
+
+        // Register custom Telescope configuration
+        $this->registerTelescope();
+    }
+
+    /**
+     * Register Telescope configuration
+     */
+    protected function registerTelescope(): void
+    {
+        if (!class_exists(\Laravel\Telescope\Telescope::class)) {
+            return;
+        }
+
+        $telescope = \Laravel\Telescope\Telescope::class;
+        
         // Telescope hanya berjalan di local, staging, dan ketika dipaksa berjalan melalui variabel lingkungan
-        Telescope::night();
+        $telescope::night();
 
         $this->hideSensitiveRequestDetails();
 
-        Telescope::filter(function (IncomingEntry $entry) {
+        $telescope::filter(function ($entry) {
             if ($this->app->environment('local', 'staging')) {
                 return true;
             }
@@ -35,6 +53,9 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
                 $entry->isScheduledTask() ||
                 $entry->hasMonitoredTag();
         });
+
+        // Register gate untuk akses Telescope
+        $this->registerGate();
     }
 
     /**
@@ -42,13 +63,18 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
      */
     protected function hideSensitiveRequestDetails(): void
     {
+        if (!class_exists(\Laravel\Telescope\Telescope::class)) {
+            return;
+        }
+
         if ($this->app->environment('local', 'staging')) {
             return;
         }
 
-        Telescope::hideRequestParameters(['_token', 'password', 'password_confirmation']);
+        $telescope = \Laravel\Telescope\Telescope::class;
+        $telescope::hideRequestParameters(['_token', 'password', 'password_confirmation']);
 
-        Telescope::hideRequestHeaders([
+        $telescope::hideRequestHeaders([
             'cookie',
             'x-csrf-token',
             'x-xsrf-token',
@@ -60,7 +86,7 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
      *
      * This gate determines who can access Telescope in non-local environments.
      */
-    protected function gate(): void
+    protected function registerGate(): void
     {
         Gate::define('viewTelescope', function ($user) {
             // Pastikan user memiliki role dan role-nya adalah superadmin
