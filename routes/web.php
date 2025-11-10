@@ -144,13 +144,8 @@ Route::prefix('superadmin')->name('superadmin.')->middleware(['auth', 'superadmi
 
 // Route untuk modul-modul
 Route::middleware(['auth', 'tenant'])->prefix('modules')->name('modules.')->group(function () {
-    // User Management Module
-    Route::prefix('user-management')->name('user-management.')->middleware('module:user-management')->group(function () {
-        // Users
-        Route::resource('users', App\Http\Controllers\Modules\UserManagement\UserController::class);
-        // Roles
-        Route::resource('roles', App\Http\Controllers\Modules\UserManagement\RoleController::class);
-    });
+    // User Management Module - Routes didefinisikan di routes/modules/UserManagement.php
+    // Route::prefix('user-management') dihapus karena sudah ada di UserManagement.php
 
     // Product Management Module
     Route::prefix('product-management')->name('product-management.')->middleware('module:product-management')->group(function () {
@@ -301,49 +296,9 @@ Route::middleware(['auth', 'tenant'])->prefix('modules')->name('modules.')->grou
     });
 
     /**
-     * Correspondence Module
+     * Correspondence Module - Routes didefinisikan di routes/modules/Correspondence.php
+     * Route dihapus karena sudah ada di Correspondence.php untuk menghindari duplicate
      */
-    Route::prefix('correspondence')->name('correspondence.')->middleware('module:correspondence')->group(function () {
-        // Mengubah route default agar langsung ke daftar surat
-        Route::get('/', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'index'])->name('index');
-
-        // Dashboard tetap dipertahankan jika dibutuhkan
-        Route::get('/dashboard', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'dashboard'])->name('dashboard');
-
-        // Route resource untuk letters
-        Route::resource('letters', App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class);
-
-        // Export PDF
-        Route::get('letters/{id}/export-pdf', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'exportPdf'])
-            ->name('letters.export-pdf')
-            ->middleware('check.permission:correspondence,can_export');
-
-        // Export Word
-        Route::get('letters/{id}/export-word', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'exportWord'])
-            ->name('letters.export-word')
-            ->middleware('check.permission:correspondence,can_export');
-
-        // QR Code route
-        Route::get('letters/{id}/qr-code', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'generateQr'])
-            ->name('letters.qr-code');
-
-        // Pencarian
-        Route::get('search', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'search'])
-            ->name('search');
-
-        // Laporan
-        Route::get('reports', [App\Http\Controllers\Modules\Correspondence\ReportController::class, 'index'])
-            ->name('reports.index')
-            ->middleware('check.permission:correspondence,can_generate_reports');
-
-        Route::get('reports/generate', [App\Http\Controllers\Modules\Correspondence\ReportController::class, 'generate'])
-            ->name('reports.generate')
-            ->middleware('check.permission:correspondence,can_generate_reports');
-
-        Route::post('reports/export', [App\Http\Controllers\Modules\Correspondence\ReportController::class, 'export'])
-            ->name('reports.export')
-            ->middleware('check.permission:correspondence,can_generate_reports');
-    });
 });
 
 // Tenant routes - akses melalui subdomain
