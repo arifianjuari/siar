@@ -29,7 +29,7 @@ Route::get('/', function () {
         return redirect()->route('dashboard');
     }
     return redirect()->route('login');
-});
+})->name('welcome');
 
 // Debug routes
 Route::get('/debug-session', function () {

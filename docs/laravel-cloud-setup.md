@@ -245,7 +245,7 @@ Setelah deploy, verifikasi:
 
 ### Error: Class "Laravel\Telescope\TelescopeApplicationServiceProvider" not found
 
-Error ini terjadi karena Laravel Telescope adalah dev dependency dan tidak tersedia di production.
+Error ini terjadi karena Laravel Telescope adalah dev dependency dan tidak tersedia di production. 
 
 **Solusi:** File `TelescopeServiceProvider` sudah diperbaiki untuk mengecek apakah class tersedia sebelum digunakan. Jika masih terjadi error:
 
@@ -256,6 +256,37 @@ Error ini terjadi karena Laravel Telescope adalah dev dependency dan tidak terse
    php artisan cache:clear
    ```
 3. Rebuild aplikasi di Laravel Cloud
+
+### Error: 404 Not Found (nginx)
+
+Jika Anda mendapatkan error **404 Not Found** dari nginx saat mengakses domain aplikasi:
+
+**Solusi:**
+
+1. **Clear Route Cache** - Jalankan di Laravel Cloud dashboard (Artisan Commands):
+   ```bash
+   php artisan route:clear
+   php artisan config:clear
+   php artisan cache:clear
+   php artisan view:clear
+   php artisan route:cache
+   php artisan config:cache
+   ```
+
+2. **Verifikasi Environment Variables** - Pastikan `APP_URL` sesuai dengan domain Laravel Cloud:
+   ```env
+   APP_URL=https://siar-main-bot1z9.laravel.cloud
+   ```
+
+3. **Test Route Spesifik** - Coba akses route spesifik:
+   - `https://siar-main-bot1z9.laravel.cloud/login` - Harus menampilkan halaman login
+   - `https://siar-main-bot1z9.laravel.cloud/register` - Harus menampilkan halaman register
+
+4. **Rebuild Aplikasi** - Jika masih error, coba rebuild aplikasi di Laravel Cloud dashboard
+
+5. **Cek Logs** - Buka bagian **Logs** di Laravel Cloud dashboard untuk melihat error detail
+
+**Lihat dokumentasi lengkap:** [Troubleshooting Guide](laravel-cloud-troubleshooting.md)
 
 ## Catatan Penting
 
