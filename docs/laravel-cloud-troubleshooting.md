@@ -74,6 +74,54 @@ Coba akses route spesifik untuk memastikan routing berfungsi:
 
 Jika route spesifik berfungsi tapi root (`/`) tidak, kemungkinan masalah di route root.
 
+## Error 419 Page Expired
+
+Jika Anda mendapatkan error **419 Page Expired** saat login atau submit form:
+
+**Penyebab:**
+- CSRF token expired atau tidak valid
+- Session tidak berfungsi dengan benar
+- Tabel `sessions` belum dibuat (jika menggunakan database driver)
+
+**Solusi:**
+
+1. **Pastikan Tabel Sessions Sudah Dibuat:**
+   ```bash
+   php artisan migrate
+   ```
+   Pastikan migration `2025_04_26_211145_create_sessions_table` sudah dijalankan.
+
+2. **Pastikan Tabel Cache Sudah Dibuat (jika menggunakan database cache):**
+   ```bash
+   php artisan migrate
+   ```
+   Pastikan migration `2025_11_10_125532_create_cache_table` sudah dijalankan.
+
+3. **Verifikasi Environment Variables:**
+   ```env
+   SESSION_DRIVER=database
+   SESSION_LIFETIME=120
+   SESSION_DOMAIN=.laravel.cloud
+   CACHE_DRIVER=database
+   ```
+
+4. **Clear Session dan Cache:**
+   ```bash
+   php artisan session:clear
+   php artisan cache:clear
+   php artisan config:clear
+   ```
+
+5. **Pastikan APP_URL Benar:**
+   ```env
+   APP_URL=https://siar-main-bot1z9.laravel.cloud
+   ```
+
+6. **Cek Browser:**
+   - Clear cookies dan cache browser
+   - Coba di browser lain atau mode incognito
+   - Pastikan JavaScript enabled
+
 ## Error Lainnya
 
 ### Database Connection Error
@@ -98,6 +146,29 @@ Jika ada error session:
 1. Pastikan `SESSION_DRIVER=database`
 2. Pastikan tabel `sessions` sudah dibuat (jalankan `php artisan migrate`)
 3. Cek konfigurasi `SESSION_DOMAIN`
+
+### Cache Table Not Found Error
+
+Jika ada error `Table 'cache' doesn't exist`:
+
+1. Jalankan migration untuk membuat tabel cache:
+   ```bash
+   php artisan migrate
+   ```
+2. Pastikan migration `2025_11_10_125532_create_cache_table` sudah dijalankan
+3. Jika menggunakan database cache driver, pastikan `CACHE_DRIVER=database`
+
+### Duplicate Route Name Error
+
+Jika ada error `Another route has already been assigned name`:
+
+1. Cek file `routes/web.php` untuk route dengan nama yang sama
+2. Hapus atau rename route yang duplicate
+3. Clear route cache:
+   ```bash
+   php artisan route:clear
+   php artisan route:cache
+   ```
 
 ## Kontak Support
 
