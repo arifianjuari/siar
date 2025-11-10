@@ -92,6 +92,9 @@ Route::get('/debug-config', function () {
 
 // Debug route untuk cek apakah user sudah login
 Route::get('/debug-auth', function () {
+    $session = request()->session();
+    $sessionCookieName = config('session.cookie');
+    
     return response()->json([
         'auth_check' => auth()->check(),
         'user' => auth()->user() ? [
@@ -108,6 +111,14 @@ Route::get('/debug-auth', function () {
                 'name' => auth()->user()->tenant->name,
             ] : null,
         ] : null,
+        'session_info' => [
+            'session_id' => $session->getId(),
+            'session_cookie_name' => $sessionCookieName,
+            'has_session_cookie' => request()->hasCookie($sessionCookieName),
+            'session_cookie_value' => request()->cookie($sessionCookieName),
+            'session_has_auth_key' => $session->has('login_web_' . sha1('Illuminate\Auth\SessionGuard')),
+            'all_cookies' => request()->cookies->all(),
+        ],
         'session_data' => session()->all(),
     ]);
 })->middleware('web');
