@@ -90,6 +90,28 @@ Route::get('/debug-config', function () {
     ]);
 });
 
+// Debug route untuk cek apakah user sudah login
+Route::get('/debug-auth', function () {
+    return response()->json([
+        'auth_check' => auth()->check(),
+        'user' => auth()->user() ? [
+            'id' => auth()->id(),
+            'name' => auth()->user()->name,
+            'email' => auth()->user()->email,
+            'role' => auth()->user()->role ? [
+                'id' => auth()->user()->role->id,
+                'name' => auth()->user()->role->name,
+                'slug' => auth()->user()->role->slug,
+            ] : null,
+            'tenant' => auth()->user()->tenant ? [
+                'id' => auth()->user()->tenant->id,
+                'name' => auth()->user()->tenant->name,
+            ] : null,
+        ] : null,
+        'session_data' => session()->all(),
+    ]);
+})->middleware('web');
+
 // Dashboard utama - gunakan hanya middleware auth, tanpa tenant
 Route::get('/dashboard', function () {
     // Untuk debug
