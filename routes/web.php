@@ -623,7 +623,7 @@ Route::middleware(['auth'])->prefix('tenant')->name('tenant.')->group(function (
 
     // Tag Document Relations
     Route::post('tags/attach-document', [App\Http\Controllers\Tenant\TagController::class, 'attachTagToDocument'])->name('tags.attach-document');
-    Route::delete('tags/attach-document', [App\Http\Controllers\Tenant\TagController::class, 'attachTagToDocument'])->name('tags.attach-document');
+    Route::delete('tags/detach-document', [App\Http\Controllers\Tenant\TagController::class, 'attachTagToDocument'])->name('tags.detach-document');
     Route::post('tags/delete-tag', [App\Http\Controllers\Tenant\TagController::class, 'deleteTag'])->name('tags.delete-tag');
     Route::post('tags/create-and-attach', [App\Http\Controllers\Tenant\TagController::class, 'createAndAttachTag'])->name('tags.create-and-attach');
     Route::get('tags/documents/{slug}', [App\Http\Controllers\Tenant\TagController::class, 'getDocumentsByTag'])->name('tags.documents');
