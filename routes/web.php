@@ -112,6 +112,65 @@ Route::get('/debug-auth', function () {
     ]);
 })->middleware('web');
 
+// Route untuk create/reset superadmin user (TEMPORARY - HAPUS SETELAH PRODUCTION)
+Route::get('/setup-superadmin', function () {
+    try {
+        // 1. Buat tenant system jika belum ada
+        $tenant = \App\Models\Tenant::firstOrCreate(
+            ['name' => 'System'],
+            [
+                'domain' => 'system',
+                'database' => 'system',
+                'is_active' => true,
+            ]
+        );
+
+        // 2. Buat role superadmin jika belum ada
+        $role = \App\Models\Role::firstOrCreate(
+            ['slug' => 'superadmin', 'tenant_id' => $tenant->id],
+            [
+                'name' => 'Superadmin',
+                'description' => 'Administrator Sistem dengan akses penuh',
+                'is_active' => true,
+            ]
+        );
+
+        // 3. Buat atau update user superadmin
+        $user = \App\Models\User::updateOrCreate(
+            ['email' => 'superadmin@siar.com'],
+            [
+                'tenant_id' => $tenant->id,
+                'role_id' => $role->id,
+                'name' => 'Superadmin',
+                'password' => \Illuminate\Support\Facades\Hash::make('asdfasdf'),
+                'is_active' => true,
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Superadmin user berhasil dibuat/diperbarui!',
+            'credentials' => [
+                'email' => 'superadmin@siar.com',
+                'password' => 'asdfasdf',
+            ],
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role ? $user->role->slug : null,
+                'tenant' => $user->tenant ? $user->tenant->name : null,
+            ],
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ], 500);
+    }
+});
+
 // Dashboard utama - gunakan hanya middleware auth, tanpa tenant
 Route::get('/dashboard', function () {
     // Untuk debug
