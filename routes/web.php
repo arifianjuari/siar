@@ -90,6 +90,26 @@ Route::get('/debug-config', function () {
     ]);
 });
 
+// Route untuk clear semua cookie session (untuk testing)
+Route::get('/clear-session-cookies', function () {
+    $response = response()->json([
+        'message' => 'Silakan hapus cookie secara manual di browser DevTools > Application > Cookies',
+        'instructions' => [
+            '1. Buka Developer Tools (F12)',
+            '2. Buka tab Application > Cookies',
+            '3. Hapus semua cookie yang ada, terutama siar_session (ada 2 duplikat)',
+            '4. Refresh halaman dan coba login lagi',
+        ],
+        'current_cookies' => request()->cookies->all(),
+    ]);
+    
+    // Set cookie dengan Max-Age 0 untuk menghapus cookie
+    $cookieName = config('session.cookie');
+    $response->cookie($cookieName, '', -1, '/', null, true, true, false, 'Lax');
+    
+    return $response;
+})->middleware('web');
+
 // Debug route untuk cek apakah user sudah login
 Route::get('/debug-auth', function () {
     $session = request()->session();
