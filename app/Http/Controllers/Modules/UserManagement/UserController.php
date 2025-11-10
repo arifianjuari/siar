@@ -96,7 +96,7 @@ class UserController extends Controller
         // Ambil work unit yang aktif dalam tenant yang sama
         $workUnits = WorkUnit::where('tenant_id', $tenantId)
             ->where('is_active', true)
-            ->orderBy('unit_name')
+            ->orderBy('order')
             ->get();
 
         return view('modules.UserManagement.users.create', compact('roles', 'workUnits'));
@@ -131,7 +131,12 @@ class UserController extends Controller
             ],
             'password' => 'required|string|min:8|confirmed',
             'role_id' => 'required|exists:roles,id',
-            'work_unit_id' => 'nullable|exists:work_units,id'
+            'work_unit_id' => 'nullable|exists:work_units,id',
+            'position' => 'nullable|string|max:255',
+            'rank' => 'nullable|string|max:255',
+            'nrp' => 'nullable|string|max:255',
+            'supervisor_id' => 'nullable|exists:users,id',
+            'employment_status' => 'nullable|in:aktif,resign,cuti,magang'
         ]);
 
         // Pastikan role yang dipilih masih dalam tenant yang sama
@@ -148,6 +153,14 @@ class UserController extends Controller
             }
         }
 
+        // Pastikan supervisor berada dalam tenant yang sama jika dipilih
+        if (!empty($validated['supervisor_id'])) {
+            $supervisor = User::findOrFail($validated['supervisor_id']);
+            if ($supervisor->tenant_id != $tenantId) {
+                return redirect()->back()->withErrors(['supervisor_id' => 'Atasan tidak valid'])->withInput();
+            }
+        }
+
         $user = User::create([
             'tenant_id' => $tenantId,
             'role_id' => $validated['role_id'],
@@ -157,6 +170,11 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
             'is_active' => $request->has('is_active') ? 1 : 0,
             'created_by' => auth()->id(),
+            'position' => $validated['position'] ?? null,
+            'rank' => $validated['rank'] ?? null,
+            'nrp' => $validated['nrp'] ?? null,
+            'supervisor_id' => $validated['supervisor_id'] ?? null,
+            'employment_status' => $validated['employment_status'] ?? 'aktif'
         ]);
 
         return redirect()->route('modules.user-management.users.index')
@@ -238,7 +256,7 @@ class UserController extends Controller
         // Ambil work unit yang aktif dalam tenant yang sama
         $workUnits = WorkUnit::where('tenant_id', $tenantId)
             ->where('is_active', true)
-            ->orderBy('unit_name')
+            ->orderBy('order')
             ->get();
 
         return view('modules.UserManagement.users.edit', compact('user', 'roles', 'workUnits'));
@@ -287,7 +305,12 @@ class UserController extends Controller
             ],
             'password' => 'nullable|string|min:8|confirmed',
             'role_id' => 'required|exists:roles,id',
-            'work_unit_id' => 'nullable|exists:work_units,id'
+            'work_unit_id' => 'nullable|exists:work_units,id',
+            'position' => 'nullable|string|max:255',
+            'rank' => 'nullable|string|max:255',
+            'nrp' => 'nullable|string|max:255',
+            'supervisor_id' => 'nullable|exists:users,id',
+            'employment_status' => 'nullable|in:aktif,resign,cuti,magang'
         ]);
 
         // Pastikan role yang dipilih masih dalam tenant yang sama
@@ -304,12 +327,29 @@ class UserController extends Controller
             }
         }
 
+        // Pastikan supervisor berada dalam tenant yang sama dan bukan diri sendiri
+        if (!empty($validated['supervisor_id'])) {
+            if ($validated['supervisor_id'] == $user->id) {
+                return redirect()->back()->withErrors(['supervisor_id' => 'Pengguna tidak bisa menjadi atasan diri sendiri'])->withInput();
+            }
+
+            $supervisor = User::findOrFail($validated['supervisor_id']);
+            if ($supervisor->tenant_id != $tenantId) {
+                return redirect()->back()->withErrors(['supervisor_id' => 'Atasan tidak valid'])->withInput();
+            }
+        }
+
         $user->role_id = $validated['role_id'];
         $user->work_unit_id = $validated['work_unit_id'] ?? null;
         $user->name = $validated['name'];
         $user->email = $validated['email'];
         $user->is_active = $request->has('is_active') ? 1 : 0;
         $user->updated_by = auth()->id();
+        $user->position = $validated['position'] ?? null;
+        $user->rank = $validated['rank'] ?? null;
+        $user->nrp = $validated['nrp'] ?? null;
+        $user->supervisor_id = $validated['supervisor_id'] ?? null;
+        $user->employment_status = $validated['employment_status'] ?? 'aktif';
 
         if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);

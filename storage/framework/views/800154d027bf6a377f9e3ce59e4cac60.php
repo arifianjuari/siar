@@ -102,6 +102,7 @@
                                 <th width="7%">Versi</th>
                                 <th width="12%">Tgl. Berlaku</th>
                                 <th width="10%">Status</th>
+                                <th width="10%">Tag</th>
                                 <th width="11%">Tgl. Perubahan</th>
                                 <th width="20%">Aksi</th>
                             </tr>
@@ -121,6 +122,28 @@
                                             <?php echo e($spo->status_validasi); ?>
 
                                         </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap" style="gap: 2px;">
+                                            <?php $__empty_1 = true; $__currentLoopData = $spo->tags; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tag): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                                <div class="badge bg-info text-white tag-badge" 
+                                                     id="tag-item-<?php echo e($tag->id); ?>-<?php echo e($spo->id); ?>"> 
+                                                    <span><?php echo e($tag->name); ?></span>
+                                                    <button 
+                                                        type="button" 
+                                                        class="btn-close btn-close-white"
+                                                        onclick="hapusTagLangsung(<?php echo e($tag->id); ?>, '<?php echo e($spo->id); ?>', 'App\\Models\\SPO')"
+                                                        aria-label="Close">
+                                                    </button>
+                                                </div>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                                <small class="text-muted">Tidak ada tag</small>
+                                            <?php endif; ?>
+                                        </div>
+                                        
+                                        <form class="d-flex mt-1" style="gap: 2px;" data-spo-id="<?php echo e($spo->id); ?>">
+                                            <input type="text" class="form-control tag-input w-100" placeholder="Tambah tag" required>
+                                        </form>
                                     </td>
                                     <td><?php echo e($spo->updated_at->format('d/m/Y')); ?></td>
                                     <td>
@@ -183,5 +206,195 @@
         </div>
     </div>
 </div>
-<?php $__env->stopSection(); ?> 
+<?php $__env->stopSection(); ?>
+
+<?php $__env->startPush('scripts'); ?>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Dapatkan semua form tag
+        const tagForms = document.querySelectorAll('form[data-spo-id]');
+        
+        // Fungsi untuk menghapus tag
+        window.hapusTagLangsung = function(tagId, spoId, documentType) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            // Hapus elemen tag dari DOM terlebih dahulu (optimistic update)
+            const tagElement = document.getElementById(`tag-item-${tagId}-${spoId}`);
+            if (tagElement) {
+                tagElement.style.opacity = '0.5'; // Visual feedback bahwa sedang diproses
+                
+                // Tambahkan placeholder "Tidak ada tag" jika semua tag sudah dihapus
+                const tagsContainer = document.querySelector(`.d-flex.flex-wrap[style="gap: 2px;"]`);
+                if (tagsContainer && !tagsContainer.querySelector('.tag-badge')) {
+                    const emptyMsg = document.createElement('small');
+                    emptyMsg.className = 'text-muted';
+                    emptyMsg.textContent = 'Tidak ada tag';
+                    tagsContainer.appendChild(emptyMsg);
+                }
+            }
+            
+            // Buat form data
+            const formData = new FormData();
+            formData.append('tag_id', tagId);
+            formData.append('document_id', spoId);
+            formData.append('document_type', documentType);
+            formData.append('_token', csrfToken);
+            
+            // Kirim request dengan fetch API 
+            fetch('<?php echo e(route('tenant.tags.delete-tag')); ?>', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    if (tagElement) {
+                        tagElement.remove();
+                    }
+                } else {
+                    return response.text().then(text => {
+                        throw new Error(`Server error: ${response.status} ${response.statusText}. ${text}`);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error saat menghapus tag:', error);
+                if (tagElement) {
+                    tagElement.style.opacity = '1'; // Kembalikan tampilan jika gagal
+                }
+                alert('Terjadi kesalahan saat menghapus tag. Refresh halaman untuk melihat status terbaru.');
+            });
+        };
+        
+        // Handle submit form untuk setiap input tag
+        tagForms.forEach(function(form) {
+            let isSubmitting = false; // Flag untuk mencegah submit ganda
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                if (isSubmitting) {
+                    return; // Cegah submit ganda
+                }
+                isSubmitting = true; // Set flag
+                
+                // Dapatkan CSRF token dari meta tag
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                // Dapatkan data dari form
+                const spoId = form.dataset.spoId;
+                const inputElement = form.querySelector('input[type="text"]');
+                const tagName = inputElement.value.trim();
+                
+                if (!tagName) {
+                    isSubmitting = false; // Reset flag jika input kosong
+                    return; 
+                }
+                
+                // Buat form data
+                const formData = new FormData();
+                formData.append('tag_name', tagName);
+                formData.append('document_id', spoId);
+                formData.append('document_type', 'App\\Models\\SPO');
+                formData.append('_token', csrfToken);
+
+                const tagsContainer = form.previousElementSibling; // Target kontainer tag
+                
+                // Tampilkan indikator visual bahwa tag sedang ditambahkan
+                inputElement.disabled = true;
+                inputElement.style.opacity = '0.5';
+                
+                // Kirim request dengan fetch API
+                fetch('<?php echo e(route('tenant.tags.create-and-attach')); ?>', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Cek jenis response
+                    if (data.success) {
+                        // Cek apakah tag sudah ada di DOM untuk mencegah duplikasi
+                        const existingTag = tagsContainer.querySelector(`div[id="tag-item-${data.tag.id}-${spoId}"]`);
+                        if (!existingTag) {
+                            // Buat badge tag baru
+                            const newTag = document.createElement('div');
+                            newTag.className = 'badge bg-info text-white tag-badge';
+                            newTag.id = `tag-item-${data.tag.id}-${spoId}`;
+                            
+                            newTag.innerHTML = `
+                                <span>${data.tag.name}</span>
+                                <button 
+                                    type="button" 
+                                    class="btn-close btn-close-white"
+                                    onclick="hapusTagLangsung(${data.tag.id}, '${spoId}', 'App\\\\Models\\\\SPO')"
+                                    aria-label="Close">
+                                </button>
+                            `;
+                            
+                            // Jika ada placeholder "Tidak ada tag", hapus itu terlebih dahulu
+                            const emptyMsg = tagsContainer.querySelector('small.text-muted');
+                            if (emptyMsg) {
+                                emptyMsg.remove();
+                            }
+                            
+                            // Tambahkan tag baru ke kontainer
+                            tagsContainer.appendChild(newTag);
+                        } else {
+                            console.log('Tag sudah ada di DOM, tidak perlu ditambahkan lagi');
+                        }
+                        
+                        // Reset input
+                        inputElement.value = '';
+                    } 
+                    // Jika ini kesalahan duplicate entry, jangan tampilkan alert
+                    else if (data.error && data.error.includes('Duplicate entry')) {
+                        console.log('Tag sudah ada, tidak perlu menambahkan lagi');
+                        inputElement.value = '';
+                    }
+                    // Jika kesalahan lain, tampilkan alert
+                    else {
+                        alert('Gagal menambahkan tag: ' + (data.error || 'Unknown error'));
+                    }
+                    
+                    // Kembalikan input ke status normal
+                    inputElement.disabled = false;
+                    inputElement.style.opacity = '1';
+                    isSubmitting = false; // Reset flag
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Terjadi kesalahan saat menambahkan tag');
+                    // Kembalikan input ke status normal
+                    inputElement.disabled = false;
+                    inputElement.style.opacity = '1';
+                    isSubmitting = false; // Reset flag
+                });
+            });
+            
+            // Handle enter key pada input dengan debounce
+            const inputElement = form.querySelector('input[type="text"]');
+            let debounceTimer;
+            
+            inputElement.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    
+                    // Pembatalan timer sebelumnya jika ada
+                    clearTimeout(debounceTimer);
+                    
+                    // Setel timer baru
+                    debounceTimer = setTimeout(() => {
+                        form.dispatchEvent(new Event('submit'));
+                    }, 300); // 300ms debounce
+                }
+            });
+        });
+    });
+</script>
+<?php $__env->stopPush(); ?> 
 <?php echo $__env->make('layouts.app', ['hideDefaultHeader' => true], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Users/arifianjuari/Library/CloudStorage/GoogleDrive-arifianjuari@gmail.com/My Drive/MYDEV/siar/resources/views/modules/work-unit/spo/index.blade.php ENDPATH**/ ?>

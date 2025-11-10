@@ -29,42 +29,38 @@ class UserSeeder extends Seeder
 
         $this->command->info("Menggunakan tenant: {$tenant->name}");
 
-        // Coba role super-admin terlebih dahulu
-        $superAdminRole = Role::where('slug', 'super-admin')->first();
-        // Jika tidak ditemukan, coba alternatif lain
-        if (!$superAdminRole) {
-            $superAdminRole = Role::where('slug', 'superadmin')->first();
-        }
+        // Cari role superadmin
+        $superAdminRole = Role::where('slug', 'superadmin')->first();
 
+        // Jika role superadmin tidak ada, buat baru
         if (!$superAdminRole) {
-            $this->command->error('Role superadmin tidak ditemukan.');
             $this->command->info('Membuat role superadmin...');
 
             // Buat role superadmin jika tidak ada
             $superAdminRole = Role::create([
-                'tenant_id' => $tenant->id,
-                'name' => 'Super Admin',
-                'slug' => 'super-admin',
-                'description' => 'Super Administrator',
+                'tenant_id' => 1, // System tenant
+                'name' => 'Superadmin',
+                'slug' => 'superadmin',
+                'description' => 'Super Administrator dengan akses penuh ke sistem',
                 'is_active' => true,
             ]);
 
             $this->command->info('Role superadmin berhasil dibuat.');
         }
 
-        // Buat super admin
+        // Buat user superadmin
         $superAdmin = User::firstOrCreate(
             ['email' => 'superadmin@siar.com'],
             [
-                'tenant_id' => $tenant->id,
+                'tenant_id' => 1, // System tenant
                 'role_id' => $superAdminRole->id,
-                'name' => 'Super Admin',
-                'password' => Hash::make('asdfasdf'),
+                'name' => 'Superadmin',
+                'password' => Hash::make('password'),
                 'is_active' => true,
             ]
         );
 
-        $this->command->info('User super admin berhasil dibuat.');
+        $this->command->info('User superadmin berhasil dibuat/diperbarui.');
 
         // Buat admin
         $adminRole = Role::where('slug', 'tenant-admin')->first();

@@ -104,6 +104,16 @@ class Tag extends Model
     }
 
     /**
+     * Morph relasi khusus untuk SPO
+     */
+    public function spos()
+    {
+        return $this->morphedByMany(SPO::class, 'document', 'document_tag', 'tag_id', 'document_id')
+            ->select('spos.*')
+            ->where('spos.tenant_id', $this->tenant_id);
+    }
+
+    /**
      * Scope query untuk tenant berdasarkan user yang login
      */
     public function scopeTenant($query)

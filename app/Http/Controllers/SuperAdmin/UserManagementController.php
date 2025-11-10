@@ -51,7 +51,7 @@ class UserManagementController extends Controller
         $tenants = Tenant::orderBy('name')->get();
         $roles = Role::orderBy('name')->get();
 
-        return view('superadmin.users.index', compact('users', 'tenants', 'roles'));
+        return view('roles.superadmin.users.index', compact('users', 'tenants', 'roles'));
     }
 
     /**
@@ -59,10 +59,9 @@ class UserManagementController extends Controller
      */
     public function create()
     {
-        $tenants = Tenant::orderBy('name')->get();
-        $roles = Role::orderBy('name')->get();
-
-        return view('superadmin.users.create', compact('tenants', 'roles'));
+        $roles = Role::all();
+        $tenants = Tenant::all();
+        return view('roles.superadmin.users.create', compact('roles', 'tenants'));
     }
 
     /**
@@ -74,8 +73,8 @@ class UserManagementController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'tenant_id' => 'nullable|exists:tenants,id',
             'role_id' => 'required|exists:roles,id',
+            'tenant_id' => 'required|exists:tenants,id',
         ]);
 
         if ($validator->fails()) {
@@ -85,26 +84,16 @@ class UserManagementController extends Controller
         }
 
         try {
-            $user = User::create([
+            User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'tenant_id' => $request->tenant_id,
                 'role_id' => $request->role_id,
-            ]);
-
-            // Buat log aktivitas
-            ActivityLog::create([
-                'user_id' => auth()->id(),
                 'tenant_id' => $request->tenant_id,
-                'action' => 'create_user',
-                'model_type' => 'User',
-                'model_id' => $user->id,
-                'description' => 'Membuat pengguna baru: ' . $user->name,
             ]);
 
             return redirect()->route('superadmin.users.index')
-                ->with('success', 'Pengguna berhasil dibuat.');
+                ->with('success', 'Pengguna berhasil ditambahkan');
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
@@ -125,7 +114,7 @@ class UserManagementController extends Controller
             ->take(20)
             ->get();
 
-        return view('superadmin.users.show', compact('user', 'activityLogs'));
+        return view('roles.superadmin.users.show', compact('user', 'activityLogs'));
     }
 
     /**
@@ -133,10 +122,17 @@ class UserManagementController extends Controller
      */
     public function edit(User $user)
     {
-        $tenants = Tenant::orderBy('name')->get();
-        $roles = Role::orderBy('name')->get();
-
-        return view('superadmin.users.edit', compact('user', 'tenants', 'roles'));
+        $allowedRoles = [
+            'Superadmin',
+            'Tenant Admin',
+            'Manajemen Strategis',
+            'Manajemen Eksekutif',
+            'Manajemen Operasional',
+            'Staf'
+        ];
+        $roles = \App\Models\Role::whereIn('name', $allowedRoles)->get();
+        $tenants = \App\Models\Tenant::all();
+        return view('roles.superadmin.users.edit', compact('user', 'roles', 'tenants'));
     }
 
     /**
@@ -148,8 +144,8 @@ class UserManagementController extends Controller
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|string|min:8|confirmed',
-            'tenant_id' => 'nullable|exists:tenants,id',
             'role_id' => 'required|exists:roles,id',
+            'tenant_id' => 'required|exists:tenants,id',
         ]);
 
         if ($validator->fails()) {
@@ -159,32 +155,21 @@ class UserManagementController extends Controller
         }
 
         try {
-            $data = [
+            $userData = [
                 'name' => $request->name,
                 'email' => $request->email,
-                'tenant_id' => $request->tenant_id,
                 'role_id' => $request->role_id,
+                'tenant_id' => $request->tenant_id,
             ];
 
-            // Update password hanya jika diisi
             if ($request->filled('password')) {
-                $data['password'] = Hash::make($request->password);
+                $userData['password'] = Hash::make($request->password);
             }
 
-            $user->update($data);
-
-            // Buat log aktivitas
-            ActivityLog::create([
-                'user_id' => auth()->id(),
-                'tenant_id' => $request->tenant_id,
-                'action' => 'update_user',
-                'model_type' => 'User',
-                'model_id' => $user->id,
-                'description' => 'Memperbarui pengguna: ' . $user->name,
-            ]);
+            $user->update($userData);
 
             return redirect()->route('superadmin.users.index')
-                ->with('success', 'Pengguna berhasil diperbarui.');
+                ->with('success', 'Pengguna berhasil diperbarui');
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
@@ -197,36 +182,10 @@ class UserManagementController extends Controller
      */
     public function destroy(User $user)
     {
-        // Mencegah superadmin menghapus dirinya sendiri
-        if ($user->id === auth()->id()) {
-            return redirect()->back()
-                ->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
-        }
-
-        // Cek apakah user yang akan dihapus adalah superadmin
-        if ($user->hasRole('superadmin')) {
-            return redirect()->back()
-                ->with('error', 'Pengguna superadmin tidak dapat dihapus karena diperlukan untuk administrasi sistem.');
-        }
-
         try {
-            // Simpan informasi untuk log sebelum pengguna dihapus
-            $userName = $user->name;
-            $tenantId = $user->tenant_id;
-
             $user->delete();
-
-            // Buat log aktivitas
-            ActivityLog::create([
-                'user_id' => auth()->id(),
-                'tenant_id' => $tenantId,
-                'action' => 'delete_user',
-                'model_type' => 'User',
-                'description' => 'Menghapus pengguna: ' . $userName,
-            ]);
-
             return redirect()->route('superadmin.users.index')
-                ->with('success', 'Pengguna berhasil dihapus.');
+                ->with('success', 'Pengguna berhasil dihapus');
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());

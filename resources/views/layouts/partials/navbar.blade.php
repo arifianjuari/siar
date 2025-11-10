@@ -1,9 +1,11 @@
-<nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
+<nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm fixed-top">
     <div class="container-fluid px-4">
         <!-- Mobile Sidebar Toggle -->
-        <button id="sidebarToggle" class="btn d-md-none me-2">
+        @auth
+        <button class="sidebar-toggle btn d-md-none me-2">
             <i class="fas fa-bars"></i>
         </button>
+        @endauth
         
         <!-- Brand - dengan class baru untuk konsistensi mobile -->
         <a class="navbar-brand d-flex align-items-center flex-shrink-0" href="{{ url('/') }}">
@@ -46,7 +48,95 @@
             
             <div class="tenant-branding d-flex align-items-center">
                 @if ($tenantLogo && $logoExists)
-                    <img src="{{ asset('storage/' . $tenantLogo) }}" alt="{{ $tenantName }}" class="tenant-logo d-inline-block align-top me-2" style="height: 36px; width: auto;">
+                    <img src="{{ asset('storage/' . $tenantLogo) }}?v={{ isset($tenant) && $tenant->updated_at ? $tenant->updated_at->timestamp : time() }}" 
+                         alt="{{ $tenantName }}" 
+                         class="tenant-logo d-inline-block align-top me-2" 
+                         style="height: 36px; width: auto;" 
+                         onerror="this.onerror=null; this.src='{{ asset('storage/' . $tenantLogo) }}?v=' + new Date().getTime();">
+                    
+                    <script>
+                        // Buat variable global untuk logo timestamp
+                        window.logoTimestamp = {{ isset($tenant) && $tenant->updated_at ? $tenant->updated_at->timestamp : time() }};
+                        
+                        // Fungsi untuk refresh logo dengan parameter baru
+                        function refreshNavbarLogo(retryCount) {
+                            retryCount = retryCount || 0;
+                            var maxRetries = 3;
+                            
+                            // Ambil elemen logo
+                            var navLogo = document.querySelector('.tenant-logo');
+                            if (!navLogo) return;
+                            
+                            // Simpan URL original (tanpa query params)
+                            var originalSrc = navLogo.src.split('?')[0];
+                            
+                            // Prefetch logo dengan cache busting
+                            fetch(originalSrc + '?force_refresh=1&t=' + (new Date().getTime()), {
+                                method: 'GET',
+                                cache: 'no-store',
+                                headers: {
+                                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                    'Pragma': 'no-cache',
+                                    'Expires': '0'
+                                }
+                            }).then(function(response) {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok');
+                                }
+                                return response.blob();
+                            }).then(function(blob) {
+                                // Buat object URL dari blob dan update logo
+                                var objectURL = URL.createObjectURL(blob);
+                                navLogo.src = objectURL;
+                                console.log('Logo navbar berhasil diperbarui dengan object URL');
+                            }).catch(function(err) {
+                                console.error('Error memuat logo navbar:', err);
+                                
+                                // Retry jika masih di bawah batas percobaan
+                                if (retryCount < maxRetries) {
+                                    setTimeout(function() {
+                                        refreshNavbarLogo(retryCount + 1);
+                                    }, 500); // Tunggu 500ms sebelum retry
+                                } else {
+                                    // Fallback ke cara lama jika gagal
+                                    navLogo.src = originalSrc + '?v=' + window.logoTimestamp;
+                                }
+                            });
+                        }
+                        
+                        // Execute immediate untuk prefetch logo
+                        (function() {
+                            // Prefetch logo saat script dijalankan
+                            var logoUrl = '{{ asset('storage/' . $tenantLogo) }}?force_refresh=1&t={{ time() }}';
+                            
+                            // Buat link prefetch
+                            var link = document.createElement('link');
+                            link.rel = 'prefetch';
+                            link.href = logoUrl;
+                            document.head.appendChild(link);
+                            
+                            // Update logo saat DOM sudah ready
+                            if (document.readyState === 'loading') {
+                                document.addEventListener('DOMContentLoaded', refreshNavbarLogo);
+                            } else {
+                                refreshNavbarLogo();
+                            }
+                            
+                            // Juga update saat window selesai loading
+                            window.addEventListener('load', refreshNavbarLogo);
+                        })();
+                        
+                        // Registrasi service worker untuk caching logo
+                        if ('serviceWorker' in navigator) {
+                            navigator.serviceWorker.register('/logoCache.js')
+                                .then(registration => {
+                                    console.log('Logo Service Worker terdaftar dengan scope:', registration.scope);
+                                })
+                                .catch(error => {
+                                    console.error('Registrasi Logo Service Worker gagal:', error);
+                                });
+                        }
+                    </script>
                 @else
                     @php
                         if ($tenantLogo && !$logoExists) {
@@ -57,7 +147,7 @@
                         <i class="fas fa-hospital-alt"></i>
                     </div>
                 @endif
-                <span class="tenant-name fw-semibold d-none d-md-inline-block align-top" style="color: #4F46E5; line-height: 36px;">{{ $tenantName }}</span>
+                <span class="tenant-name fw-semibold d-none d-md-inline-block align-top" style="color: #000000; line-height: 36px;">{{ $tenantName }}</span>
             </div>
         </a>
         
@@ -94,39 +184,39 @@
             @if($isTenantAdmin)
             <div class="nav-item dropdown me-2 d-flex align-items-center position-relative">
                 <a id="settingsDropdown" class="nav-link d-flex align-items-center p-0" href="#" role="button" 
-                    onclick="toggleSettingsDropdown(event)">
+                   data-bs-toggle="dropdown" aria-expanded="false">
                     <div class="settings-avatar d-flex align-items-center justify-content-center text-white rounded-circle" style="width: 40px; height: 40px; font-size: 1rem; background-color: #D97706;">
                         <i class="fas fa-cog"></i>
                     </div>
                 </a>
 
-                <div id="settingsDropdownMenu" class="position-absolute dropdown-menu shadow border-0" style="display: none; min-width: 240px; z-index: 1030; margin-top: 10px; left: 0;">
-                    <a class="dropdown-item py-2" href="{{ url('tenant/profile') }}">
+                <ul class="dropdown-menu shadow border-0" aria-labelledby="settingsDropdown" style="min-width: 240px; z-index: 1030; margin-top: 10px; left: 0;">
+                    <li><a class="dropdown-item py-2" href="{{ url('tenant/profile') }}">
                         <i class="fas fa-id-card me-2 text-muted"></i> Profil RS
-                    </a>
-                    <a class="dropdown-item py-2" href="{{ url('tenant/settings') }}">
+                    </a></li>
+                    <li><a class="dropdown-item py-2" href="{{ url('tenant/settings') }}">
                         <i class="fas fa-cog me-2 text-muted"></i> Umum
-                    </a>
-                    <a class="dropdown-item py-2" href="{{ route('tenant.work-units.index') }}">
+                    </a></li>
+                    <li><a class="dropdown-item py-2" href="{{ route('tenant.work-units.index') }}">
                         <i class="fas fa-sitemap me-2 text-muted"></i> Unit Kerja
-                    </a>
-                    <a class="dropdown-item py-2" href="{{ route('tenant.tags.index') }}">
+                    </a></li>
+                    <li><a class="dropdown-item py-2" href="{{ route('tenant.tags.index') }}">
                         <i class="fas fa-tags me-2 text-muted"></i> Tag
-                    </a>
-                    <a class="dropdown-item py-2" href="{{ route('tenant.document-references.index') }}">
+                    </a></li>
+                    <li><a class="dropdown-item py-2" href="{{ route('tenant.document-references.index') }}">
                         <i class="fas fa-file-alt me-2 text-muted"></i> Referensi
-                    </a>
-                    <a class="dropdown-item py-2" href="{{ route('modules.index') }}">
+                    </a></li>
+                    <li><a class="dropdown-item py-2" href="{{ route('modules.index') }}">
                         <i class="fas fa-cubes me-2 text-muted"></i> Daftar Modul
-                    </a>
-                </div>
+                    </a></li>
+                </ul>
             </div>
             @endif
 
             <!-- User Dropdown -->
             <div class="nav-item dropdown d-flex align-items-center position-relative">
                 <a id="navbarDropdown" class="nav-link d-flex align-items-center p-0" href="#" role="button" 
-                    onclick="toggleUserDropdown(event)">
+                   data-bs-toggle="dropdown" aria-expanded="false">
                     <div class="avatar d-flex align-items-center justify-content-center bg-primary text-white rounded-circle me-2" style="width: 40px; height: 40px; font-size: 1rem;">
                         {{ substr(Auth::user()->name, 0, 1) }}
                     </div>
@@ -137,22 +227,22 @@
                     <i class="fas fa-chevron-down ms-2 small"></i>
                 </a>
 
-                <div id="userDropdownMenu" class="position-absolute dropdown-menu dropdown-menu-end shadow border-0" style="display: none; min-width: 240px; right: 0; z-index: 1030; margin-top: 10px;">
-                    <a class="dropdown-item py-2" href="{{ route('profile.edit') }}">
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdown" style="min-width: 240px; z-index: 1030; margin-top: 10px;">
+                    <li><a class="dropdown-item py-2" href="{{ route('profile.edit') }}">
                         <i class="fas fa-user me-2 text-muted"></i> Edit Profil
-                    </a>
+                    </a></li>
                     
-                    <div class="dropdown-divider"></div>
+                    <li><hr class="dropdown-divider"></li>
                     
-                    <a class="dropdown-item py-2 text-danger" href="{{ route('logout') }}"
+                    <li><a class="dropdown-item py-2 text-danger" href="{{ route('logout') }}"
                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                         <i class="fas fa-sign-out-alt me-2"></i> Logout
-                    </a>
+                    </a></li>
 
                     <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
                         @csrf
                     </form>
-                </div>
+                </ul>
             </div>
         </div>
         @endauth
@@ -184,73 +274,9 @@
         </div>
     </div>
 </nav> 
+<div style="height: var(--header-height, 60px);"></div>
 
-<script>
-    function toggleUserDropdown(event) {
-        event.preventDefault();
-        const dropdownMenu = document.getElementById('userDropdownMenu');
-        const settingsDropdown = document.getElementById('settingsDropdownMenu');
-        
-        // Tutup dropdown pengaturan jika terbuka
-        if (settingsDropdown && settingsDropdown.style.display === 'block') {
-            settingsDropdown.style.display = 'none';
-        }
-        
-        // Toggle dropdown user
-        if (dropdownMenu.style.display === 'block') {
-            dropdownMenu.style.display = 'none';
-        } else {
-            dropdownMenu.style.display = 'block';
-        }
-    }
-    
-    function toggleSettingsDropdown(event) {
-        event.preventDefault();
-        const dropdownMenu = document.getElementById('settingsDropdownMenu');
-        const userDropdown = document.getElementById('userDropdownMenu');
-        
-        // Tutup dropdown user jika terbuka
-        if (userDropdown && userDropdown.style.display === 'block') {
-            userDropdown.style.display = 'none';
-        }
-        
-        // Toggle dropdown pengaturan
-        if (dropdownMenu.style.display === 'block') {
-            dropdownMenu.style.display = 'none';
-        } else {
-            dropdownMenu.style.display = 'block';
-        }
-    }
-    
-    // Tutup dropdown jika klik di luar
-    document.addEventListener('click', function(event) {
-        const userDropdown = document.getElementById('userDropdownMenu');
-        const settingsDropdown = document.getElementById('settingsDropdownMenu');
-        const userButton = document.getElementById('navbarDropdown');
-        const settingsButton = document.getElementById('settingsDropdown');
-        
-        // Jika terbuka dan klik bukan di dropdown atau buttonnya
-        if (userDropdown && userDropdown.style.display === 'block' &&
-            !userDropdown.contains(event.target) && !userButton.contains(event.target)) {
-            userDropdown.style.display = 'none';
-        }
-        
-        if (settingsDropdown && settingsDropdown.style.display === 'block' &&
-            !settingsDropdown.contains(event.target) && !settingsButton.contains(event.target)) {
-            settingsDropdown.style.display = 'none';
-        }
-    });
-    
-    // Menangani perubahan ukuran layar
-    window.addEventListener('resize', function() {
-        const userDropdown = document.getElementById('userDropdownMenu');
-        const settingsDropdown = document.getElementById('settingsDropdownMenu');
-        
-        // Reset posisi saat ukuran layar berubah
-        if (userDropdown) userDropdown.style.display = 'none';
-        if (settingsDropdown) settingsDropdown.style.display = 'none';
-    });
-</script> 
+
 
 <style>
     /* Dropdown menu positioning */

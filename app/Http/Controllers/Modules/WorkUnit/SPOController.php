@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SPO;
 use App\Models\WorkUnit;
 use App\Models\User;
+use App\Models\Tag;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -64,7 +65,7 @@ class SPOController extends Controller
             ->orderBy('unit_name', 'asc')
             ->get();
 
-        $query = SPO::with(['workUnit', 'approver', 'creator'])
+        $query = SPO::with(['workUnit', 'approver', 'creator', 'tags'])
             ->where('tenant_id', Auth::user()->tenant_id);
 
         // Filter by work unit if specified
@@ -182,6 +183,8 @@ class SPOController extends Controller
             'reference' => 'nullable|string',
             'linked_unit' => 'nullable|array',
             'linked_unit.*' => 'exists:work_units,id',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string|max:50',
         ]);
 
         try {
@@ -193,7 +196,6 @@ class SPOController extends Controller
 
             // Create SPO record
             $spo = new SPO();
-            $spo->id = Str::uuid();
             $spo->tenant_id = Auth::user()->tenant_id;
             $spo->work_unit_id = $request->work_unit_id;
             $spo->document_title = $request->document_title;
@@ -215,6 +217,30 @@ class SPOController extends Controller
             $spo->created_by = Auth::id();
             $spo->save();
 
+            // Proses tags jika ada
+            if ($request->has('tags')) {
+                $tenant_id = Auth::user()->tenant_id;
+                $tagIds = [];
+
+                foreach ($request->tags as $tagName) {
+                    // Cari tag berdasarkan nama dan tenant_id, atau buat jika tidak ada
+                    $tag = Tag::firstOrCreate(
+                        [
+                            'name' => trim($tagName),
+                            'tenant_id' => $tenant_id
+                        ],
+                        [
+                            'slug' => Str::slug(trim($tagName)),
+                            'tenant_id' => $tenant_id
+                        ]
+                    );
+                    $tagIds[] = $tag->id;
+                }
+
+                // Attach tags ke SPO
+                $spo->tags()->sync($tagIds);
+            }
+
             DB::commit();
 
             return redirect()->route('work-units.spo.index')
@@ -231,7 +257,7 @@ class SPOController extends Controller
      */
     public function show(SPO $spo)
     {
-        $spo->load(['workUnit', 'approver', 'creator']);
+        $spo->load(['workUnit', 'approver', 'creator', 'tags']);
 
         // Ambil linked work units
         $linkedUnits = collect([]);
@@ -250,6 +276,9 @@ class SPOController extends Controller
     {
         // Check if user is authorized to edit this SPO using policy
         $this->authorize('update', $spo);
+
+        // Load tags relationship
+        $spo->load('tags');
 
         $workUnits = WorkUnit::where('tenant_id', Auth::user()->tenant_id)
             ->where('is_active', true)
@@ -322,6 +351,8 @@ class SPOController extends Controller
             'reference' => 'nullable|string',
             'linked_unit' => 'nullable|array',
             'linked_unit.*' => 'exists:work_units,id',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string|max:50',
         ]);
 
         try {
@@ -357,6 +388,33 @@ class SPOController extends Controller
             }
 
             $spo->save();
+
+            // Proses tags jika ada
+            if ($request->has('tags')) {
+                $tenant_id = Auth::user()->tenant_id;
+                $tagIds = [];
+
+                foreach ($request->tags as $tagName) {
+                    // Cari tag berdasarkan nama dan tenant_id, atau buat jika tidak ada
+                    $tag = Tag::firstOrCreate(
+                        [
+                            'name' => trim($tagName),
+                            'tenant_id' => $tenant_id
+                        ],
+                        [
+                            'slug' => Str::slug(trim($tagName)),
+                            'tenant_id' => $tenant_id
+                        ]
+                    );
+                    $tagIds[] = $tag->id;
+                }
+
+                // Sync tags ke SPO
+                $spo->tags()->sync($tagIds);
+            } else {
+                // Hapus semua tag jika tidak ada tag yang dikirim
+                $spo->tags()->detach();
+            }
 
             DB::commit();
 
@@ -464,5 +522,71 @@ class SPOController extends Controller
         return response(
             QrCode::format('svg')->size(200)->generate($qrContent)
         )->header('Content-Type', 'image/svg+xml');
+    }
+
+    /**
+     * Display dashboard for SPO module.
+     */
+    public function dashboard()
+    {
+        $tenantId = auth()->user()->tenant_id;
+
+        // Mendapatkan statistik SPO
+        $stats = [
+            'total' => SPO::where('tenant_id', $tenantId)->count(),
+            'draft' => SPO::where('tenant_id', $tenantId)->where('status_validasi', 'Draft')->count(),
+            'approved' => SPO::where('tenant_id', $tenantId)->where('status_validasi', 'Disetujui')->count(),
+            'expired' => SPO::where('tenant_id', $tenantId)->where('status_validasi', 'Kadaluarsa')->count(),
+            'revision' => SPO::where('tenant_id', $tenantId)->where('status_validasi', 'Revisi')->count(),
+        ];
+
+        // Mendapatkan statistik berdasarkan tingkat kerahasiaan
+        $confidentialityStats = [
+            'internal' => SPO::where('tenant_id', $tenantId)->where('confidentiality_level', 'Internal')->count(),
+            'public' => SPO::where('tenant_id', $tenantId)->where('confidentiality_level', 'Publik')->count(),
+            'confidential' => SPO::where('tenant_id', $tenantId)->where('confidentiality_level', 'Rahasia')->count(),
+        ];
+
+        // Mendapatkan statistik berdasarkan tipe dokumen
+        $typeStats = SPO::where('tenant_id', $tenantId)
+            ->selectRaw('document_type, count(*) as count')
+            ->groupBy('document_type')
+            ->get()
+            ->pluck('count', 'document_type')
+            ->toArray();
+
+        // Mendapatkan SPO terbaru
+        $latestSPOs = SPO::with(['workUnit', 'approver'])
+            ->where('tenant_id', $tenantId)
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+
+        // Mendapatkan SPO yang perlu ditinjau (review) dalam 30 hari ke depan
+        $needReview = SPO::with(['workUnit'])
+            ->where('tenant_id', $tenantId)
+            ->where('status_validasi', 'Disetujui')
+            ->where('next_review', '<=', now()->addDays(30))
+            ->orderBy('next_review')
+            ->limit(5)
+            ->get();
+
+        // Mendapatkan unit kerja dengan jumlah SPO terbanyak
+        $topWorkUnits = WorkUnit::where('work_units.tenant_id', $tenantId)
+            ->join('spos', 'work_units.id', '=', 'spos.work_unit_id')
+            ->selectRaw('work_units.id, work_units.unit_name, count(spos.id) as spo_count')
+            ->groupBy('work_units.id', 'work_units.unit_name')
+            ->orderByDesc('spo_count')
+            ->limit(5)
+            ->get();
+
+        return view('modules.work-unit.spo.dashboard', compact(
+            'stats',
+            'confidentialityStats',
+            'typeStats',
+            'latestSPOs',
+            'needReview',
+            'topWorkUnits'
+        ));
     }
 }

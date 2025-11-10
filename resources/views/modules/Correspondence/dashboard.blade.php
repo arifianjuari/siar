@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app', ['hideDefaultHeader' => true])
 
 @section('title', 'Dashboard Korespondensi')
 

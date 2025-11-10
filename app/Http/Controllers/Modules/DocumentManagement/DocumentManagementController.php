@@ -156,6 +156,52 @@ class DocumentManagementController extends Controller
         $totalRiskDocuments = RiskReport::whereIn('tenant_id', $validTenantIds)
             ->count();
 
+        // Hitung dokumen SPO berdasarkan tingkat kerahasiaan
+        $publicSpoDocuments = \App\Models\SPO::whereIn('tenant_id', $validTenantIds)
+            ->where(function ($query) {
+                $query->where('confidentiality_level', 'Public')
+                    ->orWhere('confidentiality_level', 'Publik');
+            })
+            ->count();
+
+        $internalSpoDocuments = \App\Models\SPO::whereIn('tenant_id', $validTenantIds)
+            ->where('confidentiality_level', 'Internal')
+            ->count();
+
+        $rahasiaSpoDocuments = \App\Models\SPO::whereIn('tenant_id', $validTenantIds)
+            ->where(function ($query) {
+                $query->where('confidentiality_level', 'Confidential')
+                    ->orWhere('confidentiality_level', 'Rahasia');
+            })
+            ->count();
+
+        // Total dokumen SPO
+        $totalSpoDocuments = \App\Models\SPO::whereIn('tenant_id', $validTenantIds)
+            ->count();
+
+        // Hitung dokumen Korespondensi berdasarkan tingkat kerahasiaan
+        $publicCorrespondenceDocuments = \App\Models\Correspondence::whereIn('tenant_id', $validTenantIds)
+            ->where(function ($query) {
+                $query->where('confidentiality_level', 'Public')
+                    ->orWhere('confidentiality_level', 'Publik');
+            })
+            ->count();
+
+        $internalCorrespondenceDocuments = \App\Models\Correspondence::whereIn('tenant_id', $validTenantIds)
+            ->where('confidentiality_level', 'Internal')
+            ->count();
+
+        $rahasiaCorrespondenceDocuments = \App\Models\Correspondence::whereIn('tenant_id', $validTenantIds)
+            ->where(function ($query) {
+                $query->where('confidentiality_level', 'Confidential')
+                    ->orWhere('confidentiality_level', 'Rahasia');
+            })
+            ->count();
+
+        // Total dokumen Korespondensi
+        $totalCorrespondenceDocuments = \App\Models\Correspondence::whereIn('tenant_id', $validTenantIds)
+            ->count();
+
         // Log data lebih rinci untuk debugging
         Log::info('Detail jumlah dokumen berdasarkan confidentiality_level', [
             'documents_public' => $publicDocuments,
@@ -164,17 +210,27 @@ class DocumentManagementController extends Controller
             'risk_reports_publik' => $publicRiskDocuments,
             'risk_reports_internal' => $internalRiskDocuments,
             'risk_reports_rahasia' => $rahasiaRiskDocuments,
-            'total_risk_documents' => $totalRiskDocuments
+            'spo_publik' => $publicSpoDocuments,
+            'spo_internal' => $internalSpoDocuments,
+            'spo_rahasia' => $rahasiaSpoDocuments,
+            'correspondence_publik' => $publicCorrespondenceDocuments,
+            'correspondence_internal' => $internalCorrespondenceDocuments,
+            'correspondence_rahasia' => $rahasiaCorrespondenceDocuments,
+            'total_risk_documents' => $totalRiskDocuments,
+            'total_spo_documents' => $totalSpoDocuments,
+            'total_correspondence_documents' => $totalCorrespondenceDocuments
         ]);
 
         // Gabungkan data ke stats
-        $stats['public'] = $publicDocuments + $publicRiskDocuments;
-        $stats['internal'] = $internalDocuments + $internalRiskDocuments;
-        $stats['confidential'] = $confidentialDocuments + $rahasiaRiskDocuments;
+        $stats['public'] = $publicDocuments + $publicRiskDocuments + $publicSpoDocuments + $publicCorrespondenceDocuments;
+        $stats['internal'] = $internalDocuments + $internalRiskDocuments + $internalSpoDocuments + $internalCorrespondenceDocuments;
+        $stats['confidential'] = $confidentialDocuments + $rahasiaRiskDocuments + $rahasiaSpoDocuments + $rahasiaCorrespondenceDocuments;
         $stats['risk_management'] = $relatedToRisk + $totalRiskDocuments;
+        $stats['spo'] = $totalSpoDocuments;
+        $stats['correspondence'] = $totalCorrespondenceDocuments;
 
         // Update total
-        $stats['total'] = $documentCount + $totalRiskDocuments;
+        $stats['total'] = $documentCount + $totalRiskDocuments + $totalSpoDocuments + $totalCorrespondenceDocuments;
 
         // Log untuk debugging
         Log::info('Statistik dashboard dokumen', [
@@ -184,11 +240,11 @@ class DocumentManagementController extends Controller
 
         // Dokumen terbaru (berdasarkan document_date)
         $latestDocuments = Document::whereIn('tenant_id', $validTenantIds)
-            ->orderByDesc('document_date')
+            ->orderByDesc('created_at')
             ->limit(5)
             ->get();
 
-        // Tambahkan dokumen dari risk_reports yang memiliki file
+        // Tambahkan dokumen dari risk_reports
         $latestRiskDocuments = RiskReport::whereIn('tenant_id', $validTenantIds)
             ->orderByDesc('created_at')
             ->limit(5)
@@ -204,13 +260,46 @@ class DocumentManagementController extends Controller
             )
             ->get();
 
-        // Gabungkan dokumen dari kedua sumber
-        if ($latestRiskDocuments->count() > 0) {
-            $combinedLatestDocuments = $latestDocuments->concat($latestRiskDocuments)
-                ->sortByDesc('document_date')
-                ->take(5);
-            $latestDocuments = $combinedLatestDocuments;
-        }
+        // Tambahkan dokumen dari SPO
+        $latestSpoDocuments = \App\Models\SPO::whereIn('tenant_id', $validTenantIds)
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->select(
+                'id',
+                'document_title',
+                'document_number',
+                'file_path',
+                'created_at',
+                'document_date',
+                'document_type',
+                'confidentiality_level'
+            )
+            ->get();
+
+        // Tambahkan dokumen dari Korespondensi
+        $latestCorrespondenceDocuments = \App\Models\Correspondence::whereIn('tenant_id', $validTenantIds)
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->select(
+                'id',
+                'document_title',
+                'document_number',
+                'file_path',
+                'created_at',
+                'document_date',
+                'document_type',
+                'confidentiality_level'
+            )
+            ->get();
+
+        // Gabungkan dokumen dari semua sumber
+        $combinedLatestDocuments = $latestDocuments->merge($latestRiskDocuments)
+            ->merge($latestSpoDocuments)
+            ->merge($latestCorrespondenceDocuments)
+            ->sortByDesc('created_at')
+            ->take(5);
+
+        $latestDocuments = $combinedLatestDocuments;
 
         // Kategori dokumen
         $categories = Document::whereIn('tenant_id', $validTenantIds)
@@ -254,8 +343,40 @@ class DocumentManagementController extends Controller
             ];
         }
 
-        // 3. Tambahkan modul lain jika ada
-        // ...
+        // 3. Dokumen dari modul Korespondensi
+        $correspondenceCount = \App\Models\Correspondence::whereIn('tenant_id', $validTenantIds)
+            ->whereNotNull('document_number')
+            ->count();
+
+        if ($correspondenceCount > 0) {
+            $moduleCategories[] = [
+                'module' => 'correspondence',
+                'display_name' => 'Korespondensi',
+                'icon' => 'fa-envelope',
+                'total' => $correspondenceCount,
+                'color' => 'info'
+            ];
+        }
+
+        // 4. Dokumen dari modul SPO
+        $spoCount = \App\Models\SPO::whereIn('tenant_id', $validTenantIds)
+            ->whereNotNull('document_number')
+            ->count();
+
+        if ($spoCount > 0) {
+            $moduleCategories[] = [
+                'module' => 'work-units.spo',
+                'display_name' => 'SPO',
+                'icon' => 'fa-clipboard-list',
+                'total' => $spoCount,
+                'color' => 'success'
+            ];
+        }
+
+        // Log data kategori modul
+        Log::info('Kategori modul dokumen', [
+            'categories' => $moduleCategories
+        ]);
 
         // Urutkan berdasarkan jumlah terbanyak
         usort($moduleCategories, function ($a, $b) {
@@ -522,63 +643,13 @@ class DocumentManagementController extends Controller
      */
     public function documentsByType($type)
     {
-        // Default tenant ID jika tidak ada dalam sesi
-        $defaultTenantId = 2;
-        $tenantId = session('tenant_id') ?? $defaultTenantId;
+        $tenantId = session('tenant_id');
         $validTenantIds = [1, $tenantId];
 
-        // Logging untuk debugging
-        Log::info('Dokumen berdasarkan tipe diakses', [
-            'type' => $type,
-            'tenant_id' => $tenantId,
-            'user_id' => Auth::id() ?? 'unknown'
-        ]);
-
-        // Siapkan query untuk Document
-        $documentsQuery = Document::whereIn('tenant_id', $validTenantIds);
-
-        // Siapkan query untuk RiskReport
-        $riskReportsQuery = RiskReport::whereIn('tenant_id', $validTenantIds);
-
-        // Filter berdasarkan tipe
-        if ($type !== 'all') {
-            // Filter dokumen dari modul Document Management
-            $documentsQuery->where('confidentiality_level', $type);
-
-            // Filter dokumen dari modul Risk Management
-            // Perhatikan perbedaan format (publik/Publik, internal/Internal, rahasia/Rahasia)
-            if ($type === 'public') {
-                $riskReportsQuery->where('confidentiality_level', 'Publik');
-            } elseif ($type === 'internal') {
-                $riskReportsQuery->where('confidentiality_level', 'Internal');
-            } elseif ($type === 'confidential') {
-                $riskReportsQuery->where('confidentiality_level', 'Rahasia');
-            }
-        }
-
-        // Ambil dokumen dari Document Management
-        $documents = $documentsQuery->orderByDesc('document_date')->get();
-
-        // Ambil dokumen dari Risk Management
-        $riskReports = $riskReportsQuery->orderByDesc('created_at')
-            ->select(
-                'id',
-                'document_title',
-                'document_number',
-                'file_path',
-                'created_at',
-                'document_date',
-                'document_type',
-                'confidentiality_level'
-            )
-            ->get();
-
-        // Gabungkan kedua jenis dokumen
-        $combinedDocuments = $documents->concat($riskReports)
-            ->sortByDesc('document_date');
-
-        // Tentukan judul halaman berdasarkan tipe
+        // Set judul halaman dan tipe filter
         $typeTitle = 'Semua Dokumen';
+        $confidentialityLevels = ['public', 'internal', 'confidential', 'publik', 'rahasia'];
+
         if ($type === 'public') {
             $typeTitle = 'Dokumen Publik';
         } elseif ($type === 'internal') {
@@ -587,13 +658,74 @@ class DocumentManagementController extends Controller
             $typeTitle = 'Dokumen Rahasia';
         }
 
-        Log::info('Hasil query dokumen berdasarkan tipe', [
-            'type' => $type,
-            'documents_count' => $documents->count(),
-            'risk_reports_count' => $riskReports->count(),
-            'combined_count' => $combinedDocuments->count()
-        ]);
+        // Dapatkan dokumen dari modul Manajemen Dokumen
+        $documentsQuery = Document::whereIn('tenant_id', $validTenantIds);
+        if ($type !== 'all') {
+            $documentsQuery->where('confidentiality_level', 'like', '%' . $type . '%');
+        }
+        $documents = $documentsQuery->get();
 
-        return view('modules.DocumentManagement.documents-by-type', compact('combinedDocuments', 'typeTitle', 'type'));
+        // Dapatkan dokumen dari modul Manajemen Risiko
+        $riskReportsQuery = RiskReport::whereIn('tenant_id', $validTenantIds);
+        if ($type !== 'all') {
+            if ($type === 'public') {
+                $riskReportsQuery->where('confidentiality_level', 'Publik');
+            } elseif ($type === 'internal') {
+                $riskReportsQuery->where('confidentiality_level', 'Internal');
+            } elseif ($type === 'confidential') {
+                $riskReportsQuery->where('confidentiality_level', 'Rahasia');
+            }
+        }
+        $riskReports = $riskReportsQuery->get();
+
+        // Dapatkan dokumen dari modul SPO
+        $spoQuery = \App\Models\SPO::whereIn('tenant_id', $validTenantIds);
+        if ($type !== 'all') {
+            if ($type === 'public') {
+                $spoQuery->where(function ($query) {
+                    $query->where('confidentiality_level', 'Public')
+                        ->orWhere('confidentiality_level', 'Publik');
+                });
+            } elseif ($type === 'internal') {
+                $spoQuery->where('confidentiality_level', 'Internal');
+            } elseif ($type === 'confidential') {
+                $spoQuery->where(function ($query) {
+                    $query->where('confidentiality_level', 'Confidential')
+                        ->orWhere('confidentiality_level', 'Rahasia');
+                });
+            }
+        }
+        $spos = $spoQuery->get();
+
+        // Dapatkan dokumen dari modul Korespondensi
+        $correspondenceQuery = \App\Models\Correspondence::whereIn('tenant_id', $validTenantIds);
+        if ($type !== 'all') {
+            if ($type === 'public') {
+                $correspondenceQuery->where(function ($query) {
+                    $query->where('confidentiality_level', 'Public')
+                        ->orWhere('confidentiality_level', 'Publik');
+                });
+            } elseif ($type === 'internal') {
+                $correspondenceQuery->where('confidentiality_level', 'Internal');
+            } elseif ($type === 'confidential') {
+                $correspondenceQuery->where(function ($query) {
+                    $query->where('confidentiality_level', 'Confidential')
+                        ->orWhere('confidentiality_level', 'Rahasia');
+                });
+            }
+        }
+        $correspondences = $correspondenceQuery->get();
+
+        // Gabungkan dan urutkan semua dokumen
+        $combinedDocuments = $documents->merge($riskReports)
+            ->merge($spos)
+            ->merge($correspondences)
+            ->sortByDesc('document_date');
+
+        return view('modules.DocumentManagement.documents-by-type', [
+            'combinedDocuments' => $combinedDocuments,
+            'type' => $type,
+            'typeTitle' => $typeTitle
+        ]);
     }
 }

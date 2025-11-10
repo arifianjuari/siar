@@ -3,14 +3,13 @@
 namespace App\Models;
 
 use App\Traits\BelongsToTenant;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SPO extends Model
 {
-    use HasFactory, BelongsToTenant, HasUuids;
+    use HasFactory, BelongsToTenant;
 
     /**
      * Nama tabel yang digunakan oleh model.
@@ -91,6 +90,36 @@ class SPO extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the tags for the SPO.
+     */
+    public function tags()
+    {
+        return $this->morphToMany(Tag::class, 'document', 'document_tag', 'document_id', 'tag_id')
+            ->withTimestamps()
+            ->orderBy('tags.name');
+    }
+
+    /**
+     * Attach a tag by its slug
+     *
+     * @param string $slug
+     * @return bool
+     */
+    public function attachTagBySlug($slug)
+    {
+        $tag = Tag::where('slug', $slug)
+            ->where('tenant_id', $this->tenant_id)
+            ->first();
+
+        if ($tag) {
+            $this->tags()->syncWithoutDetaching($tag->id);
+            return true;
+        }
+
+        return false;
     }
 
     /**

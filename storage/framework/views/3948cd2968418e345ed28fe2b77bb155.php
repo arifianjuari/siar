@@ -185,6 +185,19 @@
                     
                     <hr>
                     
+                    <h6 class="mb-3">Tag</h6>
+                    <?php if($spo->tags->isEmpty()): ?>
+                        <p class="text-muted">Tidak ada tag</p>
+                    <?php else: ?>
+                        <div class="d-flex flex-wrap mb-4">
+                            <?php $__currentLoopData = $spo->tags; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tag): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <span class="badge bg-info me-2 mb-2 py-2 px-3"><?php echo e($tag->name); ?></span>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <hr>
+                    
                     <h6 class="mb-3">Persetujuan Dokumen</h6>
                     <?php if($spo->status_validasi == 'Disetujui' && $spo->approved_by && $spo->approved_at): ?>
                         <div class="list-group-item">

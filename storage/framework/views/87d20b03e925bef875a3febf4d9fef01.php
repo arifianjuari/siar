@@ -28,6 +28,21 @@
             border: 1px solid #000;
             vertical-align: top;
         }
+        
+        /* Force all sections to stay together */
+        .section-group {
+            page-break-inside: avoid !important;
+        }
+        
+        /* Allow procedure section to break across pages */
+        .procedure-content {
+            page-break-inside: auto !important;
+        }
+        
+        /* Ensure procedure doesn't start on a new page */
+        .procedure-row {
+            page-break-before: avoid !important;
+        }
         .text-center {
             text-align: center;
         }
@@ -114,6 +129,7 @@
     </style>
 </head>
 <body>
+    <!-- Header table for logo and document info -->
     <table>
         <tr>
             <td style="width: 25%; text-align: center; vertical-align: middle;" rowspan="1">
@@ -176,29 +192,43 @@
                 <div class="header-info" style="margin-top: 8px;"><span class="info-label"><?php echo e($workUnit ? $workUnit->unit_name : '[unit kerja]'); ?></span></div>
             </td>
         </tr>
-        <tr>
-            <td style="width: 25%;"><strong>Pengertian</strong></td>
-            <td colspan="2"><?php echo nl2br(e($spo->definition)); ?></td>
-        </tr>
-        <tr>
-            <td><strong>Tujuan</strong></td>
-            <td colspan="2"><?php echo nl2br(e($spo->purpose)); ?></td>
-        </tr>
-        <tr>
-            <td><strong>Kebijakan</strong></td>
-            <td colspan="2"><?php echo nl2br(e($spo->policy)); ?></td>
-        </tr>
-        <tr>
-            <td><strong>Prosedur</strong></td>
-            <td colspan="2"><?php echo nl2br(e($spo->procedure)); ?></td>
-        </tr>
-        <tr>
-            <td><strong>Referensi</strong></td>
-            <td colspan="2"><?php echo nl2br(e($spo->reference)); ?></td>
-        </tr>
-        <tr>
-            <td><strong>Unit Terkait</strong></td>
-            <td colspan="2">
+    </table>
+    
+    <!-- Main content table with all sections -->
+    <table>
+        <!-- These three rows must stay together -->
+        <tbody class="section-group">
+            <tr>
+                <td style="width: 25%;"><strong>Pengertian</strong></td>
+                <td colspan="2"><?php echo nl2br(e($spo->definition)); ?></td>
+            </tr>
+            <tr>
+                <td><strong>Tujuan</strong></td>
+                <td colspan="2"><?php echo nl2br(e($spo->purpose)); ?></td>
+            </tr>
+            <tr>
+                <td><strong>Kebijakan</strong></td>
+                <td colspan="2"><?php echo nl2br(e($spo->policy)); ?></td>
+            </tr>
+        </tbody>
+        
+        <!-- Procedure can break across pages if needed -->
+        <tbody class="procedure-content">
+            <tr class="procedure-row">
+                <td style="width: 25%;"><strong>Prosedur</strong></td>
+                <td colspan="2"><?php echo nl2br(e($spo->procedure)); ?></td>
+            </tr>
+        </tbody>
+        
+        <!-- Footer sections -->
+        <tbody>
+            <tr>
+                <td style="width: 25%;"><strong>Referensi</strong></td>
+                <td colspan="2"><?php echo nl2br(e($spo->reference)); ?></td>
+            </tr>
+            <tr>
+                <td><strong>Unit Terkait</strong></td>
+                <td colspan="2">
                 <?php if($linkedUnits && $linkedUnits->count() > 0): ?>
                     <?php $__currentLoopData = $linkedUnits; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $unit): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <?php echo e($unit->unit_name); ?><?php if(!$loop->last): ?>, <?php endif; ?>

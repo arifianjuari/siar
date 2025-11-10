@@ -77,6 +77,7 @@ class Kernel extends HttpKernel
         'module.log' => \App\Http\Middleware\LogModuleAccess::class,
         'superadmin' => \App\Http\Middleware\SuperadminMiddleware::class,
         'check.permission' => \App\Http\Middleware\CheckPermissionMiddleware::class,
+        'disable.debug' => \App\Http\Middleware\DisableDebugInfo::class,
     ];
 
     /**

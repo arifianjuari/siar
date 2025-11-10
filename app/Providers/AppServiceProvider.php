@@ -23,9 +23,24 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
         $this->registerGlobalHelpers();
         $this->registerBladeDirectives();
+        $this->configureDebugMode();
 
         // Set default pagination view to Bootstrap 5
         \Illuminate\Pagination\Paginator::useBootstrap();
+
+        // Register morphMap for ActivityAssignee
+        \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
+            'user' => \App\Models\User::class,
+            'work_unit' => \App\Models\WorkUnit::class,
+        ]);
+
+        // Register enum type for Doctrine DBAL
+        if (class_exists('Doctrine\DBAL\Types\Type')) {
+            if (!\Doctrine\DBAL\Types\Type::hasType('enum')) {
+                \Doctrine\DBAL\Types\Type::addType('enum', 'Doctrine\DBAL\Types\StringType');
+            }
+            \Doctrine\DBAL\Types\Type::getType('enum')->canRequireSQLConversion(true);
+        }
     }
 
     /**
@@ -139,5 +154,33 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Blade::directive('endcanExport', function () {
             return "<?php endif; ?>";
         });
+    }
+
+    /**
+     * Configure debug mode based on current route
+     */
+    protected function configureDebugMode(): void
+    {
+        // Disable debug info pada routes tertentu
+        if (
+            request()->is('tenant/profile') || request()->is('tenant/profile/*') ||
+            request()->routeIs('tenant.profile') || request()->routeIs('tenant.profile.*')
+        ) {
+            // Set app.debug ke false untuk mematikan debug
+            config(['app.debug' => false]);
+
+            // Juga matikan berbagai komponen debug lainnya
+            if (class_exists('\Barryvdh\Debugbar\Facade')) {
+                \Barryvdh\Debugbar\Facade::disable();
+            }
+
+            // Daftarkan view share untuk digunakan di seluruh view
+            view()->share('hideDebugInfo', true);
+
+            // Set cookie untuk memberitahu browser bahwa debug mode dimatikan
+            if (!request()->cookie('no_debug')) {
+                cookie()->queue('no_debug', '1', 60); // 60 menit
+            }
+        }
     }
 }

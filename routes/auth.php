@@ -22,12 +22,12 @@ Route::middleware(['web'])->group(function () {
         Log::info('Mencoba logout');
         return app(AuthenticatedSessionController::class)->destroy(request());
     })->name('logout');
-});
 
-Route::get('/logout-now', function () {
-    Log::info('Mencoba logout dengan GET method');
-    auth()->logout();
-    request()->session()->invalidate();
-    request()->session()->regenerateToken();
-    return redirect('/');
-})->middleware(['web'])->name('logout.get');
+    Route::get('logout', function () {
+        Log::info('Mencoba logout dengan GET method');
+        auth()->logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+        return redirect('/');
+    })->name('logout.get');
+});

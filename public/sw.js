@@ -1,99 +1,83 @@
-const CACHE_NAME = 'siar-app-v4';
-const urlsToCache = [
-    '/',
+// Service worker disengaja dinonaktifkan untuk memastikan stabilitas aplikasi
+// Script ini akan menghapus service worker yang sebelumnya terdaftar
+
+// 1. Definisikan nama cache dan daftar file statis yang akan di-cache
+const CACHE_NAME = 'laravel-mpa-cache-v1';
+const STATIC_ASSETS = [
+    '/', // halaman utama
     '/css/app.css',
     '/js/app.js',
-    '/images/pwa/icon-192.png',
-    '/images/pwa/icon-512.png',
-    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css',
-    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css'
+    '/favicon.ico',
+    // Tambahkan asset lain jika perlu, misal logo, font, dll
 ];
 
-// Install service worker
 self.addEventListener('install', event => {
-    console.log('[Service Worker] Installing Service Worker...', event);
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then(cache => {
-                console.log('[Service Worker] Caching app shell');
-                return cache.addAll(urlsToCache);
-            })
-            .catch(error => {
-                console.error('[Service Worker] Cache addAll error: ', error);
+            .then(cache => cache.addAll(STATIC_ASSETS))
+            .catch(err => {
+                // Log error jika gagal cache
+                console.error('[Service Worker] Install cache error:', err);
             })
     );
+    self.skipWaiting();
 });
 
-// Activate service worker
 self.addEventListener('activate', event => {
-    console.log('[Service Worker] Activating Service Worker...', event);
-    const cacheWhitelist = [CACHE_NAME];
     event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cacheName => {
-                    if (cacheWhitelist.indexOf(cacheName) === -1) {
-                        console.log('[Service Worker] Deleting old cache:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
+        caches.keys().then(keys =>
+            Promise.all(
+                keys.filter(key => key !== CACHE_NAME)
+                    .map(key => caches.delete(key))
+            )
+        )
     );
-    return self.clients.claim();
+    self.clients.claim();
 });
 
-// Cache and return requests
-self.addEventListener('fetch', event => {
-    console.log('[Service Worker] Fetching resource: ', event.request.url);
+// Tambahkan service worker unregistration di sini
+// Client side script akan menghandle unregistration
 
-    // Skip cross-origin requests
-    if (!event.request.url.startsWith(self.location.origin) &&
-        !event.request.url.startsWith('https://cdn.jsdelivr.net') &&
-        !event.request.url.startsWith('https://cdnjs.cloudflare.com') &&
-        !event.request.url.startsWith('https://raw.githubusercontent.com')) {
-        console.log('[Service Worker] Skipping non-same-origin fetch:', event.request.url);
+// 4. Event fetch: serve dari cache, fallback ke network, fallback sederhana jika gagal
+self.addEventListener('fetch', event => {
+    // Hanya handle GET request ke domain sendiri
+    if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
         return;
     }
 
     event.respondWith(
         caches.match(event.request)
             .then(response => {
-                // Cache hit - return response
-                if (response) {
-                    console.log('[Service Worker] Returning cached resource:', event.request.url);
-                    return response;
-                }
+                // Jika ada di cache, kembalikan dari cache
+                if (response) return response;
 
-                // Clone the request
-                const fetchRequest = event.request.clone();
-
-                return fetch(fetchRequest)
-                    .then(response => {
-                        // Check if we received a valid response
-                        if (!response || response.status !== 200 || response.type !== 'basic') {
-                            console.log('[Service Worker] Not caching response for:', event.request.url);
-                            return response;
-                        }
-
-                        // Clone the response
-                        const responseToCache = response.clone();
-
-                        caches.open(CACHE_NAME)
-                            .then(cache => {
-                                console.log('[Service Worker] Caching new resource:', event.request.url);
-                                cache.put(event.request, responseToCache);
-                            })
-                            .catch(error => {
-                                console.error('[Service Worker] Error caching resource:', error);
+                // Jika tidak ada di cache, ambil dari network
+                return fetch(event.request)
+                    .then(networkResponse => {
+                        // Simpan response ke cache jika response valid
+                        if (
+                            networkResponse &&
+                            networkResponse.status === 200 &&
+                            networkResponse.type === 'basic'
+                        ) {
+                            const responseClone = networkResponse.clone();
+                            caches.open(CACHE_NAME).then(cache => {
+                                cache.put(event.request, responseClone);
                             });
-
-                        return response;
+                        }
+                        return networkResponse;
                     })
-                    .catch(error => {
-                        console.error('[Service Worker] Fetch error:', error);
-                        // You can provide a fallback response here if needed
+                    .catch(() => {
+                        // Fallback sederhana jika fetch gagal (misal offline)
+                        // Untuk halaman HTML, bisa kembalikan halaman offline sederhana
+                        if (event.request.destination === 'document') {
+                            return new Response(
+                                '<h1>Offline</h1><p>Halaman tidak dapat diakses. Silakan cek koneksi Anda.</p>',
+                                { headers: { 'Content-Type': 'text/html' } }
+                            );
+                        }
+                        // Untuk asset lain, bisa return Response kosong
+                        return new Response('', { status: 404 });
                     });
             })
     );

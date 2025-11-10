@@ -15,6 +15,9 @@ $app = new Illuminate\Foundation\Application(
     $_ENV['APP_BASE_PATH'] ?? dirname(__DIR__)
 );
 
+// Override storage path untuk mengatasi masalah permission
+$app->useStoragePath(dirname(__DIR__) . '/storage');
+
 /*
 |--------------------------------------------------------------------------
 | Bind Important Interfaces

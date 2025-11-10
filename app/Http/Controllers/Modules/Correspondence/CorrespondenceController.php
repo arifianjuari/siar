@@ -586,7 +586,8 @@ class CorrespondenceController extends Controller
         $dompdf->render();
 
         // Stream PDF
-        return $dompdf->stream('Surat_' . $correspondence->document_number . '.pdf');
+        $fileName = 'Surat_' . \Illuminate\Support\Str::slug($correspondence->document_number) . '.pdf';
+return $dompdf->stream($fileName);
     }
 
     /**

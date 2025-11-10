@@ -9,6 +9,9 @@ use App\Http\Controllers\SuperAdmin\TenantManagementController;
 use App\Http\Controllers\SuperAdmin\ModuleManagementController;
 use App\Http\Controllers\SuperAdmin\UserManagementController;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\TenantRoleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -64,7 +67,7 @@ Route::get('/dashboard', function () {
         \Illuminate\Support\Facades\Log::warning('Akses dashboard oleh user tidak terotentikasi');
     }
 
-    return view('dashboard');
+    return roleView('dashboard', 'pages.dashboard');
 })->middleware('auth')->name('dashboard');
 
 // Profile routes
@@ -79,25 +82,46 @@ Route::middleware(['auth'])->group(function () {
 Route::prefix('superadmin')->name('superadmin.')->middleware(['auth', 'superadmin'])->group(function () {
     // Dashboard Superadmin
     Route::get('/dashboard', function () {
-        return view('superadmin.dashboard');
+        return view('roles.superadmin.dashboard');
     })->name('dashboard');
 
     // Tenant Management
-    Route::resource('tenants', TenantManagementController::class);
-    Route::post('tenants/{tenant}/toggle-module', [TenantManagementController::class, 'toggleModule'])->name('tenants.toggle-module');
-    Route::post('tenants/{tenant}/reset-admin-password', [TenantManagementController::class, 'resetAdminPassword'])->name('tenants.reset-admin-password');
-    Route::get('statistics', [TenantManagementController::class, 'statistics'])->name('statistics');
+    Route::prefix('tenants')->name('tenants.')->group(function () {
+        Route::get('/', [TenantManagementController::class, 'index'])->name('index');
+        Route::get('/create', [TenantManagementController::class, 'create'])->name('create');
+        Route::post('/', [TenantManagementController::class, 'store'])->name('store');
+        Route::get('/{tenant}', [TenantManagementController::class, 'show'])->name('show');
+        Route::get('/{tenant}/edit', [TenantManagementController::class, 'edit'])->name('edit');
+        Route::match(['put', 'patch'], '/{tenant}', [TenantManagementController::class, 'update'])->name('update');
+        Route::delete('/{tenant}', [TenantManagementController::class, 'destroy'])->name('destroy');
+        Route::post('/{tenant}/reset-admin-password', [TenantManagementController::class, 'resetAdminPassword'])->name('reset-admin-password');
 
-    // Tenant Role Management
-    Route::get('tenants/{tenant}/roles/create', [TenantManagementController::class, 'createRole'])->name('tenants.roles.create');
-    Route::post('tenants/{tenant}/roles', [TenantManagementController::class, 'storeRole'])->name('tenants.roles.store');
-    Route::get('tenants/{tenant}/roles/{role}/edit', [TenantManagementController::class, 'editRole'])->name('tenants.roles.edit');
-    Route::put('tenants/{tenant}/roles/{role}', [TenantManagementController::class, 'updateRole'])->name('tenants.roles.update');
-    Route::delete('tenants/{tenant}/roles/{role}', [TenantManagementController::class, 'destroyRole'])->name('tenants.roles.destroy');
+        // Module Management
+        Route::post('/{tenant}/toggle-module', [TenantManagementController::class, 'toggleModule'])->name('toggle-module');
 
-    // Tenant Role Module Permissions
-    Route::get('tenants/{tenant}/roles/{role}/permissions', [TenantManagementController::class, 'editRolePermissions'])->name('tenants.roles.permissions.edit');
-    Route::put('tenants/{tenant}/roles/{role}/permissions', [TenantManagementController::class, 'updateRolePermissions'])->name('tenants.roles.permissions.update');
+        // Role Management
+        Route::prefix('{tenant}/roles')->name('roles.')->group(function () {
+            Route::get('/', [TenantRoleController::class, 'index'])->name('index');
+            Route::get('/create', [TenantRoleController::class, 'create'])->name('create');
+            Route::post('/', [TenantRoleController::class, 'store'])->name('store');
+            Route::get('/{role}/edit', [TenantRoleController::class, 'edit'])->name('edit');
+            Route::match(['put', 'patch'], '/{role}', [TenantRoleController::class, 'update'])->name('update');
+            Route::delete('/{role}', [TenantRoleController::class, 'destroy'])->name('destroy');
+            Route::get('/{role}/permissions/edit', [TenantRoleController::class, 'editPermissions'])->name('permissions.edit');
+            Route::match(['put', 'patch'], '/{role}/permissions', [TenantRoleController::class, 'updatePermissions'])->name('permissions.update');
+        });
+    });
+
+    // Risk Management
+    Route::prefix('risk-management')->name('risk-management.')->group(function () {
+        Route::get('reports', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'show'])->name('reports.show');
+        Route::get('reports/create', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'create'])->name('reports.create');
+        Route::post('reports', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'store'])->name('reports.store');
+        Route::get('reports/{id}/edit', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'edit'])->name('reports.edit');
+        Route::put('reports/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'update'])->name('reports.update');
+        Route::delete('reports/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'destroy'])->name('reports.destroy');
+    });
 
     // Tenant Monitoring
     Route::get('tenants/monitor', [App\Http\Controllers\SuperAdmin\TenantMonitoringController::class, 'index'])->name('tenants.monitor');
@@ -216,6 +240,17 @@ Route::middleware(['auth', 'tenant'])->prefix('modules')->name('modules.')->grou
             ->name('risk-analysis.update');
         Route::get('risk-reports/{reportId}/risk-analysis/{id}/qr-code', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'generateQr'])
             ->name('risk-analysis.qr-code');
+
+        // Rute untuk hubungan dengan modul kegiatan
+        Route::post('risk-reports/{id}/link-activity', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'linkActivity'])
+            ->middleware('check.permission:risk-management,can_edit')
+            ->name('risk-reports.link-activity');
+        Route::post('risk-reports/{id}/unlink-activity', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'unlinkActivity'])
+            ->middleware('check.permission:risk-management,can_edit')
+            ->name('risk-reports.unlink-activity');
+        Route::post('risk-reports/{id}/create-activity', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'createActivityFromRisk'])
+            ->middleware('check.permission:risk-management,can_edit')
+            ->name('risk-reports.create-activity');
     });
 
     // Rute Manajemen Modul - PINDAHKAN KE BAWAH
@@ -423,6 +458,17 @@ Route::domain('{tenant}.' . env('APP_URL_BASE'))->middleware(['tenant.resolve'])
                     ->name('risk-analysis.update');
                 Route::get('risk-reports/{reportId}/risk-analysis/{id}/qr-code', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'generateQr'])
                     ->name('risk-analysis.qr-code');
+
+                // Rute untuk hubungan dengan modul kegiatan
+                Route::post('risk-reports/{id}/link-activity', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'linkActivity'])
+                    ->middleware('check.permission:risk-management,can_edit')
+                    ->name('risk-reports.link-activity');
+                Route::post('risk-reports/{id}/unlink-activity', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'unlinkActivity'])
+                    ->middleware('check.permission:risk-management,can_edit')
+                    ->name('risk-reports.unlink-activity');
+                Route::post('risk-reports/{id}/create-activity', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'createActivityFromRisk'])
+                    ->middleware('check.permission:risk-management,can_edit')
+                    ->name('risk-reports.create-activity');
             });
         });
     });
@@ -547,8 +593,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
 // Tenant routes
 Route::middleware(['auth'])->prefix('tenant')->name('tenant.')->group(function () {
-    Route::get('/profile', [App\Http\Controllers\TenantController::class, 'profile'])->name('profile');
-    Route::post('/profile', [App\Http\Controllers\TenantController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/profile', [App\Http\Controllers\TenantController::class, 'profile'])->middleware('disable.debug')->name('profile');
+    Route::post('/profile', [App\Http\Controllers\TenantController::class, 'updateProfile'])->middleware('disable.debug')->name('profile.update');
     Route::get('/settings', [App\Http\Controllers\TenantController::class, 'settings'])->name('settings');
     Route::post('/settings', [App\Http\Controllers\TenantController::class, 'updateSettings'])->name('settings.update');
 
@@ -601,3 +647,75 @@ Route::get('/help', function () {
 Route::middleware(['web', 'auth', 'tenant', 'check.permission:work-units,can_view'])
     ->get('/work-units-dashboard', [App\Http\Controllers\Modules\WorkUnitController::class, 'globalDashboard'])
     ->name('work-units.global-dashboard');
+
+// Activity Management Module Routes
+Route::middleware(['web', 'auth', 'tenant', 'module:activity-management'])
+    ->prefix('activity-management')
+    ->name('modules.activity-management.')
+    ->group(function () {
+        // Dashboard
+        Route::get('/', [App\Http\Controllers\Modules\ActivityManagement\DashboardController::class, 'index'])
+            ->name('dashboard');
+
+        // Activity routes
+        Route::resource('activities', App\Http\Controllers\Modules\ActivityManagement\ActivityController::class);
+        Route::put('activities/{uuid}/update-status', [App\Http\Controllers\Modules\ActivityManagement\ActivityController::class, 'updateStatus'])
+            ->name('activities.update-status');
+
+        // Activity comments
+        Route::resource('comments', App\Http\Controllers\Modules\ActivityManagement\ActivityCommentController::class)
+            ->except(['index', 'show', 'create']);
+        Route::get('activities/{activity}/comments', [App\Http\Controllers\Modules\ActivityManagement\ActivityCommentController::class, 'index'])
+            ->name('comments.index');
+
+        // Activity assignees
+        Route::resource('assignees', App\Http\Controllers\Modules\ActivityManagement\ActivityAssigneeController::class)
+            ->except(['index', 'show', 'create']);
+        Route::get('activities/{activity}/assignees', [App\Http\Controllers\Modules\ActivityManagement\ActivityAssigneeController::class, 'index'])
+            ->name('assignees.index');
+
+        // Actionable items
+        Route::resource('actionable-items', App\Http\Controllers\Modules\ActivityManagement\ActionableItemController::class)
+            ->except(['index', 'show', 'create']);
+        Route::get('activities/{activity}/actionable-items', [App\Http\Controllers\Modules\ActivityManagement\ActionableItemController::class, 'index'])
+            ->name('actionable-items.index');
+    });
+
+// Route langsung untuk dashboard SPO
+Route::get('/work-units/spo/dashboard', [\App\Http\Controllers\Modules\WorkUnit\SPOController::class, 'dashboard'])
+    ->name('work-units.spo.dashboard.direct')
+    ->middleware(['web', 'auth', 'tenant']);
+
+// Route untuk debugging gambar (gunakan middleware auth jika diinginkan)
+Route::post('/log-image-error', function (Request $request) {
+    Log::error('Image loading error', [
+        'original_url' => $request->input('originalUrl'),
+        'alternative_url' => $request->input('alternativeUrl'),
+        'user_agent' => $request->header('User-Agent'),
+        'ip' => $request->ip()
+    ]);
+
+    return response()->json(['status' => 'logged']);
+})->middleware('web');
+
+require __DIR__ . '/modules/ActivityManagement.php';
+require __DIR__ . '/modules/WorkUnit.php';
+require __DIR__ . '/modules/Correspondence.php';
+require __DIR__ . '/modules/UserManagement.php';
+require __DIR__ . '/modules/KendaliMutuBiaya.php';
+
+// Tenant User Management Routes
+Route::middleware(['auth', 'superadmin'])->group(function () {
+    Route::prefix('superadmin/tenants/{tenant}/users')
+        ->name('superadmin.tenants.users.')
+        ->controller(App\Http\Controllers\TenantUserController::class)
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{user}/edit', 'edit')->name('edit');
+            Route::put('/{user}', 'update')->name('update');
+            Route::delete('/{user}', 'destroy')->name('destroy');
+            Route::post('/{user}/reset-password', 'resetPassword')->name('reset-password');
+        });
+});

@@ -16,6 +16,8 @@ class VerifyCsrfToken extends Middleware
         'tenant/tags/attach-document',
         'tenant/profile',
         'tenant/settings',
+        'api/*',
+        'sanctum/csrf-cookie',
         //
     ];
 }

@@ -14,14 +14,14 @@ return new class extends Migration
     {
         // Cek apakah modul SPO Management sudah ada
         $moduleExists = DB::table('modules')
-            ->where('name', 'SPO Management')
+            ->where('name', 'Manajemen SPO')
             ->orWhere('slug', 'spo-management')
             ->exists();
 
         if (!$moduleExists) {
             // Tambahkan modul baru
             $moduleId = DB::table('modules')->insertGetId([
-                'name' => 'SPO Management',
+                'name' => 'Manajemen SPO',
                 'code' => 'spo-management',
                 'slug' => 'spo-management',
                 'description' => 'Modul untuk mengelola Standar Prosedur Operasional (SPO) di rumah sakit',
@@ -78,25 +78,25 @@ return new class extends Migration
     public function down(): void
     {
         // Cari ID modul SPO Management
-        $module = DB::table('modules')
-            ->where('name', 'SPO Management')
+        $moduleId = DB::table('modules')
+            ->where('name', 'Manajemen SPO')
             ->orWhere('slug', 'spo-management')
-            ->first();
+            ->value('id');
 
-        if ($module) {
+        if ($moduleId) {
             // Hapus izin modul
             DB::table('role_module_permissions')
-                ->where('module_id', $module->id)
+                ->where('module_id', $moduleId)
                 ->delete();
 
             // Hapus modul dari tenant
             DB::table('tenant_modules')
-                ->where('module_id', $module->id)
+                ->where('module_id', $moduleId)
                 ->delete();
 
             // Hapus modul
             DB::table('modules')
-                ->where('id', $module->id)
+                ->where('id', $moduleId)
                 ->delete();
         }
     }

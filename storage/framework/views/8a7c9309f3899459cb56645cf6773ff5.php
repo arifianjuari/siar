@@ -179,7 +179,7 @@ $hideDefaultHeader = true;
                     <div class="mb-3">
                         <p class="detail-label">Isi Surat</p>
                         <div class="document-content">
-                            <?php echo nl2br(e($correspondence->body)); ?>
+                            <?php echo $correspondence->body; ?>
 
                         </div>
                     </div>

@@ -123,33 +123,51 @@
                     @foreach($combinedDocuments as $document)
                         @php
                             $isRiskReport = $document instanceof \App\Models\RiskReport;
-                            $detailRoute = $isRiskReport 
-                                ? route('modules.risk-management.risk-reports.show', $document->id)
-                                : route('modules.document-management.documents.show', $document->id);
-                            $docDate = $document->document_date ?? $document->created_at;
+                            $isDocument = $document instanceof \App\Models\Document;
+                            $isCorrespondence = $document instanceof \App\Models\Correspondence;
+                            $isSPO = $document instanceof \App\Models\SPO;
+                            
+                            $detailRoute = '#';
+                            $iconClass = 'fas fa-file-alt text-primary';
+                            $typeBadge = '<span class="badge bg-primary">Dokumen</span>';
+                            
+                            if ($isDocument) {
+                                $detailRoute = route('modules.document-management.documents.show', $document->id);
+                                $iconClass = 'fas fa-file-alt text-primary';
+                                $typeBadge = '<span class="badge bg-primary">Dokumen</span>';
+                            } elseif ($isRiskReport) {
+                                $detailRoute = route('modules.risk-management.risk-reports.show', $document->id);
+                                $iconClass = 'fas fa-exclamation-triangle text-danger';
+                                $typeBadge = '<span class="badge bg-danger">Laporan Risiko</span>';
+                            } elseif ($isCorrespondence) {
+                                $detailRoute = route('modules.correspondence.letters.show', $document->id);
+                                $iconClass = 'fas fa-envelope text-info';
+                                $typeBadge = '<span class="badge bg-info">Korespondensi</span>';
+                            } elseif ($isSPO) {
+                                $detailRoute = route('modules.spo.show', $document->id);
+                                $iconClass = 'fas fa-clipboard-list text-success';
+                                $typeBadge = '<span class="badge bg-success">SPO</span>';
+                            }
+                            
+                            $docDate = $document->document_date ?? $document->letter_date ?? $document->effective_date ?? $document->created_at;
                             $formattedDate = $docDate ? \Carbon\Carbon::parse($docDate)->format('d M Y') : '-';
+                            
+                            $docTitle = $document->document_title ?? $document->title ?? 'Judul Tidak Tersedia';
+                            $docNumber = $document->document_number ?? $document->number ?? 'No. Dokumen tidak tersedia';
                         @endphp
                         <div class="doc-item">
                             <a href="{{ $detailRoute }}" class="text-decoration-none">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
                                         <h5 class="doc-title mb-0">
-                                            @if($isRiskReport)
-                                                <i class="fas fa-exclamation-triangle text-danger me-2"></i>
-                                            @else
-                                                <i class="fas fa-file-alt text-primary me-2"></i>
-                                            @endif
-                                            {{ $document->document_title }}
+                                            <i class="{{ $iconClass }} me-2"></i>
+                                            {{ $docTitle }}
                                         </h5>
                                         <div class="doc-meta">
-                                            <span class="me-3">{{ $document->document_number ?? 'No. Dokumen tidak tersedia' }}</span>
+                                            <span class="me-3">{{ $docNumber }}</span>
                                             <span class="me-3"><i class="far fa-calendar-alt me-1"></i> {{ $formattedDate }}</span>
                                             <span>
-                                                @if($isRiskReport)
-                                                    <span class="badge bg-danger">Laporan Risiko</span>
-                                                @else
-                                                    <span class="badge bg-primary">Dokumen</span>
-                                                @endif
+                                                {!! $typeBadge !!}
                                                 
                                                 @if($document->confidentiality_level)
                                                     @php

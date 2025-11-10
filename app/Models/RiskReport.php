@@ -207,4 +207,20 @@ class RiskReport extends Model
     {
         return $this->belongsTo(WorkUnit::class, 'work_unit_id');
     }
+
+    /**
+     * Get the activity associated with this risk report.
+     */
+    public function activity()
+    {
+        return $this->belongsTo(Activity::class, 'activity_id');
+    }
+
+    /**
+     * Get the actionable items that reference this risk report.
+     */
+    public function actionableItems()
+    {
+        return $this->morphMany(ActionableItem::class, 'actionable');
+    }
 }

@@ -131,7 +131,7 @@
                 <div class="row">
                     <div class="col-md-12 mb-3">
                         <label for="body" class="form-label">Isi Surat <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="body" name="body" rows="6" required><?php echo e($oldBody); ?></textarea>
+                        <textarea class="form-control summernote" id="body" name="body" rows="6" required><?php echo e($oldBody); ?></textarea>
                     </div>
                 </div>
 
@@ -242,24 +242,15 @@
                 <div class="row mt-2">
                     <div class="col-md-12 mb-3">
                         <label for="tag-input" class="form-label">Tag</label>
-                        <div class="input-group">
+                        <div class="input-group mb-2">
                             <input type="text" class="form-control" id="tag-input" placeholder="Ketik tag lalu tekan Enter atau tombol Tambah">
                             <button class="btn btn-outline-secondary" type="button" id="add-tag-button">Tambah</button>
                         </div>
-                        <div id="tags-container" class="mt-2 d-flex flex-wrap">
+                        <div id="tags-container" class="mt-2 d-flex flex-wrap gap-1 mb-1">
                             
-                            <?php $__currentLoopData = $oldTags; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tagName): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <div class="badge bg-primary text-white me-2 mb-2 p-2 d-flex align-items-center">
-                                    <span><?php echo e($tagName); ?></span>
-                                    <button type="button" class="btn-close btn-close-white ms-2 remove-tag-button" style="font-size: 0.6rem;" aria-label="Close"></button>
-                                </div>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
                         <div id="hidden-tags-container">
                             
-                            <?php $__currentLoopData = $oldTags; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tagName): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <input type="hidden" name="tags[]" value="<?php echo e($tagName); ?>">
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
                         <small class="text-muted">Anda bisa menambahkan tag baru atau menggunakan tag yang sudah ada.</small>
                     </div>
@@ -280,6 +271,28 @@
     </form>
 </div>
 
+    <!-- Summernote CSS & JS CDN -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('.summernote').summernote({
+                height: 250,
+                tabsize: 2,
+                toolbar: [
+                  ['style', ['style']],
+                  ['font', ['bold', 'italic', 'underline', 'clear']],
+                  ['fontname', ['fontname']],
+                  ['color', ['color']],
+                  ['para', ['ul', 'ol', 'paragraph']],
+                  ['table', ['table']],
+                  ['insert', ['link', 'picture', 'video']],
+                  ['view', ['fullscreen', 'codeview', 'help']]
+                ]
+            });
+        });
+    </script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -287,76 +300,77 @@
         const addTagButton = document.getElementById('add-tag-button');
         const tagsContainer = document.getElementById('tags-container');
         const hiddenTagsContainer = document.getElementById('hidden-tags-container');
+        const initialTags = <?php echo json_encode($oldTags, 15, 512) ?>;
 
-        function addTag(tagName) {
+        function addTag(tagName, isInitial = false) {
             tagName = tagName.trim();
-            if (tagName === '') return;
+            if (!tagName) return;
 
-            // Cek duplikasi
-            const existingTags = hiddenTagsContainer.querySelectorAll('input[name="tags[]"]');
-            let isDuplicate = false;
-            existingTags.forEach(input => {
-                if (input.value.toLowerCase() === tagName.toLowerCase()) {
-                    isDuplicate = true;
+            // Cek duplikasi visual
+            const existingBadges = tagsContainer.querySelectorAll('.tag-badge');
+            for (let badge of existingBadges) {
+                if (badge.dataset.tagName.toLowerCase() === tagName.toLowerCase()) {
+                    if (!isInitial) tagInput.value = ''; // Kosongkan input saja
+                    return;
                 }
-            });
-
-            if (isDuplicate) {
-                tagInput.value = ''; // Kosongkan input jika duplikat
-                return; // Jangan tambahkan jika sudah ada
             }
 
-            // Buat badge
+            // Buat badge visual
+            const badgeId = `tag-badge-${Date.now()}${Math.random()}`; // ID unik sementara
             const badge = document.createElement('div');
-            badge.className = 'badge bg-primary text-white me-2 mb-2 p-2 d-flex align-items-center';
-            badge.innerHTML = `
-                <span>${tagName}</span>
-                <button type="button" class="btn-close btn-close-white ms-2 remove-tag-button" style="font-size: 0.6rem;" aria-label="Close"></button>
-            `;
+            badge.classList.add('d-flex', 'align-items-center', 'badge', 'bg-secondary', 'text-white', 'me-1', 'mb-1', 'p-1', 'tag-badge');
+            badge.style.fontSize = '0.75rem';
+            badge.dataset.tagName = tagName;
+            badge.id = badgeId;
+
+            const badgeText = document.createElement('span');
+            badgeText.textContent = tagName;
+            badge.appendChild(badgeText);
+
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.classList.add('btn-close', 'btn-close-white', 'ms-2');
+            closeButton.style.fontSize = '0.6rem';
+            closeButton.ariaLabel = 'Close';
+            closeButton.onclick = function() { removeTag(badgeId, tagName); };
+            badge.appendChild(closeButton);
+
             tagsContainer.appendChild(badge);
 
-            // Buat input hidden
+            // Tambahkan ke hidden input
             const hiddenInput = document.createElement('input');
             hiddenInput.type = 'hidden';
             hiddenInput.name = 'tags[]';
             hiddenInput.value = tagName;
+            hiddenInput.id = `hidden-${badgeId}`;
             hiddenTagsContainer.appendChild(hiddenInput);
 
-            // Kosongkan input
-            tagInput.value = '';
+            // Kosongkan input field jika bukan tag awal
+            if (!isInitial) tagInput.value = '';
         }
 
-        function removeTag(badgeElement) {
-            const tagName = badgeElement.querySelector('span').textContent;
-            const hiddenInputs = hiddenTagsContainer.querySelectorAll(`input[value="${tagName}"]`);
-            hiddenInputs.forEach(input => input.remove());
-            badgeElement.remove();
+        function removeTag(badgeId, tagName) {
+            const badgeElement = document.getElementById(badgeId);
+            const hiddenInputElement = document.getElementById(`hidden-${badgeId}`);
+
+            if (badgeElement) badgeElement.remove();
+            if (hiddenInputElement) hiddenInputElement.remove();
         }
 
-        addTagButton.addEventListener('click', () => {
-            addTag(tagInput.value);
-        });
-
-        tagInput.addEventListener('keypress', (event) => {
+        // Event listeners untuk input tag
+        tagInput.addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
-                event.preventDefault(); // Mencegah form submit
+                event.preventDefault(); // Cegah submit form
                 addTag(tagInput.value);
             }
         });
 
-        // Event delegation untuk tombol remove pada tag
-        tagsContainer.addEventListener('click', (event) => {
-            if (event.target.classList.contains('remove-tag-button')) {
-                removeTag(event.target.closest('.badge'));
-            }
+        addTagButton.addEventListener('click', function() {
+            addTag(tagInput.value);
         });
 
-        // Inisialisasi tombol remove untuk tag yang sudah ada dari server
-        tagsContainer.querySelectorAll('.remove-tag-button').forEach(button => {
-            button.addEventListener('click', () => {
-                removeTag(button.closest('.badge'));
-            });
-        });
+        // Load initial tags 
+        initialTags.forEach(tag => addTag(tag, true));
 
         // === Logika Referensi Dokumen ===
         const selectReferenceBtn = document.getElementById('select-reference-btn');

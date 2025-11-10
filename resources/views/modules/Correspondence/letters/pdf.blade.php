@@ -59,14 +59,36 @@
             margin-bottom: 30px;
         }
         .body-content ol {
-            padding-left: 25px; /* Indentasi untuk list */
+            padding-left: 15px;
             margin-top: 10px;
             margin-bottom: 0;
             padding-top: 0;
             padding-bottom: 0;
+            list-style-type: decimal;
+        }
+        .body-content ul {
+            padding-left: 15px;
+            margin-top: 10px;
+            margin-bottom: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            list-style-type: none;
         }
         .body-content li {
-            margin-bottom: 5px; /* Atur margin bawah list item */
+            margin-bottom: 5px;
+            margin-left: 10px;
+        }
+        .body-content ul > li {
+            position: relative;
+            list-style-type: none !important;
+        }
+        .body-content ul > li::before {
+            content: '- ';
+            position: absolute;
+            left: -10px;
+        }
+        .body-content ol > li {
+            list-style-type: decimal !important;
         }
         .signature-section {
             margin-top: 30px; /* Kurangi jarak atas */
@@ -172,7 +194,7 @@
             @endif
             <li>
                 {{-- Isi utama surat --}}
-                {!! nl2br(e($correspondence->body ?? 'Isi surat belum dimasukkan.')) !!}
+                {!! $correspondence->body ?? 'Isi surat belum dimasukkan.' !!}
             </li>
             <li>
                 Demikian untuk menjadi maklum.

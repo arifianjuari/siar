@@ -269,6 +269,25 @@ unset($__errorArgs, $__bag); ?>
                         </div>
                         
                         <div class="mb-3">
+                            <label for="tag-input" class="form-label">Tag</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="tag-input" placeholder="Ketik tag lalu tekan Enter atau tombol Tambah">
+                                <button class="btn btn-outline-secondary" type="button" id="add-tag-button">Tambah</button>
+                            </div>
+                            <div id="tags-container" class="mt-2 d-flex flex-wrap">
+                                
+                            </div>
+                            <div id="hidden-tags-container">
+                                <?php if(old('tags')): ?>
+                                    <?php $__currentLoopData = old('tags'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $oldTag): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <input type="hidden" name="tags[]" value="<?php echo e($oldTag); ?>">
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                <?php endif; ?>
+                            </div>
+                            <small class="text-muted">Anda bisa menambahkan tag untuk memudahkan pencarian dan pengkategorian.</small>
+                        </div>
+                        
+                        <div class="mb-3">
                             <label for="review_cycle_months" class="form-label">Siklus Review (bulan) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control <?php $__errorArgs = ['review_cycle_months'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -436,6 +455,131 @@ unset($__errorArgs, $__bag); ?>
                 allowClear: true
             });
         }
+
+        // === Logika Tag Input ===
+        const tagInput = document.getElementById('tag-input');
+        const addTagButton = document.getElementById('add-tag-button');
+        const tagsContainer = document.getElementById('tags-container');
+        const hiddenTagsContainer = document.getElementById('hidden-tags-container');
+    
+        function addTag(tagName) {
+            tagName = tagName.trim();
+            if (!tagName) return; // Jangan tambahkan jika kosong
+    
+            // Cek duplikasi visual
+            const existingBadges = tagsContainer.querySelectorAll('.tag-badge');
+            for (let badge of existingBadges) {
+                if (badge.dataset.tagName.toLowerCase() === tagName.toLowerCase()) {
+                    tagInput.value = ''; // Kosongkan input saja
+                    return;
+                }
+            }
+    
+            // Buat badge visual
+            const badgeId = `tag-badge-${Date.now()}${Math.random()}`; // ID unik
+            const badge = document.createElement('div');
+            badge.classList.add('d-flex', 'align-items-center', 'badge', 'bg-info', 'text-white', 'me-1', 'mb-1', 'p-1', 'tag-badge');
+            badge.style.fontSize = '0.75rem';
+            badge.dataset.tagName = tagName;
+            badge.id = badgeId;
+    
+            const badgeText = document.createElement('span');
+            badgeText.textContent = tagName;
+            badge.appendChild(badgeText);
+    
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.classList.add('btn-close', 'btn-close-white', 'ms-2');
+            closeButton.style.fontSize = '0.6rem';
+            closeButton.ariaLabel = 'Close';
+            closeButton.onclick = function() { removeTag(badgeId, tagName); };
+            badge.appendChild(closeButton);
+    
+            tagsContainer.appendChild(badge);
+    
+            // Tambahkan ke hidden input
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'tags[]';
+            hiddenInput.value = tagName;
+            hiddenInput.id = `hidden-${badgeId}`;
+            hiddenTagsContainer.appendChild(hiddenInput);
+    
+            // Kosongkan input field
+            tagInput.value = '';
+            tagInput.focus(); // Fokus kembali ke input
+        }
+    
+        function removeTag(badgeId, tagName) {
+            const badgeElement = document.getElementById(badgeId);
+            const hiddenInputElement = document.getElementById(`hidden-${badgeId}`);
+    
+            if (badgeElement) {
+                badgeElement.remove();
+            }
+            if (hiddenInputElement) {
+                hiddenInputElement.remove();
+            }
+        }
+
+        // Tambahkan tag dari old input jika ada (saat validasi error)
+        function addTagFromValue(tagName, existingInput) {
+            tagName = tagName.trim();
+            if (!tagName) return;
+    
+            const badgeId = `tag-badge-${Date.now()}${Math.random()}`; // ID unik
+            const badge = document.createElement('div');
+            badge.classList.add('d-flex', 'align-items-center', 'badge', 'bg-info', 'text-white', 'me-1', 'mb-1', 'p-1', 'tag-badge');
+            badge.style.fontSize = '0.75rem';
+            badge.dataset.tagName = tagName;
+            badge.id = badgeId;
+    
+            const badgeText = document.createElement('span');
+            badgeText.textContent = tagName;
+            badge.appendChild(badgeText);
+    
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.classList.add('btn-close', 'btn-close-white', 'ms-2');
+            closeButton.style.fontSize = '0.6rem';
+            closeButton.ariaLabel = 'Close';
+            // Pastikan fungsi removeTag juga menghapus input hidden yang sudah ada
+            closeButton.onclick = function() { 
+                const badgeElement = document.getElementById(badgeId);
+                if (badgeElement) badgeElement.remove();
+                if (existingInput) existingInput.remove(); 
+            };
+            badge.appendChild(closeButton);
+    
+            tagsContainer.appendChild(badge);
+            // Set ID pada input hidden yang sudah ada agar bisa dihapus
+            if(existingInput) existingInput.id = `hidden-${badgeId}`; 
+        }
+    
+        // Event listeners untuk input tag
+        if(tagInput) {
+            tagInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Cegah submit form
+                    addTag(tagInput.value);
+                }
+            });
+        }
+        
+        if(addTagButton) {
+            addTagButton.addEventListener('click', function() {
+                addTag(tagInput.value);
+            });
+        }
+    
+        // Tambahkan tag dari old input jika ada (saat validasi error)
+        const existingHiddenTags = hiddenTagsContainer.querySelectorAll('input[name="tags[]"]');
+        if(existingHiddenTags.length > 0) {
+            existingHiddenTags.forEach(input => {
+                addTagFromValue(input.value, input);
+            });
+        }
+        // === Akhir Logika Tag Input ===
     });
 </script>
 <?php $__env->stopPush(); ?>

@@ -140,3 +140,23 @@ if (!function_exists('isTenantActive')) {
         }
     }
 }
+
+if (!function_exists('roleView')) {
+    /**
+     * Render a view based on user role
+     *
+     * @param string $view View name
+     * @param string|null $fallback Fallback view name
+     * @param array $data View data
+     * @return \Illuminate\View\View
+     */
+    function roleView($view, $fallback = null, $data = [])
+    {
+        $role = auth()->user()->role->slug ?? null;
+        $customView = "roles.$role.$view";
+
+        return view()->exists($customView)
+            ? view($customView, $data)
+            : view($fallback ?? $view, $data);
+    }
+}

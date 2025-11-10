@@ -29,6 +29,24 @@ class ModuleSeeder extends Seeder
                 'order' => 2,
                 'is_active' => true,
             ],
+            [
+                'name' => 'Pengelolaan Kegiatan',
+                'slug' => 'activity-management',
+                'is_core' => false,
+                'is_purchasable' => true,
+                'is_visible' => true,
+                'description' => 'Modul untuk mengelola dan memantau kegiatan organisasi',
+                'version' => '1.0.0',
+                'icon' => 'calendar',
+                'permissions' => [
+                    ['name' => 'view', 'description' => 'Melihat kegiatan'],
+                    ['name' => 'create', 'description' => 'Membuat kegiatan baru'],
+                    ['name' => 'edit', 'description' => 'Mengedit kegiatan'],
+                    ['name' => 'delete', 'description' => 'Menghapus kegiatan'],
+                    ['name' => 'assign', 'description' => 'Menugaskan pengguna ke kegiatan'],
+                    ['name' => 'change_status', 'description' => 'Mengubah status kegiatan'],
+                ]
+            ],
         ];
 
         foreach ($modules as $module) {

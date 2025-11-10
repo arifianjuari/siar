@@ -23,26 +23,90 @@ $hideDefaultHeader = true;
     }
     
     .kpi-card .card-body {
-        padding: 1rem;
+        padding: 0.75rem;
     }
     
     .kpi-icon {
-        font-size: 2rem;
-        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
         opacity: 0.8;
     }
     
     .kpi-value {
-        font-size: 2rem;
+        font-size: 1.75rem;
         font-weight: 700;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.1rem;
         line-height: 1;
     }
     
     .kpi-label {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         opacity: 0.8;
         margin-bottom: 0;
+    }
+    
+    .stats-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stats-item {
+        flex: 1;
+        min-width: 140px;
+        background-color: white;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        transition: all 0.2s;
+    }
+    
+    .stats-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .stats-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+        font-size: 1.25rem;
+        color: white;
+    }
+    
+    .stats-icon.total {
+        background-color: #0d6efd;
+    }
+    
+    .stats-icon.public {
+        background-color: #198754;
+    }
+    
+    .stats-icon.internal {
+        background-color: #fd7e14;
+    }
+    
+    .stats-icon.confidential {
+        background-color: #dc3545;
+    }
+    
+    .stats-info .value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+    
+    .stats-info .label {
+        font-size: 0.75rem;
+        color: #6c757d;
     }
     
     .chart-container {
@@ -54,8 +118,8 @@ $hideDefaultHeader = true;
     .doc-item {
         border-left: 3px solid #eee;
         transition: all 0.2s;
-        padding: 0.75rem 1rem;
-        margin-bottom: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 0.25rem;
         border-radius: 0 0.5rem 0.5rem 0;
     }
     
@@ -66,11 +130,17 @@ $hideDefaultHeader = true;
     
     .doc-title {
         font-weight: 600;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0;
+        font-size: 0.9rem;
     }
     
     .doc-meta {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+    
+    .doc-date {
+        font-size: 0.7rem;
         color: #6c757d;
     }
     
@@ -108,75 +178,84 @@ $hideDefaultHeader = true;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         background-color: rgba(0,0,0,0.02);
     }
+    
+    .latest-docs-card {
+        max-height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .latest-docs-body {
+        flex: 1;
+        overflow-y: auto;
+        max-height: 500px;
+    }
+    
+    .list-group-flush .list-group-item {
+        padding: 0.4rem 0;
+        border-bottom-width: 1px;
+    }
 </style>
 @endpush
 
 @section('content')
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h2 class="mb-1 fw-bold">Dashboard Manajemen Dokumen</h2>
             <p class="text-muted mb-0">Pantau dan kelola dokumen dari berbagai sumber</p>
         </div>
         <div>
-            <a href="{{ route('modules.document-management.documents.create') }}" class="btn btn-success me-2">
-                <i class="fas fa-plus-circle me-1"></i> Tambah Dokumen Baru
+            <a href="{{ route('modules.document-management.documents.create') }}" class="btn btn-success btn-sm me-2">
+                <i class="fas fa-plus-circle me-1"></i> Tambah Dokumen
             </a>
-            <a href="{{ route('modules.document-management.documents.index') }}" class="btn btn-primary">
+            <a href="{{ route('modules.document-management.documents.index') }}" class="btn btn-primary btn-sm">
                 <i class="fas fa-list me-1"></i> Daftar Dokumen
             </a>
         </div>
     </div>
 
-    <!-- KPI Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-3">
-            <a href="{{ route('modules.document-management.documents-by-type', 'all') }}" class="text-decoration-none">
-                <div class="card kpi-card" style="cursor: pointer;">
-                    <div class="card-body">
-                        <i class="fas fa-file-alt kpi-icon text-primary"></i>
-                        <h2 class="kpi-value">{{ $stats['total'] }}</h2>
-                        <p class="kpi-label">Total Dokumen</p>
-                    </div>
-                </div>
-            </a>
-        </div>
+    <!-- KPI Cards - Compact Version -->
+    <div class="stats-row">
+        <a href="{{ route('modules.document-management.documents-by-type', 'all') }}" class="stats-item text-decoration-none">
+            <div class="stats-icon total">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="stats-info">
+                <div class="value">{{ $stats['total'] }}</div>
+                <div class="label">Total Dokumen</div>
+            </div>
+        </a>
         
-        <div class="col-xl-3 col-md-6 mb-3">
-            <a href="{{ route('modules.document-management.documents-by-type', 'public') }}" class="text-decoration-none">
-                <div class="card kpi-card bg-public" style="cursor: pointer;">
-                    <div class="card-body">
-                        <i class="fas fa-globe kpi-icon"></i>
-                        <h2 class="kpi-value">{{ $stats['public'] }}</h2>
-                        <p class="kpi-label">Dokumen Publik</p>
-                    </div>
-                </div>
-            </a>
-        </div>
+        <a href="{{ route('modules.document-management.documents-by-type', 'public') }}" class="stats-item text-decoration-none">
+            <div class="stats-icon public">
+                <i class="fas fa-globe"></i>
+            </div>
+            <div class="stats-info">
+                <div class="value">{{ $stats['public'] }}</div>
+                <div class="label">Dokumen Publik</div>
+            </div>
+        </a>
         
-        <div class="col-xl-3 col-md-6 mb-3">
-            <a href="{{ route('modules.document-management.documents-by-type', 'internal') }}" class="text-decoration-none">
-                <div class="card kpi-card bg-internal" style="cursor: pointer;">
-                    <div class="card-body">
-                        <i class="fas fa-building kpi-icon"></i>
-                        <h2 class="kpi-value">{{ $stats['internal'] }}</h2>
-                        <p class="kpi-label">Dokumen Internal</p>
-                    </div>
-                </div>
-            </a>
-        </div>
+        <a href="{{ route('modules.document-management.documents-by-type', 'internal') }}" class="stats-item text-decoration-none">
+            <div class="stats-icon internal">
+                <i class="fas fa-building"></i>
+            </div>
+            <div class="stats-info">
+                <div class="value">{{ $stats['internal'] }}</div>
+                <div class="label">Dokumen Internal</div>
+            </div>
+        </a>
         
-        <div class="col-xl-3 col-md-6 mb-3">
-            <a href="{{ route('modules.document-management.documents-by-type', 'confidential') }}" class="text-decoration-none">
-                <div class="card kpi-card bg-confidential" style="cursor: pointer;">
-                    <div class="card-body">
-                        <i class="fas fa-lock kpi-icon"></i>
-                        <h2 class="kpi-value">{{ $stats['confidential'] }}</h2>
-                        <p class="kpi-label">Dokumen Rahasia</p>
-                    </div>
-                </div>
-            </a>
-        </div>
+        <a href="{{ route('modules.document-management.documents-by-type', 'confidential') }}" class="stats-item text-decoration-none">
+            <div class="stats-icon confidential">
+                <i class="fas fa-lock"></i>
+            </div>
+            <div class="stats-info">
+                <div class="value">{{ $stats['confidential'] }}</div>
+                <div class="label">Dokumen Rahasia</div>
+            </div>
+        </a>
     </div>
     
     <div class="row">
@@ -190,7 +269,11 @@ $hideDefaultHeader = true;
                     @if(isset($moduleCategories) && count($moduleCategories) > 0)
                         <ul class="list-group">
                             @foreach($moduleCategories as $category)
-                                <a href="{{ route('modules.' . $category['module'] . '.dashboard') }}" class="text-decoration-none">
+                                <a href="{{ 
+                                    $category['module'] === 'work-units.spo' 
+                                        ? route('work-units.spo.dashboard') 
+                                        : route('modules.' . $category['module'] . '.dashboard') 
+                                }}" class="text-decoration-none">
                                     <li class="list-group-item d-flex justify-content-between align-items-center hover-effect" 
                                         style="cursor: pointer; transition: all 0.2s ease;">
                                         <div>
@@ -217,47 +300,59 @@ $hideDefaultHeader = true;
 
         <!-- Latest Documents -->
         <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i> Dokumen Terbaru</h5>
+            <div class="card h-100 latest-docs-card">
+                <div class="card-header py-2">
+                    <h5 class="mb-0 fs-6"><i class="fas fa-clock me-2"></i> Dokumen Terbaru</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-2 latest-docs-body">
                     @if($latestDocuments->count() > 0)
                         <ul class="list-group list-group-flush">
                             @foreach($latestDocuments as $document)
                                 @php
-                                    $detailRoute = $document instanceof \App\Models\Document
-                                        ? route('modules.document-management.documents.show', $document->id)
-                                        : route('modules.risk-management.risk-reports.show', $document->id);
+                                    $detailRoute = '#';
+                                    $iconClass = 'fas fa-file-alt text-primary';
+                                    
+                                    if ($document instanceof \App\Models\Document) {
+                                        $detailRoute = route('modules.document-management.documents.show', $document->id);
+                                        $iconClass = 'fas fa-file-alt text-primary';
+                                    } elseif ($document instanceof \App\Models\RiskReport) {
+                                        $detailRoute = route('modules.risk-management.risk-reports.show', $document->id);
+                                        $iconClass = 'fas fa-exclamation-triangle text-danger';
+                                    } elseif ($document instanceof \App\Models\SPO) {
+                                        $detailRoute = route('work-units.spo.show', $document->id);
+                                        $iconClass = 'fas fa-clipboard-list text-success';
+                                    } elseif ($document instanceof \App\Models\Correspondence) {
+                                        $detailRoute = route('modules.correspondence.letters.show', $document->id);
+                                        $iconClass = 'fas fa-envelope text-info';
+                                    }
                                 @endphp
-                                <li class="list-group-item px-0 py-2 border-bottom">
-                                    <a href="{{ $detailRoute }}" class="d-flex justify-content-between align-items-center text-decoration-none">
-                                        <div class="d-flex align-items-center">
-                                            @if(Str::startsWith($document->document_number ?? '', 'RIR-') || Str::startsWith($document->document_number ?? '', 'LR/'))
-                                                <i class="fas fa-exclamation-triangle text-danger me-2"></i>
-                                            @else
-                                                <i class="fas fa-file-alt text-primary me-2"></i>
-                                            @endif
+                                <li class="list-group-item px-0 py-1 border-bottom">
+                                    <a href="{{ $detailRoute }}" class="d-flex justify-content-between align-items-start text-decoration-none">
+                                        <div class="d-flex align-items-start">
+                                            <i class="{{ $iconClass }} me-2 mt-1"></i>
                                             <div>
-                                                <span class="fw-medium text-dark">{{ $document->document_title }}</span>
-                                                <span class="text-muted ms-2">({{ $document->document_number }})</span>
-                                                @if($document->file_path)
-                                                    <span class="badge bg-success ms-1">📎</span>
-                                                @endif
+                                                <div class="doc-title text-dark">{{ $document->document_title }}</div>
+                                                <div class="doc-meta">
+                                                    <i class="far fa-calendar-alt me-1"></i>{{ $document->created_at ? \Carbon\Carbon::parse($document->created_at)->format('d M Y H:i') : '-' }} 
+                                                    <span class="mx-1">•</span> 
+                                                    {{ $document->document_number }}
+                                                    @if($document->file_path)
+                                                        <i class="fas fa-paperclip ms-1"></i>
+                                                    @endif
+                                                </div>
                                             </div>
                                         </div>
-                                        <i class="fas fa-chevron-right text-muted"></i>
+                                        <div class="ms-2 mt-1">
+                                            <i class="fas fa-chevron-right text-muted"></i>
+                                        </div>
                                     </a>
                                 </li>
                             @endforeach
                         </ul>
                     @else
-                        <div class="text-center py-5">
-                            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
-                            <p class="mb-0 text-muted">Belum ada dokumen yang diunggah.</p>
-                            <p class="text-muted small mt-2">
-                                <i class="fas fa-exclamation-triangle me-1"></i> Pastikan telah menambahkan dokumen dengan document_date yang benar
-                            </p>
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-alt fa-2x text-muted mb-2"></i>
+                            <p class="mb-0 text-muted small">Belum ada dokumen yang diunggah.</p>
                         </div>
                     @endif
                 </div>

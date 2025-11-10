@@ -1,22 +1,9 @@
+// Manifest PWA dinonaktifkan untuk sementara
+// Untuk pengaktifan kembali, isi dengan manifest yang sesuai
 {
-    "name": "SIAR App",
+    "disabled": true,
+    "name": "SIAR",
     "short_name": "SIAR",
     "start_url": "/",
-    "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#4285f4",
-    "icons": [
-        {
-            "src": "/images/pwa/icon-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/images/pwa/icon-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any"
-        }
-    ]
+    "display": "none"
 }

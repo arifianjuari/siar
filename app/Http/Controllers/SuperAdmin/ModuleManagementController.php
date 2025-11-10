@@ -22,7 +22,7 @@ class ModuleManagementController extends Controller
             $query->where('tenant_modules.is_active', true);
         }])->paginate(10);
 
-        return view('superadmin.modules.index', compact('modules'));
+        return view('roles.superadmin.modules.index', compact('modules'));
     }
 
     /**
@@ -30,7 +30,7 @@ class ModuleManagementController extends Controller
      */
     public function create()
     {
-        return view('superadmin.modules.create');
+        return view('roles.superadmin.modules.create');
     }
 
     /**
@@ -83,7 +83,7 @@ class ModuleManagementController extends Controller
         $activeInTenantCount = $module->tenants->count();
         $percentageActive = $totalTenants > 0 ? round(($activeInTenantCount / $totalTenants) * 100) : 0;
 
-        return view('superadmin.modules.show', compact('module', 'totalTenants', 'activeInTenantCount', 'percentageActive'));
+        return view('roles.superadmin.modules.show', compact('module', 'totalTenants', 'activeInTenantCount', 'percentageActive'));
     }
 
     /**
@@ -91,7 +91,7 @@ class ModuleManagementController extends Controller
      */
     public function edit(Module $module)
     {
-        return view('superadmin.modules.edit', compact('module'));
+        return view('roles.superadmin.modules.edit', compact('module'));
     }
 
     /**

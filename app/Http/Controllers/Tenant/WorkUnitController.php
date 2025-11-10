@@ -31,7 +31,7 @@ class WorkUnitController extends Controller
             })
             ->with(['parent', 'headOfUnit']) // Eager load parent and head of unit
             ->orderBy('order')
-            ->paginate(10);
+            ->get();
 
         Log::info('User melihat daftar unit kerja', [
             'user_id' => auth()->id(),
@@ -277,22 +277,20 @@ class WorkUnitController extends Controller
     }
 
     /**
-     * Update the order of work units through drag and drop
+     * Update the order of work units after drag and drop
      */
     public function updateOrder(Request $request)
     {
         $tenantId = session('tenant_id');
+        $order = $request->input('order', []);
 
-        $workUnits = $request->input('workUnits', []);
-
-        foreach ($workUnits as $workUnit) {
-            $unit = WorkUnit::find($workUnit['id']);
+        foreach ($order as $item) {
+            $unit = WorkUnit::find($item['id']);
 
             // Ensure the work unit belongs to the current tenant
             if ($unit && $unit->tenant_id == $tenantId) {
                 $unit->update([
-                    'order' => $workUnit['order'],
-                    'parent_id' => $workUnit['parent_id'] ?? null
+                    'order' => $item['position']
                 ]);
             }
         }

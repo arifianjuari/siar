@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class TenantController extends Controller
 {
@@ -192,7 +194,7 @@ class TenantController extends Controller
             return redirect()->route('dashboard')->with('error', 'Tenant tidak ditemukan');
         }
 
-        return view('tenant.profile', compact('tenant'));
+        return view('roles.tenant.profile', compact('tenant'));
     }
 
     /**
@@ -234,21 +236,142 @@ class TenantController extends Controller
 
         // Upload logo jika ada
         if ($request->hasFile('logo')) {
-            // Hapus logo lama jika ada
-            if ($tenant->logo && Storage::disk('public')->exists($tenant->logo)) {
-                Storage::disk('public')->delete($tenant->logo);
+            try {
+                // Hapus logo lama jika ada
+                if ($tenant->logo && Storage::disk('public')->exists($tenant->logo)) {
+                    Storage::disk('public')->delete($tenant->logo);
+                }
+
+                $logo = $request->file('logo');
+
+                // Validasi ukuran dan tipe file lagi untuk keamanan
+                if (!$logo->isValid() || $logo->getSize() > 2048 * 1024) {
+                    return redirect()->back()->with('error', 'Logo tidak valid atau ukurannya terlalu besar (maks 2MB)');
+                }
+
+                // Dapatkan ekstensi file
+                $extension = strtolower($logo->getClientOriginalExtension());
+
+                // Validasi ekstensi file
+                if (empty($extension) || !in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+                    Log::error('Ekstensi file tidak valid atau kosong: ' . $extension);
+                    return redirect()->back()->with('error', 'Format file tidak valid. Gunakan JPG, PNG, atau GIF.');
+                }
+
+                // Gunakan slug nama tenant untuk nama file yang lebih aman
+                $slugName = preg_replace('/[^a-z0-9-]/', '', Str::slug($tenant->name));
+                // Batasi panjang nama file
+                $slugName = substr($slugName, 0, 30);
+                $timestamp = time();
+                $logoName = 'logo_' . $slugName . '.' . $extension;
+
+                // Pastikan tidak ada karakter line break
+                $logoName = str_replace(["\r", "\n", "\t", " "], "", $logoName);
+
+                // Simpan logo di folder images publik
+                $logoPath = 'tenant_logos/' . $logoName;
+                $publicPath = 'images/' . $logoName;
+
+                // Cek dan buat direktori jika belum ada
+                $directory = storage_path('app/public/tenant_logos');
+                if (!file_exists($directory)) {
+                    if (!mkdir($directory, 0777, true)) {
+                        Log::error("Gagal membuat direktori tenant_logos");
+                        return redirect()->back()->with('error', 'Gagal membuat direktori penyimpanan logo');
+                    }
+                }
+
+                // Pastikan direktori publik juga ada
+                $publicDirectory = public_path('images');
+                if (!file_exists($publicDirectory)) {
+                    if (!mkdir($publicDirectory, 0777, true)) {
+                        Log::error("Gagal membuat direktori images publik");
+                        return redirect()->back()->with('error', 'Gagal membuat direktori penyimpanan logo publik');
+                    }
+                }
+
+                // Simpan dan resize gambar dengan Intervention Image
+                try {
+                    $manager = new ImageManager(new Driver());
+                    $img = $manager->read($logo);
+
+                    // Resize ke maksimal 400px lebar, tinggi menyesuaikan dengan aspek rasio
+                    $img->scale(width: 400);
+
+                    // Tentukan format output berdasarkan ekstensi
+                    $format = $extension;
+                    if ($extension === 'jpg') {
+                        $format = 'jpeg';
+                    }
+
+                    // Simpan file dengan format yang ditentukan
+                    if ($format === 'jpeg' || $format === 'jpg') {
+                        // Simpan di storage
+                        $img->toJpeg(80)->save(storage_path('app/public/' . $logoPath));
+
+                        // Simpan juga di direktori publik
+                        $img->toJpeg(80)->save(public_path($publicPath));
+                    } elseif ($format === 'png') {
+                        // Simpan di storage
+                        $img->toPng()->save(storage_path('app/public/' . $logoPath));
+
+                        // Simpan juga di direktori publik
+                        $img->toPng()->save(public_path($publicPath));
+                    } elseif ($format === 'gif') {
+                        // Simpan di storage
+                        $img->toGif()->save(storage_path('app/public/' . $logoPath));
+
+                        // Simpan juga di direktori publik
+                        $img->toGif()->save(public_path($publicPath));
+                    } else {
+                        // Default ke JPG jika format tidak dikenali
+                        // Simpan di storage
+                        $img->toJpeg(80)->save(storage_path('app/public/' . $logoPath));
+
+                        // Simpan juga di direktori publik
+                        $img->toJpeg(80)->save(public_path($publicPath));
+                    }
+
+                    // Pastikan file benar-benar disimpan
+                    $savedFilePath = storage_path('app/public/' . $logoPath);
+                    $savedPublicPath = public_path($publicPath);
+
+                    if (!file_exists($savedFilePath) && !file_exists($savedPublicPath)) {
+                        Log::error("File logo gagal disimpan: " . $savedFilePath . " and " . $savedPublicPath);
+                        throw new \Exception('File logo gagal disimpan ke direktori.');
+                    }
+
+                    // Pastikan setidaknya file publik ada dan dapat dibaca
+                    if (file_exists($savedPublicPath) && !is_readable($savedPublicPath)) {
+                        Log::error("File logo publik tidak dapat dibaca: " . $savedPublicPath);
+                        chmod($savedPublicPath, 0644);
+                    }
+
+                    // Debug: log detail file yang berhasil disimpan
+                    Log::info("Logo berhasil disimpan", [
+                        'storage_path' => $logoPath,
+                        'public_path' => $publicPath,
+                        'full_storage_path' => $savedFilePath,
+                        'full_public_path' => $savedPublicPath,
+                        'file_exists_in_storage' => file_exists($savedFilePath) ? 'Yes' : 'No',
+                        'file_exists_in_public' => file_exists($savedPublicPath) ? 'Yes' : 'No',
+                    ]);
+
+                    // Simpan path di database
+                    $tenant->logo = $logoPath;
+                } catch (\Exception $e) {
+                    Log::error('Error saat memproses gambar: ' . $e->getMessage());
+                    return redirect()->back()->with('error', 'Terjadi kesalahan saat memproses logo: ' . $e->getMessage());
+                }
+            } catch (\Exception $e) {
+                Log::error('Error saat upload logo tenant: ' . $e->getMessage());
+                return redirect()->back()->with('error', 'Terjadi kesalahan saat mengupload logo: ' . $e->getMessage());
             }
-
-            $logo = $request->file('logo');
-            $logoName = 'tenant_logo_' . $tenant->id . '_' . time() . '.' . $logo->getClientOriginalExtension();
-            $logoPath = $logo->storeAs('tenant_logos', $logoName, 'public');
-
-            $tenant->logo = $logoPath;
         }
 
         $tenant->save();
 
-        return redirect()->route('tenant.profile')->with('success', 'Profil tenant berhasil diperbarui');
+        return redirect()->route('tenant.profile', ['refresh' => time()])->with('success', 'Profil tenant berhasil diperbarui');
     }
 
     /**

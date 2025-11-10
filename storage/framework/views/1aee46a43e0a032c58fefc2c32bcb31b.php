@@ -140,7 +140,7 @@
                         <thead class="table-primary">
                             <tr>
                                 <th width="40">No</th>
-                                <th>Judul</th>
+                                <th>Nomor Laporan</th>
                                 <th>Judul Insiden</th>
                                 <th>Unit Pelapor</th>
                                 <th>Tipe</th>

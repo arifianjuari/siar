@@ -20,6 +20,7 @@ class Kernel extends ConsoleKernel
         Commands\CreateTenant::class,
         Commands\FixRolePermissions::class,
         Commands\FixRoleSlugs::class,
+        \App\Console\Commands\SeedKendaliMutu::class,
     ];
 
     /**

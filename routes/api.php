@@ -27,3 +27,10 @@ Route::get('/document-references', [DocumentReferenceController::class, 'getRefe
 Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::get('/letters', [CorrespondenceController::class, 'getLetters']);
 });
+
+// User Routes
+use App\Http\Controllers\Api\UserController;
+
+Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
+    Route::get('/users/search', [UserController::class, 'search'])->name('api.users.search');
+});

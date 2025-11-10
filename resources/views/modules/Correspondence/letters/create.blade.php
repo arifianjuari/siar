@@ -104,7 +104,7 @@
                 <div class="row">
                     <div class="col-md-12 mb-3">
                         <label for="body" class="form-label">Isi Surat <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="body" name="body" rows="6" required>{{ old('body', $defaultBody) }}</textarea>
+                        <textarea class="form-control summernote" id="body" name="body" rows="6" required>{{ old('body', $defaultBody) }}</textarea>
                     </div>
                 </div>
 
@@ -210,17 +210,17 @@
                 <div class="row mt-2">
                     <div class="col-md-12 mb-3">
                         <label for="tag-input" class="form-label">Tag</label>
-                        <div class="input-group">
+                        <div class="input-group mb-2">
                             <input type="text" class="form-control" id="tag-input" placeholder="Ketik tag lalu tekan Enter atau tombol Tambah">
                             <button class="btn btn-outline-secondary" type="button" id="add-tag-button">Tambah</button>
                         </div>
-                        <div id="tags-container" class="mt-2 d-flex flex-wrap">
-                            {{-- Badge tag akan muncul di sini --}}
+                        <div id="tags-container" class="mt-2 d-flex flex-wrap gap-1 mb-1">
+                            {{-- Tag badges akan ditambahkan di sini oleh JS --}}
                         </div>
                         <div id="hidden-tags-container">
                             @if(old('tags'))
-                                @foreach(old('tags') as $oldTag)
-                                    <input type="hidden" name="tags[]" value="{{ $oldTag }}">
+                                @foreach(old('tags') as $tagName)
+                                    <input type="hidden" name="tags[]" value="{{ $tagName }}">
                                 @endforeach
                             @endif
                         </div>
@@ -356,16 +356,16 @@
             console.log('ClassicEditor is not defined.');
         }
         
-        // === Logika Tag Input Baru ===
+        // === Logika Tag Input ===
         const tagInput = document.getElementById('tag-input');
         const addTagButton = document.getElementById('add-tag-button');
         const tagsContainer = document.getElementById('tags-container');
         const hiddenTagsContainer = document.getElementById('hidden-tags-container');
-    
+
         function addTag(tagName) {
             tagName = tagName.trim();
             if (!tagName) return; // Jangan tambahkan jika kosong
-    
+
             // Cek duplikasi visual
             const existingBadges = tagsContainer.querySelectorAll('.tag-badge');
             for (let badge of existingBadges) {
@@ -374,19 +374,19 @@
                     return;
                 }
             }
-    
+
             // Buat badge visual
-            const badgeId = `tag-badge-${Date.now()}${Math.random()}`; // ID unik
+            const badgeId = `tag-badge-${Date.now()}`; // ID unik sementara
             const badge = document.createElement('div');
             badge.classList.add('d-flex', 'align-items-center', 'badge', 'bg-secondary', 'text-white', 'me-1', 'mb-1', 'p-1', 'tag-badge');
             badge.style.fontSize = '0.75rem';
             badge.dataset.tagName = tagName;
             badge.id = badgeId;
-    
+
             const badgeText = document.createElement('span');
             badgeText.textContent = tagName;
             badge.appendChild(badgeText);
-    
+
             const closeButton = document.createElement('button');
             closeButton.type = 'button';
             closeButton.classList.add('btn-close', 'btn-close-white', 'ms-2');
@@ -394,9 +394,9 @@
             closeButton.ariaLabel = 'Close';
             closeButton.onclick = function() { removeTag(badgeId, tagName); };
             badge.appendChild(closeButton);
-    
+
             tagsContainer.appendChild(badge);
-    
+
             // Tambahkan ke hidden input
             const hiddenInput = document.createElement('input');
             hiddenInput.type = 'hidden';
@@ -404,16 +404,16 @@
             hiddenInput.value = tagName;
             hiddenInput.id = `hidden-${badgeId}`;
             hiddenTagsContainer.appendChild(hiddenInput);
-    
+
             // Kosongkan input field
             tagInput.value = '';
             tagInput.focus(); // Fokus kembali ke input
         }
-    
+
         function removeTag(badgeId, tagName) {
             const badgeElement = document.getElementById(badgeId);
             const hiddenInputElement = document.getElementById(`hidden-${badgeId}`);
-    
+
             if (badgeElement) {
                 badgeElement.remove();
             }
@@ -422,21 +422,43 @@
             }
         }
 
+        // Event listeners untuk input tag
+        if(tagInput) {
+            tagInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Cegah submit form
+                    addTag(tagInput.value);
+                }
+            });
+        }
+
+        if(addTagButton) {
+            addTagButton.addEventListener('click', function() {
+                addTag(tagInput.value);
+            });
+        }
+
+        // Tambahkan tag dari old input jika ada (saat validasi error)
+        const existingHiddenTags = hiddenTagsContainer.querySelectorAll('input[name="tags[]"]');
+        existingHiddenTags.forEach(input => {
+            addTagFromValue(input.value, input);
+        });
+
         function addTagFromValue(tagName, existingInput) {
             tagName = tagName.trim();
             if (!tagName) return;
-    
-            const badgeId = `tag-badge-${Date.now()}${Math.random()}`; // ID unik
+
+            const badgeId = `tag-badge-${Date.now()}${Math.random()}`; // ID unik sementara
             const badge = document.createElement('div');
             badge.classList.add('d-flex', 'align-items-center', 'badge', 'bg-secondary', 'text-white', 'me-1', 'mb-1', 'p-1', 'tag-badge');
             badge.style.fontSize = '0.75rem';
             badge.dataset.tagName = tagName;
             badge.id = badgeId;
-    
+
             const badgeText = document.createElement('span');
             badgeText.textContent = tagName;
             badge.appendChild(badgeText);
-    
+
             const closeButton = document.createElement('button');
             closeButton.type = 'button';
             closeButton.classList.add('btn-close', 'btn-close-white', 'ms-2');
@@ -449,37 +471,11 @@
                 if (existingInput) existingInput.remove(); 
             };
             badge.appendChild(closeButton);
-    
+
             tagsContainer.appendChild(badge);
             // Set ID pada input hidden yang sudah ada agar bisa dihapus
             if(existingInput) existingInput.id = `hidden-${badgeId}`; 
         }
-    
-        // Event listeners untuk input tag
-        if(tagInput) {
-            tagInput.addEventListener('keypress', function(event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault(); // Cegah submit form
-                    addTag(tagInput.value);
-                }
-            });
-        }
-        
-        if(addTagButton) {
-            addTagButton.addEventListener('click', function() {
-                addTag(tagInput.value);
-            });
-        }
-    
-        // Tambahkan tag dari old input jika ada (saat validasi error)
-        const existingHiddenTags = hiddenTagsContainer.querySelectorAll('input[name="tags[]"]');
-        if(existingHiddenTags.length > 0) {
-            console.log('Adding tags from old input...', existingHiddenTags);
-            existingHiddenTags.forEach(input => {
-                addTagFromValue(input.value, input);
-            });
-        }
-        // === Akhir Logika Tag Input Baru ===
         
         // === Logika Referensi Dokumen ===
         const selectReferenceBtn = document.getElementById('select-reference-btn');
@@ -806,4 +802,26 @@
     </div>
 </div>
 
+    <!-- Summernote CSS & JS CDN -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('.summernote').summernote({
+                height: 250,
+                tabsize: 2,
+                toolbar: [
+                  ['style', ['style']],
+                  ['font', ['bold', 'italic', 'underline', 'clear']],
+                  ['fontname', ['fontname']],
+                  ['color', ['color']],
+                  ['para', ['ul', 'ol', 'paragraph']],
+                  ['table', ['table']],
+                  ['insert', ['link', 'picture', 'video']],
+                  ['view', ['fullscreen', 'codeview', 'help']]
+                ]
+            });
+        });
+    </script>
 @endsection 

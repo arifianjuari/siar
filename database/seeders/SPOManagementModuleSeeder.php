@@ -17,14 +17,15 @@ class SPOManagementModuleSeeder extends Seeder
     public function run(): void
     {
         // Cek apakah modul SPO Management sudah ada
-        $module = Module::where('name', 'SPO Management')
+        $module = Module::where('name', 'Manajemen SPO')
             ->orWhere('slug', 'spo-management')
             ->first();
 
         if (!$module) {
-            // Buat modul baru
+            // Buat modul SPO Management
             $module = Module::create([
-                'name' => 'SPO Management',
+                'name' => 'Manajemen SPO',
+                'code' => 'spo-management',
                 'slug' => 'spo-management',
                 'description' => 'Modul untuk mengelola Standar Prosedur Operasional (SPO) di rumah sakit',
                 'icon' => 'file-text',
@@ -32,9 +33,9 @@ class SPOManagementModuleSeeder extends Seeder
                 'order' => 7, // Sesuaikan dengan urutan yang diinginkan
             ]);
 
-            $this->command->info('Modul SPO Management berhasil dibuat.');
+            $this->command->info('Modul Manajemen SPO berhasil dibuat.');
         } else {
-            $this->command->info('Modul SPO Management sudah ada. Melanjutkan pengaturan izin...');
+            $this->command->info('Modul Manajemen SPO sudah ada. Melanjutkan pengaturan izin...');
         }
 
         // Tambahkan izin untuk modul
@@ -70,7 +71,7 @@ class SPOManagementModuleSeeder extends Seeder
             }
         }
 
-        $this->command->info('Izin modul SPO Management berhasil diatur.');
+        $this->command->info('Izin modul Manajemen SPO berhasil diatur.');
 
         // Tambahkan modul ke tenant yang ada
         $tenants = Tenant::all();
@@ -92,6 +93,6 @@ class SPOManagementModuleSeeder extends Seeder
             }
         }
 
-        $this->command->info('Modul SPO Management berhasil ditambahkan ke semua tenant.');
+        $this->command->info('Modul Manajemen SPO berhasil ditambahkan ke semua tenant.');
     }
 }

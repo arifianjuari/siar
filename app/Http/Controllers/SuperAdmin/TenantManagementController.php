@@ -25,7 +25,7 @@ class TenantManagementController extends Controller
             ->orderBy('name')
             ->paginate(10);
 
-        return view('superadmin.tenants.index', compact('tenants'));
+        return view('roles.superadmin.tenants.index', compact('tenants'));
     }
 
     /**
@@ -35,7 +35,7 @@ class TenantManagementController extends Controller
     {
         $modules = Module::orderBy('name')->get();
 
-        return view('superadmin.tenants.create', compact('modules'));
+        return view('roles.superadmin.tenants.create', compact('modules'));
     }
 
     /**
@@ -122,8 +122,9 @@ class TenantManagementController extends Controller
         $adminUsers = $tenant->users()->whereHas('role', function ($q) {
             $q->where('slug', 'tenant-admin');
         })->get();
+        $users = $tenant->users()->paginate(10);
 
-        return view('superadmin.tenants.show', compact('tenant', 'userCount', 'activeModules', 'adminUsers'));
+        return view('roles.superadmin.tenants.show', compact('tenant', 'userCount', 'activeModules', 'adminUsers', 'users'));
     }
 
     /**
@@ -135,7 +136,7 @@ class TenantManagementController extends Controller
         $tenant->load('modules');
         $activeModuleIds = $tenant->modules()->wherePivot('is_active', true)->pluck('modules.id')->toArray();
 
-        return view('superadmin.tenants.edit', compact('tenant', 'modules', 'activeModuleIds'));
+        return view('roles.superadmin.tenants.edit', compact('tenant', 'modules', 'activeModuleIds'));
     }
 
     /**
@@ -143,57 +144,72 @@ class TenantManagementController extends Controller
      */
     public function update(Request $request, Tenant $tenant)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:100',
-            'domain' => ['required', 'string', 'max:100', Rule::unique('tenants')->ignore($tenant->id)],
-            'database' => ['required', 'string', 'max:100', Rule::unique('tenants')->ignore($tenant->id)],
-            'is_active' => 'boolean',
-            'modules' => 'required|array|min:1',
-            'modules.*' => 'exists:modules,id',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
         try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'domain' => 'required|string|unique:tenants,domain,' . $tenant->id,
+                'database' => 'required|string|unique:tenants,database,' . $tenant->id,
+                'is_active' => 'boolean',
+                'modules' => 'array'
+            ]);
+
             DB::beginTransaction();
 
             // Update tenant
             $tenant->update([
-                'name' => $request->name,
-                'domain' => $request->domain,
-                'database' => $request->database,
-                'is_active' => $request->has('is_active'),
+                'name' => $validated['name'],
+                'domain' => $validated['domain'],
+                'database' => $validated['database'],
+                'is_active' => $request->boolean('is_active', true)
             ]);
 
-            // Sync modules
-            $syncData = [];
-            foreach ($request->modules as $moduleId) {
-                $syncData[$moduleId] = ['is_active' => true];
+            // Update modul
+            if ($request->has('modules')) {
+                $tenant->modules()->sync($request->modules);
+            } else {
+                $tenant->modules()->detach();
             }
 
-            // Nonaktifkan modul yang tidak dipilih
-            $allModuleIds = Module::pluck('id')->toArray();
-            $uncheckedModuleIds = array_diff($allModuleIds, $request->modules);
-
-            foreach ($uncheckedModuleIds as $moduleId) {
-                $syncData[$moduleId] = ['is_active' => false];
-            }
-
-            $tenant->modules()->sync($syncData);
+            // Reload tenant dengan relasi modules
+            $tenant->load('modules');
 
             DB::commit();
 
+            // Jika request AJAX atau expects JSON
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tenant berhasil diperbarui',
+                    'data' => [
+                        'tenant' => [
+                            'id' => $tenant->id,
+                            'name' => $tenant->name,
+                            'domain' => $tenant->domain,
+                            'database' => $tenant->database,
+                            'is_active' => $tenant->is_active
+                        ],
+                        'modules' => $tenant->modules->pluck('id')->toArray(),
+                        'redirect_url' => route('superadmin.tenants.index')
+                    ]
+                ]);
+            }
+
+            // Jika request normal
             return redirect()->route('superadmin.tenants.index')
                 ->with('success', 'Tenant berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-                ->withInput();
+
+            // Jika request AJAX atau expects JSON
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 422);
+            }
+
+            // Jika request normal
+            return back()->with('error', $e->getMessage())->withInput();
         }
     }
 
@@ -313,7 +329,7 @@ class TenantManagementController extends Controller
 
         $recentTenants = Tenant::latest()->take(5)->get();
 
-        return view('superadmin.statistics', compact(
+        return view('roles.superadmin.statistics', compact(
             'totalTenants',
             'activeTenants',
             'totalUsers',
@@ -328,7 +344,7 @@ class TenantManagementController extends Controller
      */
     public function createRole(Tenant $tenant)
     {
-        return view('superadmin.tenants.roles.create', compact('tenant'));
+        return view('roles.superadmin.tenants.roles.create', compact('tenant'));
     }
 
     /**
@@ -390,7 +406,7 @@ class TenantManagementController extends Controller
                 ->with('error', 'Role tidak ditemukan untuk tenant ini.');
         }
 
-        return view('superadmin.tenants.roles.edit', compact('tenant', 'role'));
+        return view('roles.superadmin.tenants.roles.edit', compact('tenant', 'role'));
     }
 
     /**
@@ -402,6 +418,12 @@ class TenantManagementController extends Controller
         if ($role->tenant_id !== $tenant->id) {
             return redirect()->route('superadmin.tenants.show', $tenant)
                 ->with('error', 'Role tidak ditemukan untuk tenant ini.');
+        }
+
+        // Cek apakah role adalah tenant-admin
+        if ($role->slug === 'tenant-admin') {
+            return redirect()->back()
+                ->with('error', 'Role Admin Tenant tidak dapat diubah.');
         }
 
         $validator = Validator::make($request->all(), [
@@ -417,6 +439,18 @@ class TenantManagementController extends Controller
         }
 
         try {
+            // Cek apakah nama role sudah digunakan di tenant yang sama
+            $existingRole = Role::where('tenant_id', $tenant->id)
+                ->where('id', '!=', $role->id)
+                ->where('name', $request->name)
+                ->first();
+
+            if ($existingRole) {
+                return redirect()->back()
+                    ->with('error', 'Nama role sudah digunakan di tenant ini.')
+                    ->withInput();
+            }
+
             // Update role
             $role->update([
                 'name' => $request->name,
@@ -487,7 +521,7 @@ class TenantManagementController extends Controller
             ->get()
             ->keyBy('module_id');
 
-        return view('superadmin.tenants.roles.permissions', compact('tenant', 'role', 'modules', 'rolePermissions'));
+        return view('roles.superadmin.tenants.roles.permissions', compact('tenant', 'role', 'modules', 'rolePermissions'));
     }
 
     /**
@@ -501,110 +535,71 @@ class TenantManagementController extends Controller
                 ->with('error', 'Role tidak ditemukan untuk tenant ini.');
         }
 
-        // Debug: Log request data
-        \Illuminate\Support\Facades\Log::info('Update Role Permissions Request', [
-            'tenant_id' => $tenant->id,
-            'role_id' => $role->id,
-            'permissions' => $request->permissions,
-            'all_request' => $request->all()
+        // Cek apakah role adalah tenant-admin
+        if ($role->slug === 'tenant-admin') {
+            return redirect()->back()
+                ->with('error', 'Role Admin Tenant tidak dapat diubah hak aksesnya.');
+        }
+
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'permissions' => 'required|array',
+            'permissions.*.module_id' => 'required|exists:modules,id',
+            'permissions.*.can_view' => 'boolean',
+            'permissions.*.can_create' => 'boolean',
+            'permissions.*.can_edit' => 'boolean',
+            'permissions.*.can_delete' => 'boolean',
+            'permissions.*.can_export' => 'boolean',
+            'permissions.*.can_import' => 'boolean',
         ]);
 
-        // Modifikasi validasi untuk mengatasi masalah array format
-        if (!$request->has('permissions') || !is_array($request->permissions)) {
+        if ($validator->fails()) {
             return redirect()->back()
-                ->with('error', 'Format data permissions tidak valid. Pastikan Anda mencentang setidaknya satu permission.')
+                ->withErrors($validator)
                 ->withInput();
         }
 
         try {
             DB::beginTransaction();
 
-            // Hapus semua permission yang ada untuk role ini
-            $deleteResult = \App\Models\RoleModulePermission::where('role_id', $role->id)->delete();
-            \Illuminate\Support\Facades\Log::info('Deleted existing permissions', [
-                'role_id' => $role->id,
-                'delete_result' => $deleteResult
-            ]);
+            // Ambil semua modul yang aktif untuk tenant ini
+            $activeModules = $tenant->activeModules()
+                ->select('modules.id')
+                ->pluck('id')
+                ->toArray();
 
-            // Debug: Log active modules
-            $activeModules = $tenant->activeModules()->get();
-            \Illuminate\Support\Facades\Log::info('Active modules for tenant', [
-                'tenant_id' => $tenant->id,
-                'active_modules' => $activeModules->pluck('id')->toArray(),
-                'active_modules_details' => $activeModules->toArray()
-            ]);
+            // Hapus semua permission yang ada untuk role ini
+            \App\Models\RoleModulePermission::where('role_id', $role->id)->delete();
 
             // Simpan permission baru
             $permissionsCreated = 0;
             $permissionErrors = [];
 
             foreach ($request->permissions as $moduleId => $permission) {
-                // Validasi modul ID
-                if (!is_numeric($moduleId) || !isset($permission['module_id'])) {
-                    $permissionErrors[] = "Module ID '$moduleId' tidak valid";
-                    \Illuminate\Support\Facades\Log::warning('Invalid module_id in permission data', [
-                        'module_id_key' => $moduleId,
-                        'permission' => $permission
-                    ]);
+                // Pastikan modul aktif untuk tenant
+                if (!in_array($moduleId, $activeModules)) {
+                    $permissionErrors[] = "Module ID '$moduleId' tidak aktif untuk tenant ini";
                     continue;
                 }
 
-                // Ensure moduleId is numeric
-                $moduleId = (int)$moduleId;
-
-                // Debug: Log current module permission
-                \Illuminate\Support\Facades\Log::info('Processing module permission', [
+                // Siapkan data permission
+                $permissionData = [
+                    'role_id' => $role->id,
                     'module_id' => $moduleId,
-                    'permission' => $permission
-                ]);
+                    'can_view' => isset($permission['can_view']) ? true : false,
+                    'can_create' => isset($permission['can_create']) ? true : false,
+                    'can_edit' => isset($permission['can_edit']) ? true : false,
+                    'can_delete' => isset($permission['can_delete']) ? true : false,
+                    'can_export' => isset($permission['can_export']) ? true : false,
+                    'can_import' => isset($permission['can_import']) ? true : false,
+                ];
 
-                // Pastikan modul aktif untuk tenant
-                $moduleActive = $tenant->modules()
-                    ->where('modules.id', $moduleId)
-                    ->wherePivot('is_active', true)
-                    ->exists();
-
-                // Debug: Log module active status
-                \Illuminate\Support\Facades\Log::info('Module active status', [
-                    'module_id' => $moduleId,
-                    'is_active' => $moduleActive
-                ]);
-
-                if ($moduleActive) {
-                    // Siapkan data permission
-                    $permissionData = [
-                        'role_id' => $role->id,
-                        'module_id' => $moduleId,
-                        'can_view' => isset($permission['can_view']) ? true : false,
-                        'can_create' => isset($permission['can_create']) ? true : false,
-                        'can_edit' => isset($permission['can_edit']) ? true : false,
-                        'can_delete' => isset($permission['can_delete']) ? true : false,
-                        'can_export' => isset($permission['can_export']) ? true : false,
-                        'can_import' => isset($permission['can_import']) ? true : false,
-                    ];
-
-                    // Log data yang akan dibuat
-                    \Illuminate\Support\Facades\Log::info('Creating permission with data', $permissionData);
-
-                    $rolePermission = \App\Models\RoleModulePermission::create($permissionData);
-                    $permissionsCreated++;
-
-                    // Debug: Log created permission
-                    \Illuminate\Support\Facades\Log::info('Created role permission', [
-                        'id' => $rolePermission->id,
-                        'role_id' => $rolePermission->role_id,
-                        'module_id' => $rolePermission->module_id
-                    ]);
-                } else {
-                    $permissionErrors[] = "Module ID '$moduleId' tidak aktif untuk tenant ini";
-                }
+                // Buat permission baru
+                \App\Models\RoleModulePermission::create($permissionData);
+                $permissionsCreated++;
             }
 
             DB::commit();
-            \Illuminate\Support\Facades\Log::info('Role permissions updated successfully', [
-                'role_id' => $role->id,
-                'permissions_created' => $permissionsCreated
-            ]);
 
             // Jika ada error tapi proses tetap berhasil, tampilkan warning
             if (!empty($permissionErrors)) {
@@ -616,7 +611,6 @@ class TenantManagementController extends Controller
                 ->with('success', 'Hak akses role berhasil diperbarui. Total ' . $permissionsCreated . ' permission ditambahkan.');
         } catch (\Exception $e) {
             DB::rollBack();
-            // Debug: Log error
             \Illuminate\Support\Facades\Log::error('Error updating role permissions', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()

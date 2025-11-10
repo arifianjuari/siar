@@ -329,9 +329,7 @@ endif;
 unset($__errorArgs, $__bag); ?>" 
                                 id="file_url" name="file_url" value="<?php echo e(old('file_url', $spo->file_path)); ?>" 
                                 placeholder="https://drive.google.com/file/d/xxx/view">
-                            <div class="form-text">
-                                Masukkan link Google Drive atau link lainnya ke dokumen SPO (opsional)
-                            </div>
+                            <div class="form-text">Masukkan link Google Drive atau link lainnya ke dokumen SPO (opsional)</div>
                             <?php $__errorArgs = ['file_url'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -342,6 +340,30 @@ $message = $__bag->first($__errorArgs[0]); ?>
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="tag-input" class="form-label">Tag</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="tag-input" placeholder="Ketik tag lalu tekan Enter atau tombol Tambah">
+                                <button class="btn btn-outline-secondary" type="button" id="add-tag-button">Tambah</button>
+                            </div>
+                            <div id="tags-container" class="mt-2 d-flex flex-wrap">
+                                
+                                <?php $__currentLoopData = $spo->tags; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tag): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <div class="badge bg-info text-white me-2 mb-2 p-2 d-flex align-items-center">
+                                        <span><?php echo e($tag->name); ?></span>
+                                        <button type="button" class="btn-close btn-close-white ms-2 remove-tag-button" style="font-size: 0.6rem;" aria-label="Close"></button>
+                                    </div>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </div>
+                            <div id="hidden-tags-container">
+                                
+                                <?php $__currentLoopData = $spo->tags; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tag): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <input type="hidden" name="tags[]" value="<?php echo e($tag->name); ?>">
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </div>
+                            <small class="text-muted">Anda bisa menambahkan tag untuk memudahkan pencarian dan pengkategorian.</small>
                         </div>
                     </div>
                     
@@ -489,6 +511,83 @@ unset($__errorArgs, $__bag); ?>
                 allowClear: true
             });
         }
+        
+        // === Logika Tag Input ===
+        const tagInput = document.getElementById('tag-input');
+        const addTagButton = document.getElementById('add-tag-button');
+        const tagsContainer = document.getElementById('tags-container');
+        const hiddenTagsContainer = document.getElementById('hidden-tags-container');
+    
+        function addTag(tagName) {
+            tagName = tagName.trim();
+            if (tagName === '') return;
+
+            // Cek duplikasi
+            const existingTags = hiddenTagsContainer.querySelectorAll('input[name="tags[]"]');
+            let isDuplicate = false;
+            existingTags.forEach(input => {
+                if (input.value.toLowerCase() === tagName.toLowerCase()) {
+                    isDuplicate = true;
+                }
+            });
+
+            if (isDuplicate) {
+                tagInput.value = ''; // Kosongkan input jika duplikat
+                return; // Jangan tambahkan jika sudah ada
+            }
+
+            // Buat badge
+            const badge = document.createElement('div');
+            badge.className = 'badge bg-info text-white me-2 mb-2 p-2 d-flex align-items-center';
+            badge.innerHTML = `
+                <span>${tagName}</span>
+                <button type="button" class="btn-close btn-close-white ms-2 remove-tag-button" style="font-size: 0.6rem;" aria-label="Close"></button>
+            `;
+            tagsContainer.appendChild(badge);
+
+            // Buat input hidden
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'tags[]';
+            hiddenInput.value = tagName;
+            hiddenTagsContainer.appendChild(hiddenInput);
+
+            // Kosongkan input
+            tagInput.value = '';
+        }
+
+        function removeTag(badgeElement) {
+            const tagName = badgeElement.querySelector('span').textContent;
+            const hiddenInputs = hiddenTagsContainer.querySelectorAll(`input[value="${tagName}"]`);
+            hiddenInputs.forEach(input => input.remove());
+            badgeElement.remove();
+        }
+
+        addTagButton.addEventListener('click', () => {
+            addTag(tagInput.value);
+        });
+
+        tagInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Mencegah form submit
+                addTag(tagInput.value);
+            }
+        });
+
+        // Event delegation untuk tombol remove pada tag
+        tagsContainer.addEventListener('click', (event) => {
+            if (event.target.classList.contains('remove-tag-button')) {
+                removeTag(event.target.closest('.badge'));
+            }
+        });
+
+        // Inisialisasi tombol remove untuk tag yang sudah ada dari server
+        tagsContainer.querySelectorAll('.remove-tag-button').forEach(button => {
+            button.addEventListener('click', () => {
+                removeTag(button.closest('.badge'));
+            });
+        });
+        // === Akhir Logika Tag Input ===
     });
 </script>
 <?php $__env->stopPush(); ?>

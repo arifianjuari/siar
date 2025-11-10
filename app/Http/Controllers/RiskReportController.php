@@ -46,7 +46,7 @@ class RiskReportController extends Controller
         // Dapatkan hasil query
         $riskReports = $query->orderBy('created_at', 'desc')->get();
 
-        return view('risk_reports.index', compact('riskReports'));
+        return view('modules.risk_management.index', compact('riskReports'));
     }
 
     /**
@@ -66,7 +66,7 @@ class RiskReportController extends Controller
         ]);
 
         // Tampilkan form kosong untuk membuat risk report baru
-        return view('risk_reports.create');
+        return view('modules.risk_management.create');
     }
 
     /**
@@ -137,7 +137,16 @@ class RiskReportController extends Controller
             'report_id' => $riskReport->id
         ]);
 
-        return view('risk_reports.show', compact('riskReport'));
+        // Load relasi activity
+        $riskReport->load(['activity']);
+
+        // Dapatkan daftar kegiatan yang dapat dilinkkan
+        $activities = \App\Models\Activity::where('tenant_id', auth()->user()->tenant_id)
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->orderBy('title')
+            ->get();
+
+        return view('modules.risk_management.show', compact('riskReport', 'activities'));
     }
 
     /**
@@ -154,7 +163,7 @@ class RiskReportController extends Controller
             'report_id' => $riskReport->id
         ]);
 
-        return view('risk_reports.edit', compact('riskReport'));
+        return view('modules.risk_management.edit', compact('riskReport'));
     }
 
     /**
@@ -493,7 +502,7 @@ class RiskReportController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk mengakses laporan ini.');
         }
 
-        return response()->view('risk_reports.laporan_awal', ['riskReport' => $riskReport])
+        return response()->view('modules.risk_management.laporan_awal', ['riskReport' => $riskReport])
             ->header('Content-Type', 'application/msword')
             ->header('Content-Disposition', 'attachment; filename="laporan_awal_' . $id . '.doc"');
     }
@@ -532,7 +541,7 @@ class RiskReportController extends Controller
                 ->generate($qrContent));
         }
 
-        return response()->view('risk_reports.laporan_akhir', [
+        return response()->view('modules.risk_management.laporan_akhir', [
             'riskReport' => $riskReport,
             'qrCodeData' => $qrCodeData
         ])
@@ -616,7 +625,7 @@ class RiskReportController extends Controller
             }
         }
 
-        return view('risk_reports.dashboard', [
+        return view('modules.risk_management.dashboard', [
             'totalReports' => $totalReports,
             'statusData' => $statusData,
             'reportsByRiskLevel' => $reportsByRiskLevel,
@@ -665,5 +674,207 @@ class RiskReportController extends Controller
         }
 
         return $changes;
+    }
+
+    /**
+     * Link a risk report to an activity
+     */
+    public function linkActivity(Request $request, $id)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'activity_id' => 'required|exists:activities,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => $validator->errors()], 422);
+        }
+
+        $risk = RiskReport::findOrFail($id);
+        $activity = \App\Models\Activity::findOrFail($request->activity_id);
+
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
+            // Update risk dengan activity_id
+            $risk->activity_id = $activity->id;
+            $risk->save();
+
+            // Buat ActionableItem jika belum ada
+            $existingItem = \App\Models\ActionableItem::where('activity_id', $activity->id)
+                ->where('actionable_type', 'App\\Models\\RiskReport')
+                ->where('actionable_id', $risk->id)
+                ->first();
+
+            if (!$existingItem) {
+                $activity->actionableItems()->create([
+                    'actionable_type' => 'App\\Models\\RiskReport',
+                    'actionable_id' => $risk->id,
+                    'action_type' => 'mitigasi_risiko',
+                    'reference' => "Mitigasi Risiko: {$risk->risk_title}",
+                    'is_mandatory' => true,
+                    'status' => 'pending',
+                    'created_by' => auth()->id()
+                ]);
+            }
+
+            // Catat log aktivitas
+            $this->logActivity(
+                'update',
+                $risk,
+                ['activity_id' => ['from' => null, 'to' => $activity->id]],
+                'Menghubungkan laporan risiko dengan kegiatan: ' . $activity->title
+            );
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Risiko berhasil dihubungkan dengan kegiatan',
+                'activity' => $activity
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Unlink a risk report from an activity
+     */
+    public function unlinkActivity($id)
+    {
+        $risk = RiskReport::findOrFail($id);
+
+        if (!$risk->activity_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tidak ada kegiatan yang terhubung'
+            ], 400);
+        }
+
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
+            $activityId = $risk->activity_id;
+            $activity = \App\Models\Activity::find($activityId);
+
+            if ($activity) {
+                // Hapus ActionableItem terkait
+                \App\Models\ActionableItem::where('activity_id', $activity->id)
+                    ->where('actionable_type', 'App\\Models\\RiskReport')
+                    ->where('actionable_id', $risk->id)
+                    ->delete();
+            }
+
+            // Simpan activity_id lama untuk log
+            $oldActivityId = $risk->activity_id;
+
+            // Lepaskan hubungan
+            $risk->activity_id = null;
+            $risk->save();
+
+            // Catat log aktivitas
+            $this->logActivity(
+                'update',
+                $risk,
+                ['activity_id' => ['old' => $oldActivityId, 'new' => null]],
+                'Melepaskan hubungan laporan risiko dengan kegiatan'
+            );
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Hubungan dengan kegiatan berhasil dilepaskan'
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create a new activity from a risk report
+     */
+    public function createActivityFromRisk(Request $request, $id)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'due_date' => 'nullable|date|after_or_equal:start_date',
+            'priority' => 'required|in:low,medium,high,critical',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $risk = RiskReport::findOrFail($id);
+
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
+            // Buat aktivitas baru
+            $activity = new \App\Models\Activity();
+            $activity->tenant_id = auth()->user()->tenant_id;
+            $activity->title = $request->title;
+            $activity->description = $request->description;
+            $activity->start_date = $request->start_date;
+            $activity->end_date = $request->end_date;
+            $activity->due_date = $request->due_date ?? $request->end_date;
+            $activity->category = 'Manajemen Risiko';
+            $activity->status = 'planned';
+            $activity->priority = $request->priority;
+            $activity->progress_percentage = 0;
+            $activity->work_unit_id = $risk->work_unit_id;
+            $activity->created_by = auth()->id();
+            $activity->save();
+
+            // Hubungkan risk dengan activity
+            $risk->activity_id = $activity->id;
+            $risk->save();
+
+            // Buat ActionableItem
+            $activity->actionableItems()->create([
+                'actionable_type' => 'App\\Models\\RiskReport',
+                'actionable_id' => $risk->id,
+                'action_type' => 'mitigasi_risiko',
+                'reference' => "Mitigasi Risiko: {$risk->risk_title}",
+                'is_mandatory' => true,
+                'status' => 'pending',
+                'created_by' => auth()->id()
+            ]);
+
+            // Catat log aktivitas
+            $this->logActivity(
+                'update',
+                $risk,
+                ['activity_id' => ['old' => null, 'new' => $activity->id]],
+                'Membuat kegiatan baru untuk mitigasi risiko: ' . $activity->title
+            );
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return redirect()->route('risk-reports.show', $risk->id)
+                ->with('success', 'Kegiatan mitigasi risiko berhasil dibuat.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 }

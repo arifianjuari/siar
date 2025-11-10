@@ -13,36 +13,43 @@ class SuperadminMiddleware
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return mixed
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next)
     {
         // Cek apakah user ada dan memiliki role superadmin
-        if (!Auth::check()) {
+        if (!auth()->check()) {
             Log::warning('SuperadminMiddleware: Pengguna tidak terautentikasi');
-            return redirect()->route('login')->with('error', 'Anda harus login untuk mengakses halaman ini.');
+            return redirect()->route('login');
         }
 
         $user = auth()->user();
         Log::info('SuperadminMiddleware: Memeriksa akses', [
             'user_id' => $user->id,
             'email' => $user->email,
-            'role' => $user->role ? ($user->role->name . ' (' . $user->role->slug . ')') : 'Tidak ada role'
+            'role' => $user->role ? $user->role->slug : 'tidak ada role'
         ]);
 
-        if (!$user->role || $user->role->slug !== 'superadmin') {
-            Log::warning('SuperadminMiddleware: Akses ditolak - bukan superadmin', [
+        // Cek apakah user memiliki role superadmin
+        if ($user->role && $user->role->slug === 'superadmin' && $user->tenant_id === 1) {
+            Log::info('SuperadminMiddleware: Akses diberikan', [
                 'user_id' => $user->id,
-                'role' => $user->role ? $user->role->slug : 'null'
+                'email' => $user->email
             ]);
-            // Jika bukan superadmin, redirect ke dashboard dengan pesan error
-            return redirect()->route('dashboard.debug')->with('error', 'Anda tidak memiliki akses ke halaman ini.');
+            return $next($request);
         }
 
-        Log::info('SuperadminMiddleware: Akses diberikan', [
-            'user_id' => $user->id
+        Log::warning('SuperadminMiddleware: Akses ditolak - bukan superadmin', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'role' => $user->role ? $user->role->slug : 'tidak ada role',
+            'tenant_id' => $user->tenant_id
         ]);
 
-        return $next($request);
+        // Jika bukan superadmin, redirect ke dashboard dengan pesan error
+        return redirect()->route('dashboard')
+            ->with('error', 'Anda tidak memiliki akses ke halaman ini.');
     }
 }
