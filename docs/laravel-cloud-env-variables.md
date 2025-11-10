@@ -7,6 +7,7 @@ Dokumen ini menjelaskan environment variables yang **WAJIB** dikonfigurasi di La
 Laravel Cloud memiliki dua jenis environment variables:
 
 1. **Injected Variables** (tidak bisa diubah langsung)
+
    - Di-inject otomatis oleh Laravel Cloud
    - Termasuk: `SESSION_DRIVER=database`, `APP_DOMAIN`, `SESSION_DOMAIN`, dll
    - Bisa di-override dengan custom variables
@@ -18,12 +19,14 @@ Laravel Cloud memiliki dua jenis environment variables:
 ### ⚠️ MASALAH UTAMA: SESSION_DRIVER Override
 
 **Masalah yang terjadi:**
+
 - Laravel Cloud meng-inject `SESSION_DRIVER=database` ✅ (benar)
 - Di custom variables ada `SESSION_DRIVER=cookie` ❌ (salah)
 - Custom variable **override** injected variable
 - Hasilnya: `SESSION_DRIVER=cookie` digunakan → **Error 419**
 
 **Solusi:**
+
 - **HAPUS** `SESSION_DRIVER=cookie` dari custom variables
 - Biarkan injected `SESSION_DRIVER=database` digunakan
 - Atau jika perlu override, pastikan override dengan `SESSION_DRIVER=database`
@@ -59,15 +62,17 @@ SESSION_DRIVER=cookie  # <--- HAPUS INI
 ```
 
 **Biarkan injected variable digunakan:**
+
 - Injected: `SESSION_DRIVER=database` ✅ (biarkan seperti ini)
 - Custom: **TIDAK ADA** `SESSION_DRIVER` (hapus jika ada)
 
 **Penjelasan:**
+
 - Laravel Cloud sudah meng-inject `SESSION_DRIVER=database` yang benar
 - Jangan override dengan `SESSION_DRIVER=cookie` di custom variables
 - Jika ada `SESSION_DRIVER` di custom variables, hapus
 
-### 2. TAMBAHKAN: SESSION_SECURE_COOKIE
+### 2. TAMBAHKAN: SESSION_SECURE_COOKIE (jika belum ada di injected)
 
 **Tambahkan:**
 
@@ -121,7 +126,9 @@ APP_DOMAIN=laravel.cloud
 SESSION_DOMAIN=.laravel.cloud
 
 # Session Configuration (PENTING!)
-SESSION_DRIVER=database
+# NOTE: SESSION_DRIVER=database harus ditambahkan di custom variables
+# karena Laravel Cloud meng-inject SESSION_DRIVER=cookie yang tidak bisa diubah
+SESSION_DRIVER=database  # <--- TAMBAHKAN DI CUSTOM VARIABLES
 SESSION_LIFETIME=120
 SESSION_SECURE_COOKIE=null
 
@@ -166,6 +173,7 @@ VITE_APP_NAME="${APP_NAME}"
 5. **Save** perubahan
 
 **Catatan Penting:**
+
 - Jangan tambahkan `SESSION_DRIVER` di custom variables
 - Biarkan injected `SESSION_DRIVER=database` digunakan
 - Jika perlu override injected variables, pastikan nilainya benar
@@ -210,11 +218,13 @@ php artisan route:cache
 Pastikan environment variables berikut sudah benar:
 
 ### Injected Variables (tidak bisa diubah, hanya bisa di-override):
+
 - [ ] `SESSION_DRIVER=database` ✅ (biarkan seperti ini, jangan override dengan `cookie`)
 - [ ] `CACHE_DRIVER=database` ✅
 - [ ] `QUEUE_CONNECTION=database` ✅
 
 ### Custom Variables (yang perlu Anda set):
+
 - [ ] **TIDAK ADA** `SESSION_DRIVER` di custom variables (biarkan injected digunakan)
 - [ ] `SESSION_SECURE_COOKIE=null` (tambahkan jika belum ada)
 - [ ] `APP_DOMAIN=laravel.cloud` (override jika injected menggunakan `laravelcloud.com`)
@@ -223,6 +233,7 @@ Pastikan environment variables berikut sudah benar:
 - [ ] Tabel `sessions` sudah dibuat (jalankan `php artisan migrate --force`)
 
 ### Verifikasi:
+
 - [ ] Di custom variables, **TIDAK ADA** `SESSION_DRIVER=cookie`
 - [ ] Injected `SESSION_DRIVER=database` digunakan (tidak di-override)
 
