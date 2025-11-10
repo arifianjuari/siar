@@ -23,28 +23,37 @@ class AuthenticatedSessionController extends Controller
             $request->authenticate();
 
             $user = Auth::user();
+            $sessionIdBefore = $request->session()->getId();
+            
             Log::info('Autentikasi berhasil', [
                 'user_id' => $user->id,
                 'email' => $user->email,
-                'session_id_before' => $request->session()->getId()
+                'session_id_before' => $sessionIdBefore,
+                'session_driver' => config('session.driver'),
             ]);
 
+            // Login user terlebih dahulu (ini akan menyimpan user ke session)
+            Auth::login($user, $request->filled('remember'));
+            
             // Regenerate session untuk keamanan
+            // Catatan: regenerate() akan membuat session ID baru tapi mempertahankan data
             $request->session()->regenerate();
+            
+            // Setelah regenerate, pastikan user masih terautentikasi
+            // Karena regenerate membuat session baru, kita perlu login lagi
+            Auth::login($user, $request->filled('remember'));
             
             // Regenerate CSRF token setelah session regenerate
             $request->session()->regenerateToken();
-
-            // Pastikan user masih terautentikasi setelah regenerate
-            Auth::login($user);
             
-            // Simpan session secara eksplisit
-            $request->session()->save();
-
+            $sessionIdAfter = $request->session()->getId();
+            
             Log::info('Session setelah regenerate', [
                 'user_id' => Auth::id(),
                 'is_authenticated' => Auth::check(),
-                'session_id_after' => $request->session()->getId(),
+                'session_id_before' => $sessionIdBefore,
+                'session_id_after' => $sessionIdAfter,
+                'session_changed' => $sessionIdBefore !== $sessionIdAfter,
             ]);
 
             // Reload user dengan relationships
@@ -56,6 +65,9 @@ class AuthenticatedSessionController extends Controller
                 view()->share('current_tenant', $user->tenant);
             }
 
+            // Buat response redirect
+            $redirectResponse = null;
+            
             if ($user->role && $user->role->slug === 'superadmin') {
                 Log::info('User superadmin, mengarahkan ke dashboard superadmin', [
                     'user_id' => $user->id,
@@ -63,11 +75,24 @@ class AuthenticatedSessionController extends Controller
                     'tenant_id' => $user->tenant_id,
                     'tenant_name' => $user->tenant ? $user->tenant->name : null,
                 ]);
-                return redirect()->intended(route('superadmin.dashboard'));
+                $redirectResponse = redirect()->intended(route('superadmin.dashboard'));
+            } else {
+                Log::info('User reguler, mengarahkan ke dashboard biasa');
+                $redirectResponse = redirect()->intended(route('dashboard'));
             }
-
-            Log::info('User reguler, mengarahkan ke dashboard biasa');
-            return redirect()->intended(route('dashboard'));
+            
+            // Pastikan session cookie ter-set dengan benar di response
+            // Laravel akan otomatis menambahkan session cookie ke response
+            // Tapi kita pastikan dengan memanggil save() sebelum redirect
+            $request->session()->save();
+            
+            Log::info('Mengirim redirect response', [
+                'target_url' => $redirectResponse->getTargetUrl(),
+                'session_id' => $request->session()->getId(),
+                'cookies_in_response' => count($redirectResponse->headers->getCookies()),
+            ]);
+            
+            return $redirectResponse;
         } catch (\Exception $e) {
             Log::error('Error saat login', [
                 'email' => $request->email,
