@@ -18,12 +18,12 @@ return new class extends Migration
             $table->string('diagnosis_name')->nullable();
             $table->string('procedure_code')->nullable();
             $table->string('procedure_name')->nullable();
+            // Kolom structured_data untuk menyimpan JSON dengan CP steps, unit cost, dan evaluation results
+            $table->json('structured_data')->nullable();
             // Status enum dengan nilai yang sesuai dengan migration 2025_04_30
             $table->enum('status', ['draft', 'published', 'archived'])->default('draft');
             $table->date('effective_date')->nullable();
             $table->date('expiry_date')->nullable();
-            // Kolom structured_data untuk menyimpan JSON dengan CP steps, unit cost, dan evaluation results
-            $table->json('structured_data')->nullable()->after('procedure_name');
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
