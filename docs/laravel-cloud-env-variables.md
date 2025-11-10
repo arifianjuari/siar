@@ -16,6 +16,7 @@ Dokumen ini menjelaskan environment variables yang **WAJIB** dikonfigurasi di La
 ### Solusi: Gunakan `SESSION_DRIVER=database`
 
 Dengan `database` driver:
+
 - Session disimpan di database (lebih reliable)
 - Tidak bergantung pada cookie attributes
 - Lebih aman untuk production environment
@@ -26,11 +27,13 @@ Dengan `database` driver:
 ### 1. UBAH: SESSION_DRIVER
 
 **Dari:**
+
 ```env
 SESSION_DRIVER=cookie
 ```
 
 **Menjadi:**
+
 ```env
 SESSION_DRIVER=database
 ```
@@ -38,11 +41,13 @@ SESSION_DRIVER=database
 ### 2. TAMBAHKAN: SESSION_SECURE_COOKIE
 
 **Tambahkan:**
+
 ```env
 SESSION_SECURE_COOKIE=null
 ```
 
-**Penjelasan:** 
+**Penjelasan:**
+
 - `null` akan membuat Laravel otomatis mendeteksi HTTPS
 - Jangan set ke `false` jika menggunakan HTTPS
 - Penting untuk secure cookie di production
@@ -50,18 +55,21 @@ SESSION_SECURE_COOKIE=null
 ### 3. PERBAIKI: APP_DOMAIN dan SESSION_DOMAIN
 
 **Dari:**
+
 ```env
 APP_DOMAIN=laravelcloud.com
 SESSION_DOMAIN=.laravelcloud.com
 ```
 
 **Menjadi:**
+
 ```env
 APP_DOMAIN=laravel.cloud
 SESSION_DOMAIN=.laravel.cloud
 ```
 
 **Penjelasan:**
+
 - Domain yang benar adalah `laravel.cloud` (dengan titik), bukan `laravelcloud.com`
 - `SESSION_DOMAIN` harus sesuai dengan domain yang sebenarnya
 - Titik di depan (`.laravel.cloud`) penting untuk subdomain support
@@ -121,12 +129,22 @@ VITE_APP_NAME="${APP_NAME}"
 1. Buka Laravel Cloud dashboard
 2. Buka aplikasi Anda
 3. Buka bagian **Environment Variables**
-4. Ubah/tambahkan environment variables sesuai di atas
+4. Di bagian **Custom Variables**:
+   - **HAPUS** `SESSION_DRIVER=cookie` (jika ada)
+   - **TAMBAHKAN** `SESSION_SECURE_COOKIE=null` (jika belum ada)
+   - **OVERRIDE** `APP_DOMAIN=laravel.cloud` (jika injected menggunakan `laravelcloud.com`)
+   - **OVERRIDE** `SESSION_DOMAIN=.laravel.cloud` (jika injected menggunakan `.laravelcloud.com`)
 5. **Save** perubahan
+
+**Catatan Penting:**
+- Jangan tambahkan `SESSION_DRIVER` di custom variables
+- Biarkan injected `SESSION_DRIVER=database` digunakan
+- Jika perlu override injected variables, pastikan nilainya benar
 
 ### 2. Deploy Ulang Aplikasi
 
 Setelah mengubah environment variables, deploy ulang aplikasi:
+
 - Klik **Deploy** atau **Rebuild** di Laravel Cloud dashboard
 - Tunggu proses build selesai
 
@@ -162,14 +180,22 @@ php artisan route:cache
 
 Pastikan environment variables berikut sudah benar:
 
-- [ ] `SESSION_DRIVER=database` (bukan `cookie`)
-- [ ] `SESSION_SECURE_COOKIE=null` (sudah ditambahkan)
-- [ ] `APP_DOMAIN=laravel.cloud` (bukan `laravelcloud.com`)
-- [ ] `SESSION_DOMAIN=.laravel.cloud` (bukan `.laravelcloud.com`)
-- [ ] `CACHE_DRIVER=database`
-- [ ] `QUEUE_CONNECTION=database`
+### Injected Variables (tidak bisa diubah, hanya bisa di-override):
+- [ ] `SESSION_DRIVER=database` ✅ (biarkan seperti ini, jangan override dengan `cookie`)
+- [ ] `CACHE_DRIVER=database` ✅
+- [ ] `QUEUE_CONNECTION=database` ✅
+
+### Custom Variables (yang perlu Anda set):
+- [ ] **TIDAK ADA** `SESSION_DRIVER` di custom variables (biarkan injected digunakan)
+- [ ] `SESSION_SECURE_COOKIE=null` (tambahkan jika belum ada)
+- [ ] `APP_DOMAIN=laravel.cloud` (override jika injected menggunakan `laravelcloud.com`)
+- [ ] `SESSION_DOMAIN=.laravel.cloud` (override jika injected menggunakan `.laravelcloud.com`)
 - [ ] `APP_URL` menggunakan HTTPS
 - [ ] Tabel `sessions` sudah dibuat (jalankan `php artisan migrate --force`)
+
+### Verifikasi:
+- [ ] Di custom variables, **TIDAK ADA** `SESSION_DRIVER=cookie`
+- [ ] Injected `SESSION_DRIVER=database` digunakan (tidak di-override)
 
 ## Mengapa Perubahan Ini Penting?
 
@@ -197,18 +223,22 @@ Pastikan environment variables berikut sudah benar:
 ### Jika Masih Error 419 Setelah Perubahan
 
 1. **Verifikasi Environment Variables:**
+
    - Pastikan semua environment variables sudah benar
    - Pastikan sudah di-save di Laravel Cloud dashboard
 
 2. **Deploy Ulang:**
+
    - Deploy ulang aplikasi setelah mengubah environment variables
    - Tunggu proses build selesai
 
 3. **Clear Browser:**
+
    - Clear cookies dan cache browser
    - Coba di browser lain atau mode incognito
 
 4. **Cek Logs:**
+
    - Buka logs aplikasi di Laravel Cloud dashboard
    - Cari error terkait session atau CSRF
 
@@ -224,4 +254,3 @@ Pastikan environment variables berikut sudah benar:
 - [Laravel Session Documentation](https://laravel.com/docs/session)
 - [Laravel CSRF Protection](https://laravel.com/docs/csrf)
 - [Laravel Cloud Documentation](https://laravel.com/docs/cloud)
-
