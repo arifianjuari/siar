@@ -128,10 +128,45 @@ Jika Anda mendapatkan error **419 Page Expired** saat login atau submit form:
    APP_URL=https://siar-main-bot1z9.laravel.cloud
    ```
 
-6. **Cek Browser:**
+6. **Pastikan TrustProxies Middleware Benar:**
+   
+   File `app/Http/Middleware/TrustProxies.php` harus trust semua proxy untuk Laravel Cloud:
+   ```php
+   protected $proxies = '*';
+   ```
+   
+   Ini penting karena Laravel Cloud menggunakan load balancer/proxy, dan Laravel perlu trust proxy untuk mendeteksi HTTPS dengan benar.
+
+7. **Cek Browser:**
    - Clear cookies dan cache browser
    - Coba di browser lain atau mode incognito
    - Pastikan JavaScript enabled
+   - Cek di Developer Tools > Application > Cookies untuk memastikan session cookie ter-set
+
+8. **Verifikasi Session Cookie:**
+   
+   Di browser Developer Tools, cek:
+   - Session cookie harus memiliki flag `Secure` (jika HTTPS)
+   - Session cookie harus memiliki `SameSite=Lax` atau `SameSite=None; Secure`
+   - Session cookie domain harus sesuai dengan `SESSION_DOMAIN`
+
+9. **Test dengan Command:**
+   
+   Cek apakah session berfungsi:
+   ```bash
+   php artisan tinker
+   >>> session()->put('test', 'value');
+   >>> session()->get('test');
+   ```
+   
+   Jika tidak berfungsi, kemungkinan masalah di konfigurasi session.
+
+10. **Cek Logs untuk Detail Error:**
+    
+    Buka logs aplikasi di Laravel Cloud dashboard dan cari error terkait:
+    - CSRF token mismatch
+    - Session not found
+    - Cookie not set
 
 ## Error Lainnya
 
