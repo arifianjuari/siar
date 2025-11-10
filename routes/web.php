@@ -147,6 +147,9 @@ Route::get('/setup-superadmin', function () {
             ]
         );
 
+        // Reload user dengan relationship
+        $user->load(['role', 'tenant']);
+
         return response()->json([
             'success' => true,
             'message' => 'Superadmin user berhasil dibuat/diperbarui!',
@@ -158,8 +161,24 @@ Route::get('/setup-superadmin', function () {
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->role ? $user->role->slug : null,
-                'tenant' => $user->tenant ? $user->tenant->name : null,
+                'role' => $user->role ? [
+                    'id' => $user->role->id,
+                    'name' => $user->role->name,
+                    'slug' => $user->role->slug,
+                ] : null,
+                'tenant' => $user->tenant ? [
+                    'id' => $user->tenant->id,
+                    'name' => $user->tenant->name,
+                ] : null,
+            ],
+            'middleware_check' => [
+                'has_role' => $user->role ? true : false,
+                'role_slug' => $user->role ? $user->role->slug : null,
+                'is_superadmin' => $user->role && $user->role->slug === 'superadmin',
+                'tenant_id' => $user->tenant_id,
+                'tenant_name' => $user->tenant ? $user->tenant->name : null,
+                'is_system_tenant' => $user->tenant && ($user->tenant->id === 1 || $user->tenant->name === 'System'),
+                'will_pass_middleware' => $user->role && $user->role->slug === 'superadmin' && $user->tenant && ($user->tenant->id === 1 || $user->tenant->name === 'System'),
             ],
         ]);
     } catch (\Exception $e) {

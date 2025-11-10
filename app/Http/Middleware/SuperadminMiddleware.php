@@ -33,10 +33,19 @@ class SuperadminMiddleware
         ]);
 
         // Cek apakah user memiliki role superadmin
-        if ($user->role && $user->role->slug === 'superadmin' && $user->tenant_id === 1) {
+        // Cek tenant_id = 1 atau tenant name = 'System'
+        $isSystemTenant = false;
+        if ($user->tenant) {
+            $isSystemTenant = $user->tenant->id === 1 || $user->tenant->name === 'System';
+        }
+        
+        if ($user->role && $user->role->slug === 'superadmin' && $isSystemTenant) {
             Log::info('SuperadminMiddleware: Akses diberikan', [
                 'user_id' => $user->id,
-                'email' => $user->email
+                'email' => $user->email,
+                'role_slug' => $user->role->slug,
+                'tenant_id' => $user->tenant_id,
+                'tenant_name' => $user->tenant ? $user->tenant->name : null,
             ]);
             return $next($request);
         }
@@ -45,7 +54,9 @@ class SuperadminMiddleware
             'user_id' => $user->id,
             'email' => $user->email,
             'role' => $user->role ? $user->role->slug : 'tidak ada role',
-            'tenant_id' => $user->tenant_id
+            'tenant_id' => $user->tenant_id,
+            'tenant_name' => $user->tenant ? $user->tenant->name : null,
+            'is_system_tenant' => $isSystemTenant,
         ]);
 
         // Jika bukan superadmin, redirect ke dashboard dengan pesan error
