@@ -57,10 +57,6 @@ Route::middleware(['web', 'auth', 'tenant', 'module:activity-management'])
         Route::post('activities/{activityUuid}/comments/{commentUuid}/reply', [ActivityCommentController::class, 'reply'])->name('comments.reply');
         Route::delete('activities/{activityUuid}/comments/{commentUuid}', [ActivityCommentController::class, 'destroy'])->name('comments.destroy');
 
-        // Activity Assignees
-        Route::post('activities/{activityUuid}/assignees', [ActivityAssigneeController::class, 'store'])->name('assignees.store');
-        Route::delete('activities/{activityUuid}/assignees/{userUuid}', [ActivityAssigneeController::class, 'destroy'])->name('assignees.destroy');
-
         // Actionable Items
         Route::get('activities/{uuid}/actionable-items', [ActionableItemController::class, 'index'])
             ->name('actionable-items.index');
