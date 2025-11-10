@@ -24,7 +24,11 @@ class AuthenticatedSessionController extends Controller
 
             Log::info('Autentikasi berhasil', ['user_id' => Auth::id(), 'email' => Auth::user()->email]);
 
+            // Regenerate session untuk keamanan
             $request->session()->regenerate();
+            
+            // Regenerate CSRF token setelah session regenerate
+            $request->session()->regenerateToken();
 
             // Cek apakah user memiliki role superadmin
             $user = Auth::user();
