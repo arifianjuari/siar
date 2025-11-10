@@ -2,9 +2,35 @@
 
 Dokumen ini menjelaskan environment variables yang **WAJIB** dikonfigurasi di Laravel Cloud untuk mengatasi error 419 Page Expired.
 
+## ⚠️ PENTING: Injected Variables vs Custom Variables
+
+Laravel Cloud memiliki dua jenis environment variables:
+
+1. **Injected Variables** (tidak bisa diubah langsung)
+   - Di-inject otomatis oleh Laravel Cloud
+   - Termasuk: `SESSION_DRIVER=database`, `APP_DOMAIN`, `SESSION_DOMAIN`, dll
+   - Bisa di-override dengan custom variables
+
+2. **Custom Variables** (bisa diubah)
+   - Variables yang Anda tambahkan sendiri
+   - Jika nama sama dengan injected variable, akan **override** injected variable
+
+### ⚠️ MASALAH UTAMA: SESSION_DRIVER Override
+
+**Masalah yang terjadi:**
+- Laravel Cloud meng-inject `SESSION_DRIVER=database` ✅ (benar)
+- Di custom variables ada `SESSION_DRIVER=cookie` ❌ (salah)
+- Custom variable **override** injected variable
+- Hasilnya: `SESSION_DRIVER=cookie` digunakan → **Error 419**
+
+**Solusi:**
+- **HAPUS** `SESSION_DRIVER=cookie` dari custom variables
+- Biarkan injected `SESSION_DRIVER=database` digunakan
+- Atau jika perlu override, pastikan override dengan `SESSION_DRIVER=database`
+
 ## ⚠️ MASALAH UTAMA: SESSION_DRIVER=cookie
 
-**Environment variable `SESSION_DRIVER=cookie` adalah penyebab utama error 419 Page Expired di Laravel Cloud.**
+**Environment variable `SESSION_DRIVER=cookie` di custom variables adalah penyebab utama error 419 Page Expired di Laravel Cloud.**
 
 ### Mengapa `SESSION_DRIVER=cookie` Bermasalah?
 
@@ -24,19 +50,22 @@ Dengan `database` driver:
 
 ## Environment Variables yang Perlu Diubah
 
-### 1. UBAH: SESSION_DRIVER
+### 1. HAPUS: SESSION_DRIVER dari Custom Variables
 
-**Dari:**
-
-```env
-SESSION_DRIVER=cookie
-```
-
-**Menjadi:**
+**Hapus baris ini dari custom variables:**
 
 ```env
-SESSION_DRIVER=database
+SESSION_DRIVER=cookie  # <--- HAPUS INI
 ```
+
+**Biarkan injected variable digunakan:**
+- Injected: `SESSION_DRIVER=database` ✅ (biarkan seperti ini)
+- Custom: **TIDAK ADA** `SESSION_DRIVER` (hapus jika ada)
+
+**Penjelasan:**
+- Laravel Cloud sudah meng-inject `SESSION_DRIVER=database` yang benar
+- Jangan override dengan `SESSION_DRIVER=cookie` di custom variables
+- Jika ada `SESSION_DRIVER` di custom variables, hapus
 
 ### 2. TAMBAHKAN: SESSION_SECURE_COOKIE
 
