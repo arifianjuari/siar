@@ -153,22 +153,35 @@ Jika menggunakan custom domain:
 
 Setelah deploy pertama kali, jalankan migrasi dan seeding:
 
-### Via Laravel Cloud CLI (jika tersedia)
+### ⚠️ PENTING: Flag --force Diperlukan di Production
 
-```bash
-laravel-cloud ssh
-php artisan migrate --force
-php artisan db:seed --class=DatabaseSeeder
-```
+Laravel memblokir migrasi di production untuk keamanan. Anda **HARUS** menggunakan flag `--force` untuk menjalankan migrasi di production.
 
 ### Via Laravel Cloud Dashboard
 
-Gunakan fitur "Run Command" atau "Artisan Commands" di dashboard untuk menjalankan:
+Gunakan fitur **"Run Command"** atau **"Artisan Commands"** di dashboard untuk menjalankan:
 
 ```bash
 php artisan migrate --force
-php artisan db:seed --class=DatabaseSeeder
 ```
+
+**Catatan:** Flag `--force` diperlukan karena aplikasi berjalan di environment `production`.
+
+Setelah migrasi selesai, jalankan seeder (jika diperlukan):
+
+```bash
+php artisan db:seed --class=DatabaseSeeder --force
+```
+
+### Membuat Tabel Cache (Jika Menggunakan Database Cache)
+
+Jika menggunakan `CACHE_DRIVER=database`, pastikan tabel cache sudah dibuat:
+
+```bash
+php artisan migrate --force
+```
+
+Migration `2025_11_10_125532_create_cache_table` akan membuat tabel `cache` dan `cache_locks`.
 
 ## Langkah 6: Konfigurasi Scheduler (Cron Jobs)
 
@@ -245,7 +258,7 @@ Setelah deploy, verifikasi:
 
 ### Error: Class "Laravel\Telescope\TelescopeApplicationServiceProvider" not found
 
-Error ini terjadi karena Laravel Telescope adalah dev dependency dan tidak tersedia di production. 
+Error ini terjadi karena Laravel Telescope adalah dev dependency dan tidak tersedia di production.
 
 **Solusi:** File `TelescopeServiceProvider` sudah diperbaiki untuk mengecek apakah class tersedia sebelum digunakan. Jika masih terjadi error:
 
@@ -264,6 +277,7 @@ Jika Anda mendapatkan error **404 Not Found** dari nginx saat mengakses domain a
 **Solusi:**
 
 1. **Clear Route Cache** - Jalankan di Laravel Cloud dashboard (Artisan Commands):
+
    ```bash
    php artisan route:clear
    php artisan config:clear
@@ -274,11 +288,13 @@ Jika Anda mendapatkan error **404 Not Found** dari nginx saat mengakses domain a
    ```
 
 2. **Verifikasi Environment Variables** - Pastikan `APP_URL` sesuai dengan domain Laravel Cloud:
+
    ```env
    APP_URL=https://siar-main-bot1z9.laravel.cloud
    ```
 
 3. **Test Route Spesifik** - Coba akses route spesifik:
+
    - `https://siar-main-bot1z9.laravel.cloud/login` - Harus menampilkan halaman login
    - `https://siar-main-bot1z9.laravel.cloud/register` - Harus menampilkan halaman register
 

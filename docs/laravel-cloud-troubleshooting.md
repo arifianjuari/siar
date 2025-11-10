@@ -87,15 +87,19 @@ Jika Anda mendapatkan error **419 Page Expired** saat login atau submit form:
 
 1. **Pastikan Tabel Sessions Sudah Dibuat:**
    ```bash
-   php artisan migrate
+   php artisan migrate --force
    ```
    Pastikan migration `2025_04_26_211145_create_sessions_table` sudah dijalankan.
+   
+   **⚠️ PENTING:** Gunakan flag `--force` karena aplikasi berjalan di production.
 
 2. **Pastikan Tabel Cache Sudah Dibuat (jika menggunakan database cache):**
    ```bash
-   php artisan migrate
+   php artisan migrate --force
    ```
    Pastikan migration `2025_11_10_125532_create_cache_table` sudah dijalankan.
+   
+   **⚠️ PENTING:** Gunakan flag `--force` karena aplikasi berjalan di production.
 
 3. **Verifikasi Environment Variables:**
    ```env
@@ -153,8 +157,9 @@ Jika ada error `Table 'cache' doesn't exist`:
 
 1. Jalankan migration untuk membuat tabel cache:
    ```bash
-   php artisan migrate
+   php artisan migrate --force
    ```
+   **⚠️ PENTING:** Gunakan flag `--force` karena aplikasi berjalan di production.
 2. Pastikan migration `2025_11_10_125532_create_cache_table` sudah dijalankan
 3. Jika menggunakan database cache driver, pastikan `CACHE_DRIVER=database`
 
