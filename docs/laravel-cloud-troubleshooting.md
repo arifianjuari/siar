@@ -106,8 +106,15 @@ Jika Anda mendapatkan error **419 Page Expired** saat login atau submit form:
    SESSION_DRIVER=database
    SESSION_LIFETIME=120
    SESSION_DOMAIN=.laravel.cloud
+   SESSION_SECURE_COOKIE=null
    CACHE_DRIVER=database
+   APP_URL=https://siar-main-bot1z9.laravel.cloud
    ```
+   
+   **PENTING:** 
+   - `SESSION_SECURE_COOKIE=null` akan membuat Laravel otomatis mendeteksi HTTPS
+   - Jangan set `SESSION_SECURE_COOKIE=false` jika menggunakan HTTPS
+   - Pastikan `APP_URL` menggunakan HTTPS
 
 4. **Clear Session dan Cache:**
    ```bash

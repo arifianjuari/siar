@@ -61,9 +61,14 @@ SESSION_DOMAIN=.laravelcloud.com
 ```env
 SESSION_DRIVER=database
 SESSION_LIFETIME=120
+SESSION_SECURE_COOKIE=null
 CACHE_DRIVER=database
 QUEUE_CONNECTION=database
 ```
+
+**Catatan:** 
+- `SESSION_SECURE_COOKIE=null` akan membuat Laravel otomatis mendeteksi HTTPS dan mengaktifkan secure cookie
+- Jika menggunakan HTTPS, pastikan `SESSION_SECURE_COOKIE` tidak di-set ke `false`
 
 ### Konfigurasi Mail (Opsional)
 
