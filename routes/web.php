@@ -53,6 +53,43 @@ Route::get('/debug-session', function () {
     ]);
 })->middleware('web');
 
+// Debug route untuk cek konfigurasi session
+Route::get('/debug-config', function () {
+    try {
+        $sessionsCount = DB::table('sessions')->count();
+    } catch (\Exception $e) {
+        $sessionsCount = 'Error: ' . $e->getMessage();
+    }
+    
+    return response()->json([
+        'session_config' => [
+            'driver' => config('session.driver'),
+            'domain' => config('session.domain'),
+            'secure' => config('session.secure'),
+            'same_site' => config('session.same_site'),
+            'lifetime' => config('session.lifetime'),
+            'cookie' => config('session.cookie'),
+        ],
+        'env_vars' => [
+            'SESSION_DRIVER' => env('SESSION_DRIVER'),
+            'SESSION_DOMAIN' => env('SESSION_DOMAIN'),
+            'SESSION_SECURE_COOKIE' => env('SESSION_SECURE_COOKIE'),
+            'APP_URL' => env('APP_URL'),
+            'APP_DOMAIN' => env('APP_DOMAIN'),
+            'APP_ENV' => env('APP_ENV'),
+        ],
+        'sessions_table' => [
+            'count' => $sessionsCount,
+        ],
+        'request_info' => [
+            'url' => request()->url(),
+            'secure' => request()->secure(),
+            'host' => request()->getHost(),
+            'scheme' => request()->getScheme(),
+        ],
+    ]);
+});
+
 // Dashboard utama - gunakan hanya middleware auth, tanpa tenant
 Route::get('/dashboard', function () {
     // Untuk debug
