@@ -86,10 +86,31 @@ class AuthenticatedSessionController extends Controller
             // Tapi kita pastikan dengan memanggil save() sebelum redirect
             $request->session()->save();
             
+            // Log cookie yang akan dikirim
+            $cookies = $redirectResponse->headers->getCookies();
+            $cookieInfo = [];
+            foreach ($cookies as $cookie) {
+                $cookieInfo[] = [
+                    'name' => $cookie->getName(),
+                    'domain' => $cookie->getDomain(),
+                    'path' => $cookie->getPath(),
+                    'secure' => $cookie->isSecure(),
+                    'httpOnly' => $cookie->isHttpOnly(),
+                    'sameSite' => $cookie->getSameSite(),
+                ];
+            }
+            
             Log::info('Mengirim redirect response', [
                 'target_url' => $redirectResponse->getTargetUrl(),
                 'session_id' => $request->session()->getId(),
-                'cookies_in_response' => count($redirectResponse->headers->getCookies()),
+                'cookies_in_response' => count($cookies),
+                'cookie_details' => $cookieInfo,
+                'session_config' => [
+                    'cookie_name' => config('session.cookie'),
+                    'domain' => config('session.domain'),
+                    'secure' => config('session.secure'),
+                    'same_site' => config('session.same_site'),
+                ],
             ]);
             
             return $redirectResponse;

@@ -119,6 +119,21 @@ Route::get('/debug-auth', function () {
             'session_has_auth_key' => $session->has('login_web_' . sha1('Illuminate\Auth\SessionGuard')),
             'all_cookies' => request()->cookies->all(),
         ],
+        'session_config' => [
+            'driver' => config('session.driver'),
+            'cookie' => config('session.cookie'),
+            'domain' => config('session.domain'),
+            'secure' => config('session.secure'),
+            'same_site' => config('session.same_site'),
+            'path' => config('session.path'),
+            'http_only' => config('session.http_only'),
+        ],
+        'request_info' => [
+            'host' => request()->getHost(),
+            'scheme' => request()->getScheme(),
+            'secure' => request()->secure(),
+            'url' => request()->url(),
+        ],
         'session_data' => session()->all(),
     ]);
 })->middleware('web');
