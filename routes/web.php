@@ -271,16 +271,18 @@ Route::middleware(['auth', 'tenant'])->prefix('modules')->name('modules.')->grou
 
         // Documents routes
         Route::resource('documents', \App\Http\Controllers\Modules\DocumentManagement\DocumentController::class)
-            ->except(['show']);
+            ->except(['show', 'edit', 'update']);
+        
+        // Custom routes dengan middleware tambahan
         Route::get('documents/{document}', [\App\Http\Controllers\Modules\DocumentManagement\DocumentController::class, 'show'])
             ->name('documents.show')
             ->middleware(['check.permission:document-management,can_view', 'tenant.document']);
 
-        Route::get('documents/{id}/edit', [\App\Http\Controllers\Modules\DocumentManagement\DocumentController::class, 'edit'])
+        Route::get('documents/{document}/edit', [\App\Http\Controllers\Modules\DocumentManagement\DocumentController::class, 'edit'])
             ->name('documents.edit')
             ->middleware(['check.permission:document-management,can_edit', 'tenant.document']);
 
-        Route::put('documents/{id}', [\App\Http\Controllers\Modules\DocumentManagement\DocumentController::class, 'update'])
+        Route::put('documents/{document}', [\App\Http\Controllers\Modules\DocumentManagement\DocumentController::class, 'update'])
             ->name('documents.update')
             ->middleware(['check.permission:document-management,can_edit', 'tenant.document']);
 
