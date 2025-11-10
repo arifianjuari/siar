@@ -9,31 +9,30 @@ Laravel Cloud memiliki dua jenis environment variables:
 1. **Injected Variables** (tidak bisa diubah langsung)
 
    - Di-inject otomatis oleh Laravel Cloud
-   - Termasuk: `SESSION_DRIVER=database`, `APP_DOMAIN`, `SESSION_DOMAIN`, dll
-   - Bisa di-override dengan custom variables
+   - Termasuk: `SESSION_DRIVER=cookie`, `APP_DOMAIN`, `SESSION_DOMAIN`, dll
+   - **TIDAK BISA** diubah langsung, hanya bisa di-override dengan custom variables
 
 2. **Custom Variables** (bisa diubah)
    - Variables yang Anda tambahkan sendiri
    - Jika nama sama dengan injected variable, akan **override** injected variable
 
-### ⚠️ MASALAH UTAMA: SESSION_DRIVER Override
+### ⚠️ MASALAH UTAMA: SESSION_DRIVER=cookie (Injected)
 
 **Masalah yang terjadi:**
 
-- Laravel Cloud meng-inject `SESSION_DRIVER=database` ✅ (benar)
-- Di custom variables ada `SESSION_DRIVER=cookie` ❌ (salah)
-- Custom variable **override** injected variable
+- Laravel Cloud meng-inject `SESSION_DRIVER=cookie` ❌ (salah untuk production)
+- Injected variable **TIDAK BISA** diubah langsung
 - Hasilnya: `SESSION_DRIVER=cookie` digunakan → **Error 419**
 
 **Solusi:**
 
-- **HAPUS** `SESSION_DRIVER=cookie` dari custom variables
-- Biarkan injected `SESSION_DRIVER=database` digunakan
-- Atau jika perlu override, pastikan override dengan `SESSION_DRIVER=database`
+- **TAMBAHKAN** `SESSION_DRIVER=database` di custom variables
+- Custom variable akan **override** injected variable
+- Hasilnya: `SESSION_DRIVER=database` digunakan ✅
 
-## ⚠️ MASALAH UTAMA: SESSION_DRIVER=cookie
+## ⚠️ MASALAH UTAMA: SESSION_DRIVER=cookie (Injected)
 
-**Environment variable `SESSION_DRIVER=cookie` di custom variables adalah penyebab utama error 419 Page Expired di Laravel Cloud.**
+**Environment variable `SESSION_DRIVER=cookie` yang di-inject oleh Laravel Cloud adalah penyebab utama error 419 Page Expired.**
 
 ### Mengapa `SESSION_DRIVER=cookie` Bermasalah?
 
@@ -53,24 +52,20 @@ Dengan `database` driver:
 
 ## Environment Variables yang Perlu Diubah
 
-### 1. HAPUS: SESSION_DRIVER dari Custom Variables
+### 1. TAMBAHKAN: SESSION_DRIVER=database di Custom Variables
 
-**Hapus baris ini dari custom variables:**
+**Tambahkan di custom variables untuk override injected variable:**
 
 ```env
-SESSION_DRIVER=cookie  # <--- HAPUS INI
+SESSION_DRIVER=database  # <--- TAMBAHKAN INI
 ```
-
-**Biarkan injected variable digunakan:**
-
-- Injected: `SESSION_DRIVER=database` ✅ (biarkan seperti ini)
-- Custom: **TIDAK ADA** `SESSION_DRIVER` (hapus jika ada)
 
 **Penjelasan:**
 
-- Laravel Cloud sudah meng-inject `SESSION_DRIVER=database` yang benar
-- Jangan override dengan `SESSION_DRIVER=cookie` di custom variables
-- Jika ada `SESSION_DRIVER` di custom variables, hapus
+- Laravel Cloud meng-inject `SESSION_DRIVER=cookie` (tidak bisa diubah langsung)
+- Tambahkan `SESSION_DRIVER=database` di custom variables
+- Custom variable akan **override** injected variable
+- Hasilnya: `SESSION_DRIVER=database` digunakan ✅
 
 ### 2. TAMBAHKAN: SESSION_SECURE_COOKIE (jika belum ada di injected)
 
@@ -166,17 +161,17 @@ VITE_APP_NAME="${APP_NAME}"
 2. Buka aplikasi Anda
 3. Buka bagian **Environment Variables**
 4. Di bagian **Custom Variables**:
-   - **HAPUS** `SESSION_DRIVER=cookie` (jika ada)
-   - **TAMBAHKAN** `SESSION_SECURE_COOKIE=null` (jika belum ada)
+   - **TAMBAHKAN** `SESSION_DRIVER=database` (untuk override injected `cookie`) ⚠️ **WAJIB**
+   - **TAMBAHKAN** `SESSION_SECURE_COOKIE=null` (jika belum ada di injected)
    - **OVERRIDE** `APP_DOMAIN=laravel.cloud` (jika injected menggunakan `laravelcloud.com`)
    - **OVERRIDE** `SESSION_DOMAIN=.laravel.cloud` (jika injected menggunakan `.laravelcloud.com`)
 5. **Save** perubahan
 
 **Catatan Penting:**
 
-- Jangan tambahkan `SESSION_DRIVER` di custom variables
-- Biarkan injected `SESSION_DRIVER=database` digunakan
-- Jika perlu override injected variables, pastikan nilainya benar
+- **WAJIB** tambahkan `SESSION_DRIVER=database` di custom variables
+- Ini akan override injected `SESSION_DRIVER=cookie`
+- Tanpa ini, aplikasi akan menggunakan `cookie` → Error 419
 
 ### 2. Deploy Ulang Aplikasi
 
@@ -219,14 +214,14 @@ Pastikan environment variables berikut sudah benar:
 
 ### Injected Variables (tidak bisa diubah, hanya bisa di-override):
 
-- [ ] `SESSION_DRIVER=database` ✅ (biarkan seperti ini, jangan override dengan `cookie`)
-- [ ] `CACHE_DRIVER=database` ✅
-- [ ] `QUEUE_CONNECTION=database` ✅
+- [ ] `SESSION_DRIVER=cookie` ❌ (harus di-override dengan `database`)
+- [ ] `CACHE_DRIVER=database` ✅ (sudah benar)
+- [ ] `QUEUE_CONNECTION=database` ✅ (sudah benar)
 
 ### Custom Variables (yang perlu Anda set):
 
-- [ ] **TIDAK ADA** `SESSION_DRIVER` di custom variables (biarkan injected digunakan)
-- [ ] `SESSION_SECURE_COOKIE=null` (tambahkan jika belum ada)
+- [ ] **WAJIB:** `SESSION_DRIVER=database` (untuk override injected `cookie`) ⚠️
+- [ ] `SESSION_SECURE_COOKIE=null` (tambahkan jika belum ada di injected)
 - [ ] `APP_DOMAIN=laravel.cloud` (override jika injected menggunakan `laravelcloud.com`)
 - [ ] `SESSION_DOMAIN=.laravel.cloud` (override jika injected menggunakan `.laravelcloud.com`)
 - [ ] `APP_URL` menggunakan HTTPS
@@ -234,8 +229,8 @@ Pastikan environment variables berikut sudah benar:
 
 ### Verifikasi:
 
-- [ ] Di custom variables, **TIDAK ADA** `SESSION_DRIVER=cookie`
-- [ ] Injected `SESSION_DRIVER=database` digunakan (tidak di-override)
+- [ ] Di custom variables, **ADA** `SESSION_DRIVER=database` ✅
+- [ ] Custom `SESSION_DRIVER=database` override injected `cookie` ✅
 
 ## Mengapa Perubahan Ini Penting?
 
