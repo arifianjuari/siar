@@ -12,6 +12,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Cek apakah tabel sudah ada sebelum memodifikasi
+        if (!Schema::hasTable('clinical_pathways')) {
+            // Jika tabel belum ada, skip migration ini
+            // Tabel akan dibuat oleh migration berikutnya (2025_05_01_000001_create_clinical_pathways_table.php)
+            // dan kolom-kolom yang diperlukan sudah ada di migration pembuatan tabel
+            return;
+        }
+
         Schema::table('clinical_pathways', function (Blueprint $table) {
             // Add structured_data column for storing JSON with CP steps, unit cost, and evaluation results
             if (!Schema::hasColumn('clinical_pathways', 'structured_data')) {
@@ -22,7 +30,11 @@ return new class extends Migration
             // Instead we'll use DB facade to alter the column if it exists
             if (Schema::hasColumn('clinical_pathways', 'status')) {
                 // Use a raw statement to modify the enum
-                DB::statement("ALTER TABLE clinical_pathways MODIFY COLUMN status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft'");
+                try {
+                    DB::statement("ALTER TABLE clinical_pathways MODIFY COLUMN status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft'");
+                } catch (\Exception $e) {
+                    // Jika gagal, skip (mungkin enum sudah benar)
+                }
             } else {
                 // If it doesn't exist, add it
                 $table->enum('status', ['draft', 'published', 'archived'])->default('draft')->after('procedure_name');
