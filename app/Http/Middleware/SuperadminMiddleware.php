@@ -21,15 +21,21 @@ class SuperadminMiddleware
     {
         // Cek apakah user ada dan memiliki role superadmin
         if (!auth()->check()) {
-            Log::warning('SuperadminMiddleware: Pengguna tidak terautentikasi');
+            Log::warning('SuperadminMiddleware: Pengguna tidak terautentikasi', [
+                'session_id' => $request->session()->getId(),
+                'session_has_auth' => $request->session()->has('login_web_' . sha1('Illuminate\Auth\SessionGuard')),
+                'path' => $request->path(),
+            ]);
             return redirect()->route('login');
         }
 
-        $user = auth()->user();
+        $user = auth()->user()->load(['role', 'tenant']);
         Log::info('SuperadminMiddleware: Memeriksa akses', [
             'user_id' => $user->id,
             'email' => $user->email,
-            'role' => $user->role ? $user->role->slug : 'tidak ada role'
+            'role' => $user->role ? $user->role->slug : 'tidak ada role',
+            'tenant_id' => $user->tenant_id,
+            'tenant_name' => $user->tenant ? $user->tenant->name : null,
         ]);
 
         // Cek apakah user memiliki role superadmin

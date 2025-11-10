@@ -13,9 +13,16 @@ class Authenticate extends Middleware
      */
     protected function redirectTo(Request $request): ?string
     {
-        Log::info('Redirect to login because unauthenticated', [
+        Log::warning('Redirect to login because unauthenticated', [
             'path' => $request->path(),
-            'is_authenticated' => auth()->check()
+            'is_authenticated' => auth()->check(),
+            'session_id' => $request->session()->getId(),
+            'session_has_auth' => $request->session()->has('login_web_' . sha1('Illuminate\Auth\SessionGuard')),
+            'cookies' => $request->cookies->all(),
+            'headers' => [
+                'user-agent' => $request->header('User-Agent'),
+                'referer' => $request->header('Referer'),
+            ]
         ]);
         return $request->expectsJson() ? null : route('login');
     }

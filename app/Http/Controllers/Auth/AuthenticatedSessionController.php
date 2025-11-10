@@ -22,7 +22,12 @@ class AuthenticatedSessionController extends Controller
 
             $request->authenticate();
 
-            Log::info('Autentikasi berhasil', ['user_id' => Auth::id(), 'email' => Auth::user()->email]);
+            $user = Auth::user();
+            Log::info('Autentikasi berhasil', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'session_id_before' => $request->session()->getId()
+            ]);
 
             // Regenerate session untuk keamanan
             $request->session()->regenerate();
@@ -30,17 +35,34 @@ class AuthenticatedSessionController extends Controller
             // Regenerate CSRF token setelah session regenerate
             $request->session()->regenerateToken();
 
-            // Cek apakah user memiliki role superadmin
-            $user = Auth::user();
+            // Pastikan user masih terautentikasi setelah regenerate
+            Auth::login($user);
+            
+            // Simpan session secara eksplisit
+            $request->session()->save();
+
+            Log::info('Session setelah regenerate', [
+                'user_id' => Auth::id(),
+                'is_authenticated' => Auth::check(),
+                'session_id_after' => $request->session()->getId(),
+            ]);
+
+            // Reload user dengan relationships
+            $user = Auth::user()->load(['role', 'tenant']);
 
             // Set tenant ke session jika user bukan superadmin
             if ($user->role && $user->role->slug !== 'superadmin' && $user->tenant) {
-                session(['tenant_id' => $user->tenant->id]);
+                session(['tenant_id' => $user->tenant_id]);
                 view()->share('current_tenant', $user->tenant);
             }
 
             if ($user->role && $user->role->slug === 'superadmin') {
-                Log::info('User superadmin, mengarahkan ke dashboard superadmin');
+                Log::info('User superadmin, mengarahkan ke dashboard superadmin', [
+                    'user_id' => $user->id,
+                    'role_slug' => $user->role->slug,
+                    'tenant_id' => $user->tenant_id,
+                    'tenant_name' => $user->tenant ? $user->tenant->name : null,
+                ]);
                 return redirect()->intended(route('superadmin.dashboard'));
             }
 
