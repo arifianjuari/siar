@@ -18,6 +18,8 @@ class VerifyCsrfToken extends Middleware
         'tenant/settings',
         'api/*',
         'sanctum/csrf-cookie',
+        // Temporary: exclude login for debugging 419 error
+        // 'login',
         //
     ];
 }
