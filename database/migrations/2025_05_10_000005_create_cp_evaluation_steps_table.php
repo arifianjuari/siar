@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Cek apakah tabel sudah ada (dibuat oleh migration 2025_05_01_000005_create_cp_evaluation_steps_table.php)
+        if (Schema::hasTable('cp_evaluation_steps')) {
+            return;
+        }
+
         Schema::create('cp_evaluation_steps', function (Blueprint $table) {
             $table->id();
             $table->foreignId('cp_evaluation_id')->constrained()->onDelete('cascade');
