@@ -85,14 +85,65 @@ class AuthenticatedSessionController extends Controller
             // session tersimpan di database (terutama untuk database driver)
             // Juga pastikan auth data tersimpan di session
             $request->session()->put('_token', csrf_token());
+            
+            // Force save session ke database
             $request->session()->save();
             
-            // Force save session ke database dengan flush
             if (config('session.driver') === 'database') {
-                // Pastikan session tersimpan dengan memanggil save() dan flush
-                $request->session()->save();
-                // Tunggu sebentar untuk memastikan database write selesai
-                usleep(100000); // 100ms
+                // Pastikan session tersimpan di database
+                $sessionId = $request->session()->getId();
+                $sessionData = $request->session()->all();
+                
+                // Verifikasi session tersimpan
+                $sessionExists = DB::table('sessions')->where('id', $sessionId)->exists();
+                
+                // Jika session tidak ada di database, insert/update manual
+                if (!$sessionExists) {
+                    try {
+                        // Coba update dulu (jika ada)
+                        $updated = DB::table('sessions')
+                            ->where('id', $sessionId)
+                            ->update([
+                                'user_id' => Auth::id(),
+                                'ip_address' => $request->ip(),
+                                'user_agent' => $request->userAgent(),
+                                'payload' => base64_encode(serialize($sessionData)),
+                                'last_activity' => time(),
+                            ]);
+                        
+                        // Jika tidak ada yang di-update, insert baru
+                        if ($updated === 0) {
+                            DB::table('sessions')->insert([
+                                'id' => $sessionId,
+                                'user_id' => Auth::id(),
+                                'ip_address' => $request->ip(),
+                                'user_agent' => $request->userAgent(),
+                                'payload' => base64_encode(serialize($sessionData)),
+                                'last_activity' => time(),
+                            ]);
+                            Log::info('Session inserted manually ke database', [
+                                'session_id' => $sessionId,
+                            ]);
+                        } else {
+                            Log::info('Session updated manually di database', [
+                                'session_id' => $sessionId,
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Error saving session manually', [
+                            'error' => $e->getMessage(),
+                            'session_id' => $sessionId,
+                        ]);
+                    }
+                } else {
+                    // Update last_activity dan user_id jika sudah ada
+                    DB::table('sessions')
+                        ->where('id', $sessionId)
+                        ->update([
+                            'user_id' => Auth::id(),
+                            'last_activity' => time(),
+                        ]);
+                }
             }
 
             // Explicitly queue the session cookie to ensure client adopts the new session ID
