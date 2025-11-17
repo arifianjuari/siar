@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class AuthenticatedSessionController extends Controller
@@ -41,6 +42,10 @@ class AuthenticatedSessionController extends Controller
             // Regenerate CSRF token setelah session regenerate
             $request->session()->regenerateToken();
 
+            // PENTING: Explicitly save session untuk database driver
+            // Tanpa ini, session mungkin tidak tersimpan di database sebelum redirect
+            $request->session()->save();
+
             Log::info('Session setelah regenerate', [
                 'user_id' => Auth::id(),
                 'is_authenticated' => Auth::check(),
@@ -48,6 +53,7 @@ class AuthenticatedSessionController extends Controller
                 'session_id_after' => $sessionIdAfter,
                 'session_changed' => $sessionIdBefore !== $sessionIdAfter,
                 'session_all_keys' => array_keys($request->session()->all()),
+                'session_driver' => config('session.driver'),
             ]);
 
             // Reload user dengan relationships
@@ -75,10 +81,16 @@ class AuthenticatedSessionController extends Controller
                 $redirectResponse = redirect()->intended(route('dashboard'));
             }
 
+            // PENTING: Save session sekali lagi sebelum redirect untuk memastikan
+            // session tersimpan di database (terutama untuk database driver)
+            $request->session()->save();
+
             // Explicitly queue the session cookie to ensure client adopts the new session ID
             $cookieName = config('session.cookie');
             $cookieDomain = config('session.domain');
-            $cookieSecure = request()->isSecure();
+            // Untuk database driver, gunakan config('session.secure') jika tersedia
+            // Jika null, auto-detect dari request
+            $cookieSecure = config('session.secure') ?? request()->isSecure();
             $cookieSameSite = config('session.same_site');
             $cookieMinutes = (int) config('session.lifetime');
             $cookie = cookie($cookieName, $request->session()->getId(), $cookieMinutes, '/', $cookieDomain, $cookieSecure, true, false, $cookieSameSite);
@@ -98,16 +110,32 @@ class AuthenticatedSessionController extends Controller
                 ];
             }
             
+            // Verifikasi session tersimpan di database (untuk debugging)
+            $sessionInDb = false;
+            if (config('session.driver') === 'database') {
+                try {
+                    $sessionInDb = DB::table('sessions')
+                        ->where('id', $request->session()->getId())
+                        ->exists();
+                } catch (\Exception $e) {
+                    Log::warning('Tidak bisa verifikasi session di database', [
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
             Log::info('Mengirim redirect response', [
                 'target_url' => $redirectResponse->getTargetUrl(),
                 'session_id' => $request->session()->getId(),
                 'cookies_in_response' => count($cookies),
                 'cookie_details' => $cookieInfo,
+                'session_in_database' => $sessionInDb,
                 'session_config' => [
                     'cookie_name' => config('session.cookie'),
                     'domain' => config('session.domain'),
                     'secure' => config('session.secure'),
                     'same_site' => config('session.same_site'),
+                    'driver' => config('session.driver'),
                 ],
             ]);
             
