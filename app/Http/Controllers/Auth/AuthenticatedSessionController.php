@@ -146,30 +146,59 @@ class AuthenticatedSessionController extends Controller
                 }
             }
 
-            // Explicitly queue the session cookie to ensure client adopts the new session ID
+            // PENTING: Verifikasi session tersimpan di database SEBELUM set cookie
+            $sessionId = $request->session()->getId();
+            $sessionExistsInDb = false;
+            
+            if (config('session.driver') === 'database') {
+                $sessionExistsInDb = DB::table('sessions')->where('id', $sessionId)->exists();
+                
+                if (!$sessionExistsInDb) {
+                    Log::error('Session tidak tersimpan di database sebelum set cookie!', [
+                        'session_id' => $sessionId,
+                    ]);
+                    // Coba save sekali lagi
+                    $request->session()->save();
+                    // Tunggu sebentar
+                    usleep(50000); // 50ms
+                    $sessionExistsInDb = DB::table('sessions')->where('id', $sessionId)->exists();
+                }
+            }
+            
+            // Set cookie menggunakan withCookie() untuk memastikan cookie ter-set dengan benar
             $cookieName = config('session.cookie');
             $cookieDomain = config('session.domain');
-            // Untuk database driver, gunakan config('session.secure') jika tersedia
-            // Jika null, auto-detect dari request
             $cookieSecure = config('session.secure') !== null ? (bool) config('session.secure') : request()->isSecure();
             $cookieSameSite = config('session.same_site') ?? 'lax';
             $cookieMinutes = (int) config('session.lifetime');
             
-            // Pastikan cookie domain null jika kosong
-            $cookieDomain = $cookieDomain ?: null;
+            // Pastikan cookie domain null jika kosong (bukan empty string)
+            $cookieDomain = !empty($cookieDomain) ? $cookieDomain : null;
             
-            $cookie = cookie(
-                $cookieName, 
-                $request->session()->getId(), 
-                $cookieMinutes, 
-                '/', 
-                $cookieDomain, 
-                $cookieSecure, 
-                true, // httpOnly
-                false, // raw
-                $cookieSameSite
+            // Gunakan withCookie() untuk memastikan cookie ter-set
+            $redirectResponse = $redirectResponse->withCookie(
+                cookie(
+                    $cookieName, 
+                    $sessionId, 
+                    $cookieMinutes, 
+                    '/', 
+                    $cookieDomain, 
+                    $cookieSecure, 
+                    true, // httpOnly
+                    false, // raw
+                    $cookieSameSite
+                )
             );
-            $redirectResponse->headers->setCookie($cookie);
+            
+            Log::info('Setting session cookie', [
+                'cookie_name' => $cookieName,
+                'session_id' => $sessionId,
+                'session_exists_in_db' => $sessionExistsInDb,
+                'cookie_domain' => $cookieDomain,
+                'cookie_secure' => $cookieSecure,
+                'cookie_same_site' => $cookieSameSite,
+                'cookie_minutes' => $cookieMinutes,
+            ]);
             
             // Log cookie yang akan dikirim (setelah explicit session cookie)
             $cookies = $redirectResponse->headers->getCookies();
