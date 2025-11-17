@@ -12,6 +12,10 @@ class EncryptCookies extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        //
+        // CSRF token should be readable by frontend frameworks
+        'XSRF-TOKEN',
+        // Ensure session cookie is not encrypted to prevent decryption mismatch
+        'laravel_session',
+        'siar_session',
     ];
 }
