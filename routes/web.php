@@ -196,6 +196,53 @@ Route::get('/debug-auth', function () {
     ]);
 })->middleware('web');
 
+// Debug route untuk cek session setelah login (tanpa middleware auth)
+Route::get('/debug-after-login', function () {
+    $session = request()->session();
+    $sessionId = $session->getId();
+    
+    // Cek session di database
+    $sessionInDb = null;
+    $sessionPayload = null;
+    try {
+        if (config('session.driver') === 'database') {
+            $sessionInDb = DB::table('sessions')
+                ->where('id', $sessionId)
+                ->first();
+            if ($sessionInDb) {
+                $sessionPayload = unserialize(base64_decode($sessionInDb->payload));
+            }
+        }
+    } catch (\Exception $e) {
+        $sessionInDb = 'Error: ' . $e->getMessage();
+    }
+    
+    // Cek auth key di session
+    $authKey = 'login_web_' . sha1('Illuminate\Auth\SessionGuard');
+    $hasAuthKey = $session->has($authKey);
+    $authUserId = $session->get($authKey);
+    
+    return response()->json([
+        'session_id' => $sessionId,
+        'session_driver' => config('session.driver'),
+        'auth_check' => auth()->check(),
+        'has_auth_key' => $hasAuthKey,
+        'auth_user_id' => $authUserId,
+        'session_in_db' => $sessionInDb ? [
+            'exists' => true,
+            'user_id' => $sessionInDb->user_id ?? null,
+            'last_activity' => $sessionInDb->last_activity ? date('Y-m-d H:i:s', $sessionInDb->last_activity) : null,
+            'payload_keys' => $sessionPayload ? array_keys($sessionPayload) : null,
+        ] : ['exists' => false],
+        'session_keys' => array_keys($session->all()),
+        'cookie_info' => [
+            'cookie_name' => config('session.cookie'),
+            'has_cookie' => request()->hasCookie(config('session.cookie')),
+            'cookie_value' => request()->cookie(config('session.cookie')),
+        ],
+    ]);
+})->middleware('web');
+
 // Debug route untuk test session persistence
 Route::get('/debug-session-test', function () {
     $testKey = 'debug_test_' . time();

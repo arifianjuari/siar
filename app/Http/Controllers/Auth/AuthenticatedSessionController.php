@@ -83,17 +83,41 @@ class AuthenticatedSessionController extends Controller
 
             // PENTING: Save session sekali lagi sebelum redirect untuk memastikan
             // session tersimpan di database (terutama untuk database driver)
+            // Juga pastikan auth data tersimpan di session
+            $request->session()->put('_token', csrf_token());
             $request->session()->save();
+            
+            // Force save session ke database dengan flush
+            if (config('session.driver') === 'database') {
+                // Pastikan session tersimpan dengan memanggil save() dan flush
+                $request->session()->save();
+                // Tunggu sebentar untuk memastikan database write selesai
+                usleep(100000); // 100ms
+            }
 
             // Explicitly queue the session cookie to ensure client adopts the new session ID
             $cookieName = config('session.cookie');
             $cookieDomain = config('session.domain');
             // Untuk database driver, gunakan config('session.secure') jika tersedia
             // Jika null, auto-detect dari request
-            $cookieSecure = config('session.secure') ?? request()->isSecure();
-            $cookieSameSite = config('session.same_site');
+            $cookieSecure = config('session.secure') !== null ? (bool) config('session.secure') : request()->isSecure();
+            $cookieSameSite = config('session.same_site') ?? 'lax';
             $cookieMinutes = (int) config('session.lifetime');
-            $cookie = cookie($cookieName, $request->session()->getId(), $cookieMinutes, '/', $cookieDomain, $cookieSecure, true, false, $cookieSameSite);
+            
+            // Pastikan cookie domain null jika kosong
+            $cookieDomain = $cookieDomain ?: null;
+            
+            $cookie = cookie(
+                $cookieName, 
+                $request->session()->getId(), 
+                $cookieMinutes, 
+                '/', 
+                $cookieDomain, 
+                $cookieSecure, 
+                true, // httpOnly
+                false, // raw
+                $cookieSameSite
+            );
             $redirectResponse->headers->setCookie($cookie);
             
             // Log cookie yang akan dikirim (setelah explicit session cookie)
