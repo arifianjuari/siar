@@ -32,29 +32,21 @@ class AuthenticatedSessionController extends Controller
                 'session_driver' => config('session.driver'),
             ]);
 
-            // Regenerate session untuk keamanan SEBELUM login
-            // Ini mencegah session fixation attack
+            // Regenerate session setelah autentikasi (sesuai rekomendasi Laravel)
+            // untuk mencegah session fixation attack
             $request->session()->regenerate();
-            
+
             $sessionIdAfter = $request->session()->getId();
-            
-            // Login user SETELAH regenerate session
-            // Ini akan menyimpan user ke session yang baru
-            Auth::login($user, $request->filled('remember'));
-            
+
             // Regenerate CSRF token setelah session regenerate
             $request->session()->regenerateToken();
-            
-            // Pastikan session tersimpan
-            $request->session()->save();
-            
+
             Log::info('Session setelah regenerate', [
                 'user_id' => Auth::id(),
                 'is_authenticated' => Auth::check(),
                 'session_id_before' => $sessionIdBefore,
                 'session_id_after' => $sessionIdAfter,
                 'session_changed' => $sessionIdBefore !== $sessionIdAfter,
-                'session_has_auth' => $request->session()->has('login_web_' . sha1('Illuminate\Auth\SessionGuard')),
                 'session_all_keys' => array_keys($request->session()->all()),
             ]);
 
@@ -82,11 +74,6 @@ class AuthenticatedSessionController extends Controller
                 Log::info('User reguler, mengarahkan ke dashboard biasa');
                 $redirectResponse = redirect()->intended(route('dashboard'));
             }
-            
-            // Pastikan session cookie ter-set dengan benar di response
-            // Laravel akan otomatis menambahkan session cookie ke response
-            // Tapi kita pastikan dengan memanggil save() sebelum redirect
-            $request->session()->save();
             
             // Log cookie yang akan dikirim
             $cookies = $redirectResponse->headers->getCookies();
