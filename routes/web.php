@@ -9,6 +9,7 @@ use App\Http\Controllers\SuperAdmin\TenantManagementController;
 use App\Http\Controllers\SuperAdmin\ModuleManagementController;
 use App\Http\Controllers\SuperAdmin\UserManagementController;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\TenantRoleController;
@@ -115,6 +116,18 @@ Route::get('/debug-auth', function () {
     $session = request()->session();
     $sessionCookieName = config('session.cookie');
     
+    // Cek session di database
+    $sessionInDb = null;
+    try {
+        if (config('session.driver') === 'database') {
+            $sessionInDb = DB::table('sessions')
+                ->where('id', $session->getId())
+                ->first();
+        }
+    } catch (\Exception $e) {
+        $sessionInDb = 'Error: ' . $e->getMessage();
+    }
+    
     return response()->json([
         'auth_check' => auth()->check(),
         'user' => auth()->user() ? [
@@ -135,9 +148,17 @@ Route::get('/debug-auth', function () {
             'session_id' => $session->getId(),
             'session_cookie_name' => $sessionCookieName,
             'has_session_cookie' => request()->hasCookie($sessionCookieName),
-            'session_cookie_value' => request()->cookie($sessionCookieName),
+            'session_cookie_value' => request()->cookie($sessionCookieName) ? 'exists (length: ' . strlen(request()->cookie($sessionCookieName)) . ')' : 'missing',
             'session_has_auth_key' => $session->has('login_web_' . sha1('Illuminate\Auth\SessionGuard')),
-            'all_cookies' => request()->cookies->all(),
+            'all_cookies' => array_keys(request()->cookies->all()),
+            'all_cookies_count' => count(request()->cookies->all()),
+        ],
+        'session_database' => [
+            'exists_in_db' => is_object($sessionInDb),
+            'user_id' => is_object($sessionInDb) ? $sessionInDb->user_id : null,
+            'ip_address' => is_object($sessionInDb) ? $sessionInDb->ip_address : null,
+            'last_activity' => is_object($sessionInDb) ? date('Y-m-d H:i:s', $sessionInDb->last_activity) : null,
+            'payload_length' => is_object($sessionInDb) ? strlen($sessionInDb->payload) : null,
         ],
         'session_config' => [
             'driver' => config('session.driver'),
@@ -153,8 +174,34 @@ Route::get('/debug-auth', function () {
             'scheme' => request()->getScheme(),
             'secure' => request()->secure(),
             'url' => request()->url(),
+            'ip' => request()->ip(),
         ],
-        'session_data' => session()->all(),
+        'session_data_keys' => array_keys(session()->all()),
+    ]);
+})->middleware('web');
+
+// Debug route untuk test session persistence
+Route::get('/debug-session-test', function () {
+    $testKey = 'debug_test_' . time();
+    $testValue = 'test_value_' . rand(1000, 9999);
+    
+    // Set test value
+    session()->put($testKey, $testValue);
+    session()->save();
+    
+    // Read back
+    $readValue = session()->get($testKey);
+    
+    return response()->json([
+        'test' => [
+            'key' => $testKey,
+            'value_set' => $testValue,
+            'value_read' => $readValue,
+            'match' => $testValue === $readValue,
+        ],
+        'session_id' => session()->getId(),
+        'session_driver' => config('session.driver'),
+        'instruction' => 'Refresh halaman ini beberapa kali. Jika session_id berubah setiap refresh, berarti session tidak persist.',
     ]);
 })->middleware('web');
 
