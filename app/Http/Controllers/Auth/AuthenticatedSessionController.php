@@ -179,13 +179,24 @@ class AuthenticatedSessionController extends Controller
             // Ini penting karena browser mungkin tidak update cookie jika ada cookie lama dengan attributes berbeda
             $oldCookieValue = $request->cookie($cookieName);
             if ($oldCookieValue && $oldCookieValue !== $sessionId) {
-                // Hapus cookie lama dengan expire di masa lalu
+                // Hapus cookie lama dengan expire di masa lalu, gunakan domain yang sama
                 $redirectResponse = $redirectResponse->withCookie(
-                    cookie()->forget($cookieName)
+                    cookie(
+                        $cookieName,
+                        null,
+                        -2628000, // Expire di masa lalu (1 bulan lalu)
+                        '/',
+                        $cookieDomain,
+                        $cookieSecure,
+                        true, // httpOnly
+                        false, // raw
+                        $cookieSameSite
+                    )
                 );
                 Log::info('Removing old session cookie', [
                     'old_session_id' => $oldCookieValue,
                     'new_session_id' => $sessionId,
+                    'cookie_domain' => $cookieDomain,
                 ]);
             }
             
