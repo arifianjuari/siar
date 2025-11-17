@@ -266,21 +266,46 @@ document.getElementById('tenant-form').addEventListener('submit', function(e) {
         method: 'POST',
         body: formData,
         headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Tenant berhasil dibuat!');
-            window.location.href = '<?php echo e(route("superadmin.tenants.index")); ?>';
-        } else {
-            alert('Terjadi kesalahan: ' + data.message);
+    .then(async (response) => {
+        const contentType = response.headers.get('content-type') || '';
+        let data = null;
+
+        if (contentType.includes('application/json')) {
+            try { data = await response.json(); } catch (_) { /* ignore parse error */ }
         }
+
+        if (response.ok) {
+            if (data && data.success) {
+                alert('Tenant berhasil dibuat!');
+                window.location.href = '<?php echo e(route("superadmin.tenants.index")); ?>';
+                return;
+            }
+
+            // Jika server mengembalikan HTML (redirect/halaman), anggap sukses
+            if (contentType.includes('text/html')) {
+                window.location.href = '<?php echo e(route("superadmin.tenants.index")); ?>';
+                return;
+            }
+
+            alert('Terjadi kesalahan: ' + ((data && data.message) ? data.message : 'Respon tidak valid'));
+            return;
+        }
+
+        // Tidak OK (4xx/5xx)
+        let message = (data && data.message) ? data.message : '';
+        if (!message) {
+            try { message = await response.text(); } catch (_) { message = 'Unknown error'; }
+        }
+        alert('Terjadi kesalahan: ' + message);
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Terjadi kesalahan saat menyimpan data');
+        alert('Terjadi kesalahan saat menyimpan data: ' + (error && error.message ? error.message : error));
     });
 });
 </script>

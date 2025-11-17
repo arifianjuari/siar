@@ -56,6 +56,14 @@ class TenantManagementController extends Controller
         ]);
 
         if ($validator->fails()) {
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
@@ -77,14 +85,18 @@ class TenantManagementController extends Controller
                 $tenant->modules()->attach($moduleId, ['is_active' => true]);
             }
 
-            // Create tenant admin role
-            $role = Role::create([
-                'tenant_id' => $tenant->id,
-                'name' => 'Tenant Admin',
-                'slug' => 'tenant-admin',
-                'description' => 'Administrator untuk tenant ' . $tenant->name,
-                'is_active' => true,
-            ]);
+            // Create tenant admin role (or get existing)
+            $role = Role::firstOrCreate(
+                [
+                    'tenant_id' => $tenant->id,
+                    'slug' => 'tenant-admin',
+                ],
+                [
+                    'name' => 'Tenant Admin',
+                    'description' => 'Administrator untuk tenant ' . $tenant->name,
+                    'is_active' => true,
+                ]
+            );
 
             // Create admin user
             User::create([
@@ -97,11 +109,24 @@ class TenantManagementController extends Controller
             ]);
 
             DB::commit();
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tenant berhasil dibuat.',
+                ]);
+            }
 
             return redirect()->route('superadmin.tenants.index')
                 ->with('success', 'Tenant berhasil dibuat.');
         } catch (\Exception $e) {
             DB::rollBack();
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 500);
+            }
+
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
                 ->withInput();
@@ -368,6 +393,18 @@ class TenantManagementController extends Controller
             // Generate slug dari nama
             $slug = Str::slug($request->name);
 
+            // Cegah duplikasi khusus slug tenant-admin
+            if ($slug === 'tenant-admin') {
+                $alreadyHasTenantAdmin = Role::where('tenant_id', $tenant->id)
+                    ->where('slug', 'tenant-admin')
+                    ->exists();
+                if ($alreadyHasTenantAdmin) {
+                    return redirect()->back()
+                        ->with('error', 'Role Tenant Admin sudah ada untuk tenant ini.')
+                        ->withInput();
+                }
+            }
+
             // Pastikan slug unik untuk tenant
             $exists = Role::where('tenant_id', $tenant->id)
                 ->where('slug', $slug)
@@ -377,14 +414,18 @@ class TenantManagementController extends Controller
                 $slug = $slug . '-' . time();
             }
 
-            // Buat role baru
-            Role::create([
-                'tenant_id' => $tenant->id,
-                'name' => $request->name,
-                'slug' => $slug,
-                'description' => $request->description,
-                'is_active' => $request->has('is_active'),
-            ]);
+            // Buat role baru (aman dari duplikasi)
+            Role::firstOrCreate(
+                [
+                    'tenant_id' => $tenant->id,
+                    'slug' => $slug,
+                ],
+                [
+                    'name' => $request->name,
+                    'description' => $request->description,
+                    'is_active' => $request->has('is_active'),
+                ]
+            );
 
             return redirect()->route('superadmin.tenants.show', $tenant)
                 ->with('success', 'Role berhasil ditambahkan.');

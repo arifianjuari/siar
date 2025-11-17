@@ -17,30 +17,40 @@ class RoleModulePermissionSeeder extends Seeder
         $superadmin = Role::where('name', 'Superadmin')->first();
         $modules = Module::all();
 
-        // Berikan full access ke Superadmin untuk semua modul
-        foreach ($modules as $module) {
-            RoleModulePermission::create([
-                'role_id' => $superadmin->id,
-                'module_id' => $module->id,
-                'can_view' => true,
-                'can_create' => true,
-                'can_edit' => true,
-                'can_delete' => true,
-            ]);
+        if ($superadmin) {
+            // Berikan full access ke Superadmin untuk semua modul (idempoten)
+            foreach ($modules as $module) {
+                RoleModulePermission::updateOrCreate(
+                    [
+                        'role_id' => $superadmin->id,
+                        'module_id' => $module->id,
+                    ],
+                    [
+                        'can_view' => true,
+                        'can_create' => true,
+                        'can_edit' => true,
+                        'can_delete' => true,
+                    ]
+                );
+            }
         }
 
         // Berikan akses view saja untuk role lainnya
         $otherRoles = Role::where('name', '!=', 'Superadmin')->get();
         foreach ($otherRoles as $role) {
             foreach ($modules as $module) {
-                RoleModulePermission::create([
-                    'role_id' => $role->id,
-                    'module_id' => $module->id,
-                    'can_view' => true,
-                    'can_create' => false,
-                    'can_edit' => false,
-                    'can_delete' => false,
-                ]);
+                RoleModulePermission::updateOrCreate(
+                    [
+                        'role_id' => $role->id,
+                        'module_id' => $module->id,
+                    ],
+                    [
+                        'can_view' => true,
+                        'can_create' => false,
+                        'can_edit' => false,
+                        'can_delete' => false,
+                    ]
+                );
             }
         }
     }

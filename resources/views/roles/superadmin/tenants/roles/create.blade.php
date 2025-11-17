@@ -52,9 +52,10 @@
 
                         <div class="mb-3">
                             <label for="role_slug" class="form-label">Tipe Role <span class="text-danger">*</span></label>
+                            @php $hasTenantAdmin = $tenant->roles()->where('slug', 'tenant-admin')->exists(); @endphp
                             <select class="form-select @error('role_slug') is-invalid @enderror" id="role_slug" name="role_slug" required>
                                 <option value="">Pilih Tipe Role</option>
-                                <option value="tenant-admin" {{ old('role_slug') == 'tenant-admin' ? 'selected' : '' }}>Tenant Admin</option>
+                                <option value="tenant-admin" {{ old('role_slug') == 'tenant-admin' ? 'selected' : '' }} {{ $hasTenantAdmin ? 'disabled' : '' }}>Tenant Admin {{ $hasTenantAdmin ? '(sudah ada)' : '' }}</option>
                                 <option value="manajemen-strategis" {{ old('role_slug') == 'manajemen-strategis' ? 'selected' : '' }}>Manajemen Strategis</option>
                                 <option value="manajemen-eksekutif" {{ old('role_slug') == 'manajemen-eksekutif' ? 'selected' : '' }}>Manajemen Eksekutif</option>
                                 <option value="manajemen-operasional" {{ old('role_slug') == 'manajemen-operasional' ? 'selected' : '' }}>Manajemen Operasional</option>

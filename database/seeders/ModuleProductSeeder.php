@@ -11,8 +11,19 @@ class ModuleProductSeeder extends Seeder
 {
     public function run(): void
     {
-        // Ambil tenant RS Bhayangkara
-        $tenant = Tenant::where('name', 'RS Bhayangkara Tk.III Batu')->first();
+        // Ambil tenant yang ada (prioritaskan RS Bhayangkara jika ada), fallback ke tenant pertama
+        $tenant = Tenant::where('name', 'RS Bhayangkara Tk.III Hasta Brata Batu')->first() ?? Tenant::first();
+
+        if (!$tenant) {
+            echo "Tidak ada tenant. Lewati ModuleProductSeeder.\n";
+            return;
+        }
+
+        // Jika model ModuleProduct tidak tersedia, lewati dengan aman
+        if (!class_exists(ModuleProduct::class)) {
+            echo "Model ModuleProduct tidak ditemukan. Lewati ModuleProductSeeder.\n";
+            return;
+        }
 
         // Data dummy modul dan produk-produknya
         $data = [
@@ -37,10 +48,11 @@ class ModuleProductSeeder extends Seeder
         ];
 
         foreach ($data as $moduleName => $products) {
-            $module = Module::where('name', $moduleName)->where('tenant_id', $tenant->id)->first();
+            // Tabel modules tidak memiliki kolom tenant_id, cari berdasarkan nama saja
+            $module = Module::where('name', $moduleName)->first();
 
             if (!$module) {
-                echo "Module $moduleName tidak ditemukan untuk tenant RS Bhayangkara.\n";
+                echo "Module $moduleName tidak ditemukan. Lewati.\n";
                 continue;
             }
 
@@ -59,3 +71,4 @@ class ModuleProductSeeder extends Seeder
         }
     }
 }
+

@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class TenantRoleController extends Controller
 {
@@ -33,11 +34,19 @@ class TenantRoleController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'role_slug' => ['required', 'string', function ($attribute, $value, $fail) {
-                    if (!array_key_exists($value, $this->defaultRoles)) {
-                        $fail('Role tidak valid. Pilih salah satu role yang tersedia.');
-                    }
-                }],
+                'role_slug' => [
+                    'required',
+                    'string',
+                    function ($attribute, $value, $fail) {
+                        if (!array_key_exists($value, $this->defaultRoles)) {
+                            $fail('Role tidak valid. Pilih salah satu role yang tersedia.');
+                        }
+                    },
+                    // Pastikan slug unik per tenant (fail fast sebelum query insert)
+                    Rule::unique('roles', 'slug')->where(function ($query) use ($tenant) {
+                        return $query->where('tenant_id', $tenant->id);
+                    }),
+                ],
                 'description' => 'nullable|string',
                 'is_active' => 'required|boolean'
             ]);
@@ -51,12 +60,18 @@ class TenantRoleController extends Controller
                 return back()->with('error', 'Role ' . $this->defaultRoles[$validated['role_slug']] . ' sudah ada di tenant ini.');
             }
 
-            $role = $tenant->roles()->create([
-                'name' => $validated['name'],
-                'slug' => $validated['role_slug'],
-                'description' => $validated['description'],
-                'is_active' => $validated['is_active']
-            ]);
+            // Buat role dengan pengaman duplikasi
+            $role = Role::firstOrCreate(
+                [
+                    'tenant_id' => $tenant->id,
+                    'slug' => $validated['role_slug'],
+                ],
+                [
+                    'name' => $validated['name'],
+                    'description' => $validated['description'],
+                    'is_active' => $validated['is_active'],
+                ]
+            );
 
             if ($request->ajax()) {
                 return response()->json([

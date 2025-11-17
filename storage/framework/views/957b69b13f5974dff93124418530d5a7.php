@@ -92,6 +92,66 @@ $hideDefaultHeader = true;
         </div>
     </div>
 
+    <!-- Superadmin Overview -->
+    <div class="row mb-4">
+        <?php
+            try {
+                $totalTenants = \App\Models\Tenant::count();
+                $totalModules = \App\Models\Module::count();
+                $totalUsers   = \App\Models\User::count();
+            } catch (\Exception $e) {
+                $totalTenants = $totalModules = $totalUsers = 0;
+            }
+        ?>
+        <div class="col-md-4 mb-3">
+            <div class="card dashboard-card border-0 shadow-sm" style="border-left-color:#0ea5e9;">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted">Tenant</div>
+                        <div class="stat-value"><?php echo e($totalTenants); ?></div>
+                    </div>
+                    <a href="<?php echo e(route('superadmin.tenants.index')); ?>" class="btn btn-outline-primary">Kelola</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card dashboard-card border-0 shadow-sm" style="border-left-color:#22c55e;">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted">Modul</div>
+                        <div class="stat-value"><?php echo e($totalModules); ?></div>
+                    </div>
+                    <a href="<?php echo e(route('superadmin.modules.index')); ?>" class="btn btn-outline-primary">Kelola</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card dashboard-card border-0 shadow-sm" style="border-left-color:#6366F1;">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted">Pengguna</div>
+                        <div class="stat-value"><?php echo e($totalUsers); ?></div>
+                    </div>
+                    <a href="<?php echo e(route('superadmin.users.index')); ?>" class="btn btn-outline-primary">Kelola</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body d-flex flex-wrap gap-2">
+                    <a href="<?php echo e(route('superadmin.tenants.create')); ?>" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Tambah Tenant</a>
+                    <a href="<?php echo e(route('superadmin.modules.index')); ?>" class="btn btn-outline-primary"><i class="fas fa-grid me-1"></i> Kelola Modul</a>
+                    <a href="<?php echo e(route('superadmin.users.index')); ?>" class="btn btn-outline-primary"><i class="fas fa-users me-1"></i> Kelola Pengguna</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <?php if(false): ?>
     <!-- Filter Form -->
     <div class="row mb-4">
         <div class="col-12">
@@ -373,6 +433,7 @@ $hideDefaultHeader = true;
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <?php $__env->startPush('scripts'); ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

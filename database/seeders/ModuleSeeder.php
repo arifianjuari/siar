@@ -31,26 +31,21 @@ class ModuleSeeder extends Seeder
             ],
             [
                 'name' => 'Pengelolaan Kegiatan',
-                'slug' => 'activity-management',
-                'is_core' => false,
-                'is_purchasable' => true,
-                'is_visible' => true,
+                'code' => 'activity-management',
                 'description' => 'Modul untuk mengelola dan memantau kegiatan organisasi',
-                'version' => '1.0.0',
                 'icon' => 'calendar',
-                'permissions' => [
-                    ['name' => 'view', 'description' => 'Melihat kegiatan'],
-                    ['name' => 'create', 'description' => 'Membuat kegiatan baru'],
-                    ['name' => 'edit', 'description' => 'Mengedit kegiatan'],
-                    ['name' => 'delete', 'description' => 'Menghapus kegiatan'],
-                    ['name' => 'assign', 'description' => 'Menugaskan pengguna ke kegiatan'],
-                    ['name' => 'change_status', 'description' => 'Mengubah status kegiatan'],
-                ]
+                'order' => 3,
+                'is_active' => true,
             ],
         ];
 
         foreach ($modules as $module) {
-            Module::create($module);
+            // Hindari duplikasi berdasarkan code
+            Module::updateOrCreate(
+                ['code' => $module['code']],
+                $module
+            );
         }
     }
 }
+

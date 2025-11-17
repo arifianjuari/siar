@@ -1,5 +1,7 @@
 @extends('layouts.superadmin')
 
+@php($hideDefaultHeader = true)
+
 @section('title', 'Edit Pengguna')
 
 @section('content')

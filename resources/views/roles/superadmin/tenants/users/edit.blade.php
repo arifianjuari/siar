@@ -1,5 +1,7 @@
 @extends('roles.superadmin.layout')
 
+@php($hideDefaultHeader = true)
+
 @section('title', 'Edit Pengguna Tenant')
 
 @section('content')

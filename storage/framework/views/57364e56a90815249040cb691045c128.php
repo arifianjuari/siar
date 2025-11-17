@@ -1,4 +1,4 @@
-<?php $__env->startSection('title', ' | Manajemen Tenant'); ?>
+<?php ($hideDefaultHeader = true); ?>
 
 <?php $__env->startSection('content'); ?>
 <div class="container-fluid">

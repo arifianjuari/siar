@@ -30,7 +30,6 @@ class RiskManagementModuleSeeder extends Seeder
                 'slug' => 'risk-management',
                 'icon' => 'fa-exclamation-triangle',
                 'is_active' => true,
-                'version' => '1.0.0',
                 'order' => 5, // Sesuaikan dengan kebutuhan
             ]);
 

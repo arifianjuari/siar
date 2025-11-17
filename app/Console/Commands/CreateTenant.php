@@ -59,14 +59,18 @@ class CreateTenant extends Command
         }
         $this->info("Semua modul telah diaktifkan untuk tenant {$name}");
 
-        // Buat role admin
-        $adminRole = Role::create([
-            'tenant_id' => $tenant->id,
-            'name' => "Admin {$name}",
-            'slug' => 'tenant-admin',
-            'description' => "Role admin untuk {$name}",
-            'is_active' => true,
-        ]);
+        // Buat role admin (or get existing)
+        $adminRole = Role::firstOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'slug' => 'tenant-admin',
+            ],
+            [
+                'name' => "Admin {$name}",
+                'description' => "Role admin untuk {$name}",
+                'is_active' => true,
+            ]
+        );
         $this->info("Role admin berhasil dibuat!");
 
         // Berikan semua permission untuk role admin

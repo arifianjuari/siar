@@ -1,16 +1,14 @@
-@extends('layouts.app')
+<?php ($hideDefaultHeader = true); ?>
 
-@php($hideDefaultHeader = true)
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body d-flex justify-content-between align-items-center">
-                    <h2 class="mb-0">Daftar Role Tenant: {{ $tenant->name }}</h2>
+                    <h2 class="mb-0">Daftar Role Tenant: <?php echo e($tenant->name); ?></h2>
                     <div>
-                        <a href="{{ route('superadmin.tenants.show', $tenant) }}" class="btn btn-outline-primary">
+                        <a href="<?php echo e(route('superadmin.tenants.show', $tenant)); ?>" class="btn btn-outline-primary">
                             <i class="fas fa-arrow-left me-2"></i> Kembali ke Detail Tenant
                         </a>
                     </div>
@@ -20,26 +18,28 @@
     </div>
 
     <!-- Alert Messages -->
-    @if (session('success'))
+    <?php if(session('success')): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
+            <?php echo e(session('success')); ?>
 
-    @if (session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    @endif
+    <?php endif; ?>
+
+    <?php if(session('error')): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?php echo e(session('error')); ?>
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
 
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Daftar Role</h5>
-                    <a href="{{ route('superadmin.tenants.roles.create', $tenant) }}" class="btn btn-primary btn-sm">
+                    <a href="<?php echo e(route('superadmin.tenants.roles.create', $tenant)); ?>" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus me-1"></i> Tambah Role Baru
                     </a>
                 </div>
@@ -57,46 +57,47 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($roles as $role)
+                                <?php $__empty_1 = true; $__currentLoopData = $roles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $role): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                     <tr>
-                                        <td>{{ $role->name }}</td>
-                                        <td><code>{{ $role->slug }}</code></td>
-                                        <td>{{ $role->description ?? 'Tidak ada deskripsi' }}</td>
+                                        <td><?php echo e($role->name); ?></td>
+                                        <td><code><?php echo e($role->slug); ?></code></td>
+                                        <td><?php echo e($role->description ?? 'Tidak ada deskripsi'); ?></td>
                                         <td>
-                                            {!! $role->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-danger">Nonaktif</span>' !!}
+                                            <?php echo $role->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-danger">Nonaktif</span>'; ?>
+
                                         </td>
                                         <td>
-                                            <span class="badge bg-info">{{ $role->users_count }}</span>
+                                            <span class="badge bg-info"><?php echo e($role->users_count); ?></span>
                                         </td>
                                         <td class="text-center">
                                             <div class="btn-group" role="group">
-                                                <a href="{{ route('superadmin.tenants.roles.edit', [$tenant, $role]) }}" class="btn btn-sm btn-outline-primary">
+                                                <a href="<?php echo e(route('superadmin.tenants.roles.edit', [$tenant, $role])); ?>" class="btn btn-sm btn-outline-primary">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 
-                                                <a href="{{ route('superadmin.tenants.roles.permissions.edit', [$tenant, $role]) }}" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Atur Hak Akses">
+                                                <a href="<?php echo e(route('superadmin.tenants.roles.permissions.edit', [$tenant, $role])); ?>" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Atur Hak Akses">
                                                     <i class="fas fa-key"></i>
                                                 </a>
                                                 
-                                                @if($role->slug !== 'tenant-admin')
-                                                    <form action="{{ route('superadmin.tenants.roles.destroy', [$tenant, $role]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus role ini?');">
-                                                        @csrf
-                                                        @method('DELETE')
+                                                <?php if($role->slug !== 'tenant-admin'): ?>
+                                                    <form action="<?php echo e(route('superadmin.tenants.roles.destroy', [$tenant, $role])); ?>" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus role ini?');">
+                                                        <?php echo csrf_field(); ?>
+                                                        <?php echo method_field('DELETE'); ?>
                                                         <button type="submit" class="btn btn-sm btn-outline-danger">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
                                                     </form>
-                                                @endif
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>
-                                @empty
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                     <tr>
                                         <td colspan="6" class="text-center py-3 text-muted">
                                             Belum ada role yang dibuat untuk tenant ini.
                                         </td>
                                     </tr>
-                                @endforelse
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -105,9 +106,9 @@
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Inisialisasi tooltips
@@ -117,4 +118,5 @@
         });
     });
 </script>
-@endpush 
+<?php $__env->stopPush(); ?> 
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Users/arifianjuari/Library/CloudStorage/GoogleDrive-arifianjuari@gmail.com/My Drive/01 PAPA/05 DEVELOPMENT/siar/resources/views/roles/superadmin/tenants/roles/index.blade.php ENDPATH**/ ?>

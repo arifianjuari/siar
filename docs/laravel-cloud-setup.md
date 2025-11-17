@@ -66,7 +66,8 @@ CACHE_DRIVER=database
 QUEUE_CONNECTION=database
 ```
 
-**Catatan:** 
+**Catatan:**
+
 - `SESSION_SECURE_COOKIE=null` akan membuat Laravel otomatis mendeteksi HTTPS dan mengaktifkan secure cookie
 - Jika menggunakan HTTPS, pastikan `SESSION_SECURE_COOKIE` tidak di-set ke `false`
 

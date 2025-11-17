@@ -64,7 +64,6 @@ class SPOManagementModuleSeeder extends Seeder
                     'can_create' => $canCreate,
                     'can_edit' => $canEdit,
                     'can_delete' => $canDelete,
-                    'can_manage' => $canManage,
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);

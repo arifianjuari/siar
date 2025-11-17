@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', ' | Manajemen Tenant')
+@php($hideDefaultHeader = true)
 
 @section('content')
 <div class="container-fluid">

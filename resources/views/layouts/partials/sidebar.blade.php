@@ -87,10 +87,55 @@
                     <span class="menu-text">Pengguna</span>
                 </div>
             </a>
+
+            <!-- Menu Roles - Dropdown untuk setiap tenant -->
+            <div class="nav-item dropdown mb-2">
+                <button type="button" class="nav-link text-start w-100 {{ request()->routeIs('superadmin.tenants.roles.*') ? 'active' : '' }}" 
+                       onclick="toggleRolesDropdown()" 
+                       style="border: none; background: none; cursor: pointer;">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-sidebar">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-shield"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        </div>
+                        <span class="menu-text">Role</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down ms-auto" id="roles-dropdown-icon"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                </button>
+                <div id="rolesSubmenu" class="collapse" style="padding-left: 1.5rem; margin-top: 5px;">
+                    @php
+                        try {
+                            $tenants = \App\Models\Tenant::where('id', '!=', 1)->orderBy('name')->get();
+                        } catch (\Exception $e) {
+                            $tenants = [];
+                        }
+                    @endphp
+                    @foreach($tenants as $tenant)
+                        @php
+                            $isActive = false;
+                            try {
+                                $isActive = request()->routeIs('superadmin.tenants.roles.*') 
+                                    && request()->route('tenant') 
+                                    && request()->route('tenant')->id == $tenant->id;
+                            } catch (\Exception $e) {
+                                // Ignore error
+                            }
+                        @endphp
+                        <a href="{{ route('superadmin.tenants.roles.index', $tenant) }}" 
+                           class="nav-link {{ $isActive ? 'active' : '' }} my-1">
+                            <div class="d-flex align-items-center">
+                                <div class="icon-sidebar">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-briefcase"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                                </div>
+                                <span class="menu-text">{{ $tenant->name }}</span>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
         @endif
 
         <!-- Active Modules Section -->
-        @if(count($activeModules) > 0)
+        @if(!$isSuperAdmin && count($activeModules) > 0)
             <div class="sidebar-heading text-uppercase text-white-50 small px-3 mt-4 mb-2">
                 Modul
             </div>
@@ -237,6 +282,7 @@
         @endif
         
         <!-- Unit Kerja Section -->
+        @if(!$isSuperAdmin)
         <div class="sidebar-heading text-uppercase text-white-50 small px-3 mt-4 mb-2">
             Unit Kerja
         </div>
@@ -272,6 +318,7 @@
                 <span class="menu-text">Manajemen SPO</span>
             </div>
         </a>
+        @endif
     </div>
     
     <!-- Bottom Area -->
@@ -427,7 +474,7 @@
     }
 
     /* Dropdown styles */
-     #tenantSubmenu, #userManagementSubmenu {
+     #tenantSubmenu, #userManagementSubmenu, #rolesSubmenu {
          background-color: var(--sidebar-hover-bg); /* Latar submenu */
          border-radius: 0.3rem;
          padding-top: 0.5rem;
@@ -436,7 +483,8 @@
      }
 
      #tenantSubmenu .nav-link,
-     #userManagementSubmenu .nav-link {
+     #userManagementSubmenu .nav-link,
+     #rolesSubmenu .nav-link {
          padding: 0.4rem 1rem !important; /* Padding submenu item (dikurangi) */
          margin-bottom: 0 !important; /* Menghilangkan margin bottom */
          border-left: 3px solid transparent !important; /* Reset border */
@@ -444,20 +492,23 @@
      }
      
      #tenantSubmenu .menu-text,
-     #userManagementSubmenu .menu-text {
+     #userManagementSubmenu .menu-text,
+     #rolesSubmenu .menu-text {
          font-size: calc(var(--menu-font-size) - 1px) !important; /* Font submenu lebih kecil */
          font-weight: 400 !important; /* Font regular, tidak bold */
          line-height: 1.2 !important; /* Line height lebih kecil */
      }
 
      #tenantSubmenu .nav-link:hover,
-     #userManagementSubmenu .nav-link:hover {
+     #userManagementSubmenu .nav-link:hover,
+     #rolesSubmenu .nav-link:hover {
          background-color: rgba(0,0,0,0.05); /* Hover lebih gelap sedikit */
          border-left-color: transparent !important;
      }
 
      #tenantSubmenu .nav-link.active,
-     #userManagementSubmenu .nav-link.active {
+     #userManagementSubmenu .nav-link.active,
+     #rolesSubmenu .nav-link.active {
          background-color: transparent !important;
          border-left-color: transparent !important;
          color: var(--sidebar-text-active) !important;
@@ -465,7 +516,8 @@
      }
 
      #tenantSubmenu .nav-link.active .menu-text,
-     #userManagementSubmenu .nav-link.active .menu-text {
+     #userManagementSubmenu .nav-link.active .menu-text,
+     #rolesSubmenu .nav-link.active .menu-text {
          font-weight: 500 !important; /* Sedikit bold pada active submenu */
      }
 
@@ -639,6 +691,14 @@
             workUnitSubmenu.classList.add('show');
             wuDropdownIcon.style.transform = 'rotate(180deg)';
         }
+        
+        // Roles dropdown - untuk superadmin
+        const rolesSubmenu = document.getElementById('rolesSubmenu');
+        const rolesDropdownIcon = document.getElementById('roles-dropdown-icon');
+        if (rolesSubmenu && rolesDropdownIcon && rolesSubmenu.querySelector('a.active')) {
+            rolesSubmenu.classList.add('show');
+            rolesDropdownIcon.style.transform = 'rotate(180deg)';
+        }
     });
     
     // Fungsi toggle yang lebih efisien untuk User Management dropdown
@@ -667,6 +727,28 @@
     function toggleWorkUnitDropdown() {
         const submenu = document.getElementById('workUnitSubmenu');
         const icon = document.getElementById('wu-dropdown-icon');
+        if (!submenu || !icon) return;
+        
+        // Toggle class show dengan metode yang lebih efisien
+        const isExpanded = submenu.classList.contains('show');
+        
+        // Jika Bootstrap tersedia
+        if (typeof bootstrap !== 'undefined') {
+            const bsCollapse = new bootstrap.Collapse(submenu, { toggle: false });
+            bsCollapse.toggle();
+        } else {
+            // Fallback tanpa Bootstrap
+            submenu.classList.toggle('show');
+        }
+        
+        // Animasikan ikon tanpa setTimeout (lebih efisien)
+        icon.style.transform = isExpanded ? 'rotate(0)' : 'rotate(180deg)';
+    }
+
+    // Fungsi toggle untuk Roles dropdown (superadmin)
+    function toggleRolesDropdown() {
+        const submenu = document.getElementById('rolesSubmenu');
+        const icon = document.getElementById('roles-dropdown-icon');
         if (!submenu || !icon) return;
         
         // Toggle class show dengan metode yang lebih efisien

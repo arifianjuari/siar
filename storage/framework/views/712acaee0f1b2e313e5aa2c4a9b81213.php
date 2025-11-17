@@ -1,21 +1,19 @@
-@extends('roles.superadmin.layout')
+<?php ($hideDefaultHeader = true); ?>
 
-@php($hideDefaultHeader = true)
+<?php $__env->startSection('title', 'Hak Akses Modul Role'); ?>
 
-@section('title', 'Hak Akses Modul Role')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body d-flex justify-content-between align-items-center">
-                    <h2 class="mb-0">Pengaturan Hak Akses Modul: {{ $role->name }}</h2>
+                    <h2 class="mb-0">Pengaturan Hak Akses Modul: <?php echo e($role->name); ?></h2>
                     <div>
-                        <a href="{{ route('superadmin.tenants.roles.edit', [$tenant, $role]) }}" class="btn btn-outline-secondary me-2">
+                        <a href="<?php echo e(route('superadmin.tenants.roles.edit', [$tenant, $role])); ?>" class="btn btn-outline-secondary me-2">
                             <i class="fas fa-pen me-2"></i> Edit Role
                         </a>
-                        <a href="{{ route('superadmin.tenants.show', $tenant) }}" class="btn btn-outline-primary">
+                        <a href="<?php echo e(route('superadmin.tenants.show', $tenant)); ?>" class="btn btn-outline-primary">
                             <i class="fas fa-arrow-left me-2"></i> Kembali
                         </a>
                     </div>
@@ -25,56 +23,59 @@
     </div>
 
     <!-- Alert Messages -->
-    @if (session('success'))
+    <?php if(session('success')): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
+            <?php echo e(session('success')); ?>
+
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    @endif
+    <?php endif; ?>
 
-    @if (session('error'))
+    <?php if(session('error')): ?>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-    
-    @if (session('warning'))
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            {{ session('warning') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
+            <?php echo e(session('error')); ?>
 
-    @if ($errors->any())
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+    
+    <?php if(session('warning')): ?>
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <?php echo e(session('warning')); ?>
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
+    <?php if($errors->any()): ?>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-                @endforeach
+                <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <li><?php echo e($error); ?></li>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </ul>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    @endif
+    <?php endif; ?>
 
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Hak Akses Role: <span class="fw-bold">{{ $role->name }}</span></h5>
+                        <h5 class="mb-0">Hak Akses Role: <span class="fw-bold"><?php echo e($role->name); ?></span></h5>
                         <div class="d-flex gap-2">
                             <button type="button" id="check-all" class="btn btn-sm btn-outline-primary">Centang Semua</button>
                             <button type="button" id="uncheck-all" class="btn btn-sm btn-outline-secondary">Hapus Semua Centang</button>
                         </div>
                     </div>
-                    <p class="text-muted small mb-0">Pilih akses yang diizinkan untuk role {{ $role->name }} di tenant {{ $tenant->name }}</p>
+                    <p class="text-muted small mb-0">Pilih akses yang diizinkan untuk role <?php echo e($role->name); ?> di tenant <?php echo e($tenant->name); ?></p>
                 </div>
                 
                 <div class="card-body">
-                    <form id="permission-form" action="{{ route('superadmin.tenants.roles.permissions.update', [$tenant, $role]) }}" method="POST">
-                        @csrf
-                        @method('PUT')
+                    <form id="permission-form" action="<?php echo e(route('superadmin.tenants.roles.permissions.update', [$tenant, $role])); ?>" method="POST">
+                        <?php echo csrf_field(); ?>
+                        <?php echo method_field('PUT'); ?>
 
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
@@ -85,94 +86,105 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($modules as $module)
-                                    <tr id="module-row-{{ $module->id }}">
-                                        <td>{{ $module->name }}</td>
+                                    <?php $__currentLoopData = $modules; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $module): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <tr id="module-row-<?php echo e($module->id); ?>">
+                                        <td><?php echo e($module->name); ?></td>
                                         <td>
                                             <div class="d-flex flex-wrap gap-3">
-                                                <input type="hidden" name="permissions[{{ $module->id }}][module_id]" value="{{ $module->id }}">
+                                                <input type="hidden" name="permissions[<?php echo e($module->id); ?>][module_id]" value="<?php echo e($module->id); ?>">
                                                 
                                                 <div class="form-check me-3">
                                                     <input type="checkbox" class="form-check-input view-permission" 
-                                                        id="can_view_{{ $module->id }}" 
-                                                        name="permissions[{{ $module->id }}][can_view]" 
+                                                        id="can_view_<?php echo e($module->id); ?>" 
+                                                        name="permissions[<?php echo e($module->id); ?>][can_view]" 
                                                         value="1"
-                                                        {{ isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_view === 1 ? 'checked' : '' }}
-                                                        data-module-id="{{ $module->id }}">
-                                                    <label class="form-check-label" for="can_view_{{ $module->id }}">Lihat</label>
+                                                        <?php echo e(isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_view === 1 ? 'checked' : ''); ?>
+
+                                                        data-module-id="<?php echo e($module->id); ?>">
+                                                    <label class="form-check-label" for="can_view_<?php echo e($module->id); ?>">Lihat</label>
                                                 </div>
                                                 
                                                 <div class="form-check me-3">
                                                     <input type="checkbox" class="form-check-input other-permission" 
-                                                        id="can_create_{{ $module->id }}" 
-                                                        name="permissions[{{ $module->id }}][can_create]" 
+                                                        id="can_create_<?php echo e($module->id); ?>" 
+                                                        name="permissions[<?php echo e($module->id); ?>][can_create]" 
                                                         value="1"
-                                                        {{ isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_create === 1 ? 'checked' : '' }}
-                                                        {{ isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_view === 1 ? '' : 'disabled' }}
-                                                        data-module-id="{{ $module->id }}">
-                                                    <label class="form-check-label" for="can_create_{{ $module->id }}">Tambah</label>
+                                                        <?php echo e(isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_create === 1 ? 'checked' : ''); ?>
+
+                                                        <?php echo e(isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_view === 1 ? '' : 'disabled'); ?>
+
+                                                        data-module-id="<?php echo e($module->id); ?>">
+                                                    <label class="form-check-label" for="can_create_<?php echo e($module->id); ?>">Tambah</label>
                                                 </div>
                                                 
                                                 <div class="form-check me-3">
                                                     <input type="checkbox" class="form-check-input other-permission" 
-                                                        id="can_edit_{{ $module->id }}" 
-                                                        name="permissions[{{ $module->id }}][can_edit]" 
+                                                        id="can_edit_<?php echo e($module->id); ?>" 
+                                                        name="permissions[<?php echo e($module->id); ?>][can_edit]" 
                                                         value="1"
-                                                        {{ isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_edit === 1 ? 'checked' : '' }}
-                                                        {{ isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_view === 1 ? '' : 'disabled' }}
-                                                        data-module-id="{{ $module->id }}">
-                                                    <label class="form-check-label" for="can_edit_{{ $module->id }}">Edit</label>
+                                                        <?php echo e(isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_edit === 1 ? 'checked' : ''); ?>
+
+                                                        <?php echo e(isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_view === 1 ? '' : 'disabled'); ?>
+
+                                                        data-module-id="<?php echo e($module->id); ?>">
+                                                    <label class="form-check-label" for="can_edit_<?php echo e($module->id); ?>">Edit</label>
                                                 </div>
                                                 
                                                 <div class="form-check me-3">
                                                     <input type="checkbox" class="form-check-input other-permission" 
-                                                        id="can_delete_{{ $module->id }}" 
-                                                        name="permissions[{{ $module->id }}][can_delete]" 
+                                                        id="can_delete_<?php echo e($module->id); ?>" 
+                                                        name="permissions[<?php echo e($module->id); ?>][can_delete]" 
                                                         value="1"
-                                                        {{ isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_delete === 1 ? 'checked' : '' }}
-                                                        {{ isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_view === 1 ? '' : 'disabled' }}
-                                                        data-module-id="{{ $module->id }}">
-                                                    <label class="form-check-label" for="can_delete_{{ $module->id }}">Hapus</label>
+                                                        <?php echo e(isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_delete === 1 ? 'checked' : ''); ?>
+
+                                                        <?php echo e(isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_view === 1 ? '' : 'disabled'); ?>
+
+                                                        data-module-id="<?php echo e($module->id); ?>">
+                                                    <label class="form-check-label" for="can_delete_<?php echo e($module->id); ?>">Hapus</label>
                                                 </div>
                                                 
                                                 <div class="form-check me-3">
                                                     <input type="checkbox" class="form-check-input other-permission" 
-                                                        id="can_export_{{ $module->id }}" 
-                                                        name="permissions[{{ $module->id }}][can_export]" 
+                                                        id="can_export_<?php echo e($module->id); ?>" 
+                                                        name="permissions[<?php echo e($module->id); ?>][can_export]" 
                                                         value="1"
-                                                        {{ isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_export === 1 ? 'checked' : '' }}
-                                                        {{ isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_view === 1 ? '' : 'disabled' }}
-                                                        data-module-id="{{ $module->id }}">
-                                                    <label class="form-check-label" for="can_export_{{ $module->id }}">Export</label>
+                                                        <?php echo e(isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_export === 1 ? 'checked' : ''); ?>
+
+                                                        <?php echo e(isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_view === 1 ? '' : 'disabled'); ?>
+
+                                                        data-module-id="<?php echo e($module->id); ?>">
+                                                    <label class="form-check-label" for="can_export_<?php echo e($module->id); ?>">Export</label>
                                                 </div>
                                                 
                                                 <div class="form-check me-3">
                                                     <input type="checkbox" class="form-check-input other-permission" 
-                                                        id="can_import_{{ $module->id }}" 
-                                                        name="permissions[{{ $module->id }}][can_import]" 
+                                                        id="can_import_<?php echo e($module->id); ?>" 
+                                                        name="permissions[<?php echo e($module->id); ?>][can_import]" 
                                                         value="1"
-                                                        {{ isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_import === 1 ? 'checked' : '' }}
-                                                        {{ isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_view === 1 ? '' : 'disabled' }}
-                                                        data-module-id="{{ $module->id }}">
-                                                    <label class="form-check-label" for="can_import_{{ $module->id }}">Import</label>
+                                                        <?php echo e(isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_import === 1 ? 'checked' : ''); ?>
+
+                                                        <?php echo e(isset($rolePermissions[$module->id]) && (int)$rolePermissions[$module->id]->can_view === 1 ? '' : 'disabled'); ?>
+
+                                                        data-module-id="<?php echo e($module->id); ?>">
+                                                    <label class="form-check-label" for="can_import_<?php echo e($module->id); ?>">Import</label>
                                                 </div>
                                             </div>
                                         </td>
                                     </tr>
-                                    @endforeach
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     
-                                    @if(count($modules) === 0)
+                                    <?php if(count($modules) === 0): ?>
                                     <tr>
                                         <td colspan="2" class="text-center">Tidak ada modul yang tersedia</td>
                                     </tr>
-                                    @endif
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
                         
                         <!-- Form buttons -->
                         <div class="mt-3 d-flex justify-content-between align-items-center">
-                            <a href="{{ route('superadmin.tenants.show', $tenant) }}" class="btn btn-outline-secondary">
+                            <a href="<?php echo e(route('superadmin.tenants.show', $tenant)); ?>" class="btn btn-outline-secondary">
                                 <i class="fas fa-arrow-left me-1"></i> Kembali
                             </a>
                             <button type="submit" class="btn btn-primary">
@@ -185,9 +197,9 @@
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Form submit debugging
@@ -253,4 +265,5 @@
         });
     });
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+<?php echo $__env->make('roles.superadmin.layout', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Users/arifianjuari/Library/CloudStorage/GoogleDrive-arifianjuari@gmail.com/My Drive/01 PAPA/05 DEVELOPMENT/siar/resources/views/roles/superadmin/tenants/roles/permissions.blade.php ENDPATH**/ ?>

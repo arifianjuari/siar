@@ -127,13 +127,17 @@ class TenantProvisionCommand extends Command
      */
     private function createAdminRole(Tenant $tenant): Role
     {
-        return Role::create([
-            'tenant_id' => $tenant->id,
-            'name' => 'Tenant Admin',
-            'slug' => 'tenant-admin',
-            'description' => 'Administrator untuk tenant ' . $tenant->name,
-            'is_active' => true,
-        ]);
+        return Role::firstOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'slug' => 'tenant-admin',
+            ],
+            [
+                'name' => 'Tenant Admin',
+                'description' => 'Administrator untuk tenant ' . $tenant->name,
+                'is_active' => true,
+            ]
+        );
     }
 
     /**

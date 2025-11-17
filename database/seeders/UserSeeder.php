@@ -29,24 +29,22 @@ class UserSeeder extends Seeder
 
         $this->command->info("Menggunakan tenant: {$tenant->name}");
 
-        // Cari role superadmin
-        $superAdminRole = Role::where('slug', 'superadmin')->first();
-
-        // Jika role superadmin tidak ada, buat baru
-        if (!$superAdminRole) {
-            $this->command->info('Membuat role superadmin...');
-
-            // Buat role superadmin jika tidak ada
-            $superAdminRole = Role::create([
+        // Buat atau ambil role superadmin
+        $this->command->info('Membuat/mengambil role superadmin...');
+        
+        $superAdminRole = Role::firstOrCreate(
+            [
                 'tenant_id' => 1, // System tenant
-                'name' => 'Superadmin',
                 'slug' => 'superadmin',
+            ],
+            [
+                'name' => 'Superadmin',
                 'description' => 'Super Administrator dengan akses penuh ke sistem',
                 'is_active' => true,
-            ]);
+            ]
+        );
 
-            $this->command->info('Role superadmin berhasil dibuat.');
-        }
+        $this->command->info('Role superadmin berhasil dibuat/diambil.');
 
         // Buat user superadmin
         $superAdmin = User::firstOrCreate(
@@ -55,7 +53,7 @@ class UserSeeder extends Seeder
                 'tenant_id' => 1, // System tenant
                 'role_id' => $superAdminRole->id,
                 'name' => 'Superadmin',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('asdfasdf'),
                 'is_active' => true,
             ]
         );

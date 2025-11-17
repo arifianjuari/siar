@@ -110,9 +110,22 @@ Untuk menjalankan di localhost:
    ```
 5. Akses tenant di browser: `http://[tenant-domain].127.0.0.1:8000`
 
-### 3. Online (Production)
+### 3. Laravel Cloud (Production)
 
-Untuk menjalankan di server online:
+Untuk deploy ke Laravel Cloud:
+
+1. Pastikan repository GitHub sudah ditautkan ke Laravel Cloud
+2. Ikuti panduan lengkap di [docs/laravel-cloud-setup.md](docs/laravel-cloud-setup.md)
+3. Konfigurasi environment variables di Laravel Cloud dashboard
+4. Pastikan build script sudah dikonfigurasi
+5. Jalankan migrasi dan seeder setelah deploy pertama
+6. Gunakan checklist di [docs/laravel-cloud-checklist.md](docs/laravel-cloud-checklist.md)
+
+**Panduan Lengkap:** Lihat [docs/laravel-cloud-setup.md](docs/laravel-cloud-setup.md)
+
+### 4. Server Online Lainnya (Production)
+
+Untuk menjalankan di server online (VPS/Shared Hosting):
 
 1. Konfigurasi .env:
    ```

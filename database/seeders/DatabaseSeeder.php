@@ -13,10 +13,21 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Call KendaliMutuBiayaSeeder
-        $this->call(KendaliMutuBiayaSeeder::class);
-
-        // Call KendaliMutuBiayaModuleSeeder
-        $this->call(KendaliMutuBiayaModuleSeeder::class);
+        // Seeder inti modul dan relasi akses
+        $this->call([
+            ModuleSeeder::class,
+            UserManagementModuleSeeder::class,
+            SPOManagementModuleSeeder::class,
+            RiskManagementModuleSeeder::class,
+            WorkUnitModuleSeeder::class,
+            CorrespondenceManagementModuleSeeder::class,
+            DocumentManagementModuleSeeder::class,
+            PerformanceManagementModuleSeeder::class,
+            ModuleProductSeeder::class,
+            TenantModuleSeeder::class,
+            RoleModulePermissionSeeder::class,
+            KendaliMutuBiayaSeeder::class,
+            KendaliMutuBiayaModuleSeeder::class,
+        ]);
     }
 }

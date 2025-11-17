@@ -1,26 +1,24 @@
-@extends('layouts.app')
+<?php ($hideDefaultHeader = true); ?>
 
-@php($hideDefaultHeader = true)
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body d-flex justify-content-between align-items-center">
-                    <h2 class="mb-0">Detail Tenant: {{ $tenant->name }}</h2>
+                    <h2 class="mb-0">Detail Tenant: <?php echo e($tenant->name); ?></h2>
                     <div>
-                        <a href="{{ route('superadmin.tenants.edit', $tenant) }}" class="btn btn-success me-2">
+                        <a href="<?php echo e(route('superadmin.tenants.edit', $tenant)); ?>" class="btn btn-success me-2">
                             <i class="fas fa-edit me-2"></i> Edit Tenant
                         </a>
-                        <form action="{{ route('superadmin.tenants.destroy', $tenant) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus tenant ini?');">
-                            @csrf
-                            @method('DELETE')
+                        <form action="<?php echo e(route('superadmin.tenants.destroy', $tenant)); ?>" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus tenant ini?');">
+                            <?php echo csrf_field(); ?>
+                            <?php echo method_field('DELETE'); ?>
                             <button type="submit" class="btn btn-danger me-2">
                                 <i class="fas fa-trash me-2"></i> Hapus Tenant
                             </button>
                         </form>
-                        <a href="{{ route('superadmin.tenants.index') }}" class="btn btn-outline-primary">
+                        <a href="<?php echo e(route('superadmin.tenants.index')); ?>" class="btn btn-outline-primary">
                             <i class="fas fa-arrow-left me-2"></i> Kembali
                         </a>
                     </div>
@@ -30,19 +28,21 @@
     </div>
 
     <!-- Alert Messages -->
-    @if (session('success'))
+    <?php if(session('success')): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
+            <?php echo e(session('success')); ?>
 
-    @if (session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    @endif
+    <?php endif; ?>
+
+    <?php if(session('error')): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?php echo e(session('error')); ?>
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
 
     <div class="row">
         <!-- Informasi Tenant -->
@@ -54,31 +54,32 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
                         <span class="text-muted">ID</span>
-                        <strong>{{ $tenant->id }}</strong>
+                        <strong><?php echo e($tenant->id); ?></strong>
                     </div>
                     <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
                         <span class="text-muted">Nama</span>
-                        <strong>{{ $tenant->name }}</strong>
+                        <strong><?php echo e($tenant->name); ?></strong>
                     </div>
                     <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
                         <span class="text-muted">Domain</span>
-                        <strong>{{ $tenant->domain }}</strong>
+                        <strong><?php echo e($tenant->domain); ?></strong>
                     </div>
                     <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
                         <span class="text-muted">Database</span>
-                        <code>{{ $tenant->database }}</code>
+                        <code><?php echo e($tenant->database); ?></code>
                     </div>
                     <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
                         <span class="text-muted">Status</span>
-                        {!! $tenant->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-danger">Nonaktif</span>' !!}
+                        <?php echo $tenant->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-danger">Nonaktif</span>'; ?>
+
                     </div>
                     <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
                         <span class="text-muted">Dibuat Pada</span>
-                        <span>{{ $tenant->created_at->format('d M Y H:i') }}</span>
+                        <span><?php echo e($tenant->created_at->format('d M Y H:i')); ?></span>
                     </div>
                     <div class="d-flex justify-content-between">
                         <span class="text-muted">Diperbarui Pada</span>
-                        <span>{{ $tenant->updated_at->format('d M Y H:i') }}</span>
+                        <span><?php echo e($tenant->updated_at->format('d M Y H:i')); ?></span>
                     </div>
                 </div>
             </div>
@@ -91,15 +92,15 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
                         <span class="text-muted">Total Pengguna</span>
-                        <span class="badge bg-info">{{ $userCount }}</span>
+                        <span class="badge bg-info"><?php echo e($userCount); ?></span>
                     </div>
                     <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
                         <span class="text-muted">Modul Aktif</span>
-                        <span class="badge bg-primary">{{ $activeModules }}</span>
+                        <span class="badge bg-primary"><?php echo e($activeModules); ?></span>
                     </div>
                     <div class="d-flex justify-content-between">
                         <span class="text-muted">Total Peran</span>
-                        <span class="badge bg-warning">{{ $tenant->roles->count() }}</span>
+                        <span class="badge bg-warning"><?php echo e($tenant->roles->count()); ?></span>
                     </div>
                 </div>
             </div>
@@ -123,35 +124,37 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($tenant->modules as $module)
+                                <?php $__currentLoopData = $tenant->modules; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $module): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                     <tr>
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="me-2 bg-light rounded p-2">
-                                                    <i class="fas {{ $module->icon ?? 'fa-cube' }}"></i>
+                                                    <i class="fas <?php echo e($module->icon ?? 'fa-cube'); ?>"></i>
                                                 </div>
-                                                <strong>{{ $module->name }}</strong>
+                                                <strong><?php echo e($module->name); ?></strong>
                                             </div>
                                         </td>
-                                        <td>{{ $module->description ?? 'Tidak ada deskripsi' }}</td>
+                                        <td><?php echo e($module->description ?? 'Tidak ada deskripsi'); ?></td>
                                         <td>
-                                            <span id="module-status-{{ $module->id }}" class="badge {{ $module->pivot->is_active ? 'bg-success' : 'bg-danger' }}">
-                                                {{ $module->pivot->is_active ? 'Aktif' : 'Nonaktif' }}
+                                            <span id="module-status-<?php echo e($module->id); ?>" class="badge <?php echo e($module->pivot->is_active ? 'bg-success' : 'bg-danger'); ?>">
+                                                <?php echo e($module->pivot->is_active ? 'Aktif' : 'Nonaktif'); ?>
+
                                             </span>
                                         </td>
                                         <td>
                                             <button 
                                                 type="button" 
-                                                class="btn btn-sm {{ $module->pivot->is_active ? 'btn-outline-danger' : 'btn-outline-success' }} toggle-module"
-                                                data-module-id="{{ $module->id }}"
-                                                data-tenant-id="{{ $tenant->id }}"
-                                                data-current-status="{{ $module->pivot->is_active ? '1' : '0' }}"
+                                                class="btn btn-sm <?php echo e($module->pivot->is_active ? 'btn-outline-danger' : 'btn-outline-success'); ?> toggle-module"
+                                                data-module-id="<?php echo e($module->id); ?>"
+                                                data-tenant-id="<?php echo e($tenant->id); ?>"
+                                                data-current-status="<?php echo e($module->pivot->is_active ? '1' : '0'); ?>"
                                             >
-                                                {{ $module->pivot->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
+                                                <?php echo e($module->pivot->is_active ? 'Nonaktifkan' : 'Aktifkan'); ?>
+
                                             </button>
                                         </td>
                                     </tr>
-                                @endforeach
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </tbody>
                         </table>
                     </div>
@@ -175,30 +178,30 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($adminUsers as $admin)
+                                <?php $__currentLoopData = $adminUsers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $admin): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                     <tr>
-                                        <td>{{ $admin->name }}</td>
-                                        <td>{{ $admin->email }}</td>
-                                        <td>{!! $admin->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-danger">Nonaktif</span>' !!}</td>
+                                        <td><?php echo e($admin->name); ?></td>
+                                        <td><?php echo e($admin->email); ?></td>
+                                        <td><?php echo $admin->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-danger">Nonaktif</span>'; ?></td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#resetPasswordModal{{ $admin->id }}">
+                                            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#resetPasswordModal<?php echo e($admin->id); ?>">
                                                 <i class="fas fa-key me-1"></i> Reset Password
                                             </button>
 
                                             <!-- Modal Reset Password -->
-                                            <div class="modal fade" id="resetPasswordModal{{ $admin->id }}" tabindex="-1" aria-labelledby="resetPasswordModalLabel{{ $admin->id }}" aria-hidden="true">
+                                            <div class="modal fade" id="resetPasswordModal<?php echo e($admin->id); ?>" tabindex="-1" aria-labelledby="resetPasswordModalLabel<?php echo e($admin->id); ?>" aria-hidden="true">
                                                 <div class="modal-dialog">
                                                     <div class="modal-content">
-                                                        <form action="{{ route('superadmin.tenants.reset-admin-password', $tenant) }}" method="POST">
-                                                            @csrf
-                                                            <input type="hidden" name="user_id" value="{{ $admin->id }}">
+                                                        <form action="<?php echo e(route('superadmin.tenants.reset-admin-password', $tenant)); ?>" method="POST">
+                                                            <?php echo csrf_field(); ?>
+                                                            <input type="hidden" name="user_id" value="<?php echo e($admin->id); ?>">
                                                             
                                                             <div class="modal-header">
-                                                                <h5 class="modal-title" id="resetPasswordModalLabel{{ $admin->id }}">Reset Password Admin</h5>
+                                                                <h5 class="modal-title" id="resetPasswordModalLabel<?php echo e($admin->id); ?>">Reset Password Admin</h5>
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                             </div>
                                                             <div class="modal-body">
-                                                                <p>Anda akan mereset password untuk admin <strong>{{ $admin->name }}</strong>.</p>
+                                                                <p>Anda akan mereset password untuk admin <strong><?php echo e($admin->name); ?></strong>.</p>
                                                                 
                                                                 <div class="mb-3">
                                                                     <label for="new_password" class="form-label">Password Baru</label>
@@ -216,7 +219,7 @@
                                             </div>
                                         </td>
                                     </tr>
-                                @endforeach
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </tbody>
                         </table>
                     </div>
@@ -231,7 +234,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Manajemen Role</h5>
-                    <a href="{{ route('superadmin.tenants.roles.create', $tenant) }}" class="btn btn-primary btn-sm">
+                    <a href="<?php echo e(route('superadmin.tenants.roles.create', $tenant)); ?>" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus me-1"></i> Tambah Role Baru
                     </a>
                 </div>
@@ -249,67 +252,67 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($tenant->roles as $role)
+                                <?php $__empty_1 = true; $__currentLoopData = $tenant->roles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $role): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                     <tr>
-                                        <td>{{ $role->name }}</td>
-                                        <td><code>{{ $role->slug }}</code></td>
-                                        <td>{{ $role->description ?? 'Tidak ada deskripsi' }}</td>
-                                        <td>{!! $role->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-danger">Nonaktif</span>' !!}</td>
-                                        <td><span class="badge bg-info">{{ $role->users->count() }}</span></td>
+                                        <td><?php echo e($role->name); ?></td>
+                                        <td><code><?php echo e($role->slug); ?></code></td>
+                                        <td><?php echo e($role->description ?? 'Tidak ada deskripsi'); ?></td>
+                                        <td><?php echo $role->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-danger">Nonaktif</span>'; ?></td>
+                                        <td><span class="badge bg-info"><?php echo e($role->users->count()); ?></span></td>
                                         <td class="text-center">
                                             <div class="btn-group" role="group">
-                                                <a href="{{ route('superadmin.tenants.roles.edit', [$tenant, $role]) }}" class="btn btn-sm btn-outline-primary">
+                                                <a href="<?php echo e(route('superadmin.tenants.roles.edit', [$tenant, $role])); ?>" class="btn btn-sm btn-outline-primary">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 
-                                                <a href="{{ route('superadmin.tenants.roles.permissions.edit', [$tenant, $role]) }}" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Atur Hak Akses">
+                                                <a href="<?php echo e(route('superadmin.tenants.roles.permissions.edit', [$tenant, $role])); ?>" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Atur Hak Akses">
                                                     <i class="fas fa-key"></i>
                                                 </a>
                                                 
-                                                @if($role->slug !== 'tenant-admin')
-                                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteRoleModal{{ $role->id }}">
+                                                <?php if($role->slug !== 'tenant-admin'): ?>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteRoleModal<?php echo e($role->id); ?>">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                     
                                                     <!-- Modal Konfirmasi Hapus Role -->
-                                                    <div class="modal fade" id="deleteRoleModal{{ $role->id }}" tabindex="-1" aria-labelledby="deleteRoleModalLabel{{ $role->id }}" aria-hidden="true">
+                                                    <div class="modal fade" id="deleteRoleModal<?php echo e($role->id); ?>" tabindex="-1" aria-labelledby="deleteRoleModalLabel<?php echo e($role->id); ?>" aria-hidden="true">
                                                         <div class="modal-dialog">
                                                             <div class="modal-content">
                                                                 <div class="modal-header">
-                                                                    <h5 class="modal-title" id="deleteRoleModalLabel{{ $role->id }}">Konfirmasi Hapus Role</h5>
+                                                                    <h5 class="modal-title" id="deleteRoleModalLabel<?php echo e($role->id); ?>">Konfirmasi Hapus Role</h5>
                                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                                 </div>
                                                                 <div class="modal-body">
-                                                                    <p>Anda yakin ingin menghapus role <strong>{{ $role->name }}</strong>?</p>
-                                                                    @if($role->users->count() > 0)
+                                                                    <p>Anda yakin ingin menghapus role <strong><?php echo e($role->name); ?></strong>?</p>
+                                                                    <?php if($role->users->count() > 0): ?>
                                                                         <div class="alert alert-warning">
                                                                             <i class="fas fa-exclamation-triangle me-2"></i>
-                                                                            Role ini sedang digunakan oleh {{ $role->users->count() }} pengguna. Hapus atau pindahkan pengguna terlebih dahulu.
+                                                                            Role ini sedang digunakan oleh <?php echo e($role->users->count()); ?> pengguna. Hapus atau pindahkan pengguna terlebih dahulu.
                                                                         </div>
-                                                                    @endif
+                                                                    <?php endif; ?>
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                                                    <form action="{{ route('superadmin.tenants.roles.destroy', [$tenant, $role]) }}" method="POST">
-                                                                        @csrf
-                                                                        @method('DELETE')
-                                                                        <button type="submit" class="btn btn-danger" {{ $role->users->count() > 0 ? 'disabled' : '' }}>Hapus</button>
+                                                                    <form action="<?php echo e(route('superadmin.tenants.roles.destroy', [$tenant, $role])); ?>" method="POST">
+                                                                        <?php echo csrf_field(); ?>
+                                                                        <?php echo method_field('DELETE'); ?>
+                                                                        <button type="submit" class="btn btn-danger" <?php echo e($role->users->count() > 0 ? 'disabled' : ''); ?>>Hapus</button>
                                                                     </form>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                @endif
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>
-                                @empty
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                     <tr>
                                         <td colspan="6" class="text-center py-3 text-muted">
                                             Belum ada role yang dibuat untuk tenant ini.
                                         </td>
                                     </tr>
-                                @endforelse
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -324,7 +327,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Manajemen Pengguna</h5>
-                    <a href="{{ route('superadmin.tenants.users.create', $tenant) }}" class="btn btn-primary btn-sm">
+                    <a href="<?php echo e(route('superadmin.tenants.users.create', $tenant)); ?>" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus me-1"></i> Tambah Pengguna Baru
                     </a>
                 </div>
@@ -342,45 +345,45 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($users as $user)
+                                <?php $__empty_1 = true; $__currentLoopData = $users; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $user): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                     <tr>
-                                        <td>{{ $user->name }}</td>
-                                        <td>{{ $user->email }}</td>
-                                        <td>{{ $user->role ? $user->role->name : '-' }}</td>
-                                        <td>{!! $user->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-danger">Nonaktif</span>' !!}</td>
-                                        <td>{{ $user->last_login_at ? $user->last_login_at->format('d M Y H:i') : 'Belum Pernah Login' }}</td>
+                                        <td><?php echo e($user->name); ?></td>
+                                        <td><?php echo e($user->email); ?></td>
+                                        <td><?php echo e($user->role ? $user->role->name : '-'); ?></td>
+                                        <td><?php echo $user->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-danger">Nonaktif</span>'; ?></td>
+                                        <td><?php echo e($user->last_login_at ? $user->last_login_at->format('d M Y H:i') : 'Belum Pernah Login'); ?></td>
                                         <td class="text-center">
                                             <div class="btn-group" role="group">
-                                                <a href="{{ route('superadmin.tenants.users.edit', [$tenant, $user]) }}" class="btn btn-sm btn-outline-primary">
+                                                <a href="<?php echo e(route('superadmin.tenants.users.edit', [$tenant, $user])); ?>" class="btn btn-sm btn-outline-primary">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 
-                                                <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#resetPasswordModal{{ $user->id }}">
+                                                <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#resetPasswordModal<?php echo e($user->id); ?>">
                                                     <i class="fas fa-key"></i>
                                                 </button>
 
-                                                @if($user->id !== auth()->id() && !$user->hasRole('tenant-admin'))
-                                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ $user->id }}">
+                                                <?php if($user->id !== auth()->id() && !$user->hasRole('tenant-admin')): ?>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal<?php echo e($user->id); ?>">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
-                                                @endif
+                                                <?php endif; ?>
                                             </div>
 
                                             <!-- Modal Reset Password -->
-                                            <div class="modal fade" id="resetPasswordModal{{ $user->id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal fade" id="resetPasswordModal<?php echo e($user->id); ?>" tabindex="-1" aria-hidden="true">
                                                 <div class="modal-dialog">
                                                     <div class="modal-content">
-                                                        <form action="{{ route('superadmin.tenants.users.reset-password', [$tenant, $user]) }}" method="POST">
-                                                            @csrf
+                                                        <form action="<?php echo e(route('superadmin.tenants.users.reset-password', [$tenant, $user])); ?>" method="POST">
+                                                            <?php echo csrf_field(); ?>
                                                             <div class="modal-header">
                                                                 <h5 class="modal-title">Reset Password Pengguna</h5>
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                             </div>
                                                             <div class="modal-body">
-                                                                <p>Anda akan mereset password untuk pengguna <strong>{{ $user->name }}</strong>.</p>
+                                                                <p>Anda akan mereset password untuk pengguna <strong><?php echo e($user->name); ?></strong>.</p>
                                                                 <div class="mb-3">
-                                                                    <label for="new_password{{ $user->id }}" class="form-label">Password Baru</label>
-                                                                    <input type="password" class="form-control" id="new_password{{ $user->id }}" name="new_password" required>
+                                                                    <label for="new_password<?php echo e($user->id); ?>" class="form-label">Password Baru</label>
+                                                                    <input type="password" class="form-control" id="new_password<?php echo e($user->id); ?>" name="new_password" required>
                                                                     <div class="form-text">Password minimal 8 karakter.</div>
                                                                 </div>
                                                             </div>
@@ -394,8 +397,8 @@
                                             </div>
 
                                             <!-- Modal Konfirmasi Hapus -->
-                                            @if($user->id !== auth()->id() && !$user->hasRole('tenant-admin'))
-                                                <div class="modal fade" id="deleteUserModal{{ $user->id }}" tabindex="-1" aria-hidden="true">
+                                            <?php if($user->id !== auth()->id() && !$user->hasRole('tenant-admin')): ?>
+                                                <div class="modal fade" id="deleteUserModal<?php echo e($user->id); ?>" tabindex="-1" aria-hidden="true">
                                                     <div class="modal-dialog">
                                                         <div class="modal-content">
                                                             <div class="modal-header">
@@ -403,48 +406,49 @@
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                             </div>
                                                             <div class="modal-body">
-                                                                <p>Anda yakin ingin menghapus pengguna <strong>{{ $user->name }}</strong>?</p>
+                                                                <p>Anda yakin ingin menghapus pengguna <strong><?php echo e($user->name); ?></strong>?</p>
                                                                 <p class="text-danger"><small>Tindakan ini tidak dapat dibatalkan.</small></p>
                                                             </div>
                                                             <div class="modal-footer">
                                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                                                <form action="{{ route('superadmin.tenants.users.destroy', [$tenant, $user]) }}" method="POST">
-                                                                    @csrf
-                                                                    @method('DELETE')
+                                                                <form action="<?php echo e(route('superadmin.tenants.users.destroy', [$tenant, $user])); ?>" method="POST">
+                                                                    <?php echo csrf_field(); ?>
+                                                                    <?php echo method_field('DELETE'); ?>
                                                                     <button type="submit" class="btn btn-danger">Hapus</button>
                                                                 </form>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            @endif
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
-                                @empty
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                     <tr>
                                         <td colspan="6" class="text-center py-3 text-muted">
                                             Belum ada pengguna yang terdaftar di tenant ini.
                                         </td>
                                     </tr>
-                                @endforelse
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
 
-                    @if($users->hasPages())
+                    <?php if($users->hasPages()): ?>
                         <div class="d-flex justify-content-end mt-3">
-                            {{ $users->links() }}
+                            <?php echo e($users->links()); ?>
+
                         </div>
-                    @endif
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Toggle module status
@@ -515,4 +519,5 @@
         });
     });
 </script>
-@endpush 
+<?php $__env->stopPush(); ?> 
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Users/arifianjuari/Library/CloudStorage/GoogleDrive-arifianjuari@gmail.com/My Drive/01 PAPA/05 DEVELOPMENT/siar/resources/views/roles/superadmin/tenants/show.blade.php ENDPATH**/ ?>

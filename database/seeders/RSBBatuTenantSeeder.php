@@ -25,16 +25,20 @@ class RSBBatuTenantSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        // Buat role tenant admin
-        $adminRole = Role::create([
-            'tenant_id' => $tenant->id,
-            'name' => 'Tenant Admin',
-            'slug' => 'tenant-admin',
-            'description' => 'Administrator RS Bhayangkara Tk.III Hasta Brata Batu',
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // Buat role tenant admin (or get existing)
+        $adminRole = Role::firstOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'slug' => 'tenant-admin',
+            ],
+            [
+                'name' => 'Tenant Admin',
+                'description' => 'Administrator RS Bhayangkara Tk.III Hasta Brata Batu',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
 
         // Buat user admin
         $adminUser = User::create([
