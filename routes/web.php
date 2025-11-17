@@ -205,6 +205,66 @@ Route::get('/debug-session-test', function () {
     ]);
 })->middleware('web');
 
+// Debug route untuk cek database sessions
+Route::get('/debug-database', function () {
+    $errors = [];
+    $sessionsData = null;
+    $migrationsData = null;
+    
+    // Cek tabel sessions
+    try {
+        $sessionsData = [
+            'exists' => true,
+            'count' => DB::table('sessions')->count(),
+            'recent_5' => DB::table('sessions')
+                ->orderBy('last_activity', 'desc')
+                ->limit(5)
+                ->get()
+                ->map(function ($session) {
+                    return [
+                        'id' => substr($session->id, 0, 20) . '...',
+                        'user_id' => $session->user_id,
+                        'ip_address' => $session->ip_address,
+                        'last_activity' => date('Y-m-d H:i:s', $session->last_activity),
+                        'payload_length' => strlen($session->payload),
+                    ];
+                }),
+        ];
+    } catch (\Exception $e) {
+        $errors[] = 'Sessions table error: ' . $e->getMessage();
+        $sessionsData = ['exists' => false, 'error' => $e->getMessage()];
+    }
+    
+    // Cek migrations
+    try {
+        $migrationsData = DB::table('migrations')
+            ->where('migration', 'like', '%sessions%')
+            ->get(['migration', 'batch']);
+    } catch (\Exception $e) {
+        $errors[] = 'Migrations error: ' . $e->getMessage();
+    }
+    
+    return response()->json([
+        'database_connection' => [
+            'default' => config('database.default'),
+            'connection' => env('DB_CONNECTION'),
+            'database' => env('DB_DATABASE'),
+        ],
+        'session_config' => [
+            'driver' => config('session.driver'),
+            'connection' => config('session.connection'),
+            'table' => config('session.table'),
+        ],
+        'sessions_table' => $sessionsData,
+        'migrations' => $migrationsData,
+        'errors' => $errors,
+        'current_session' => [
+            'id' => session()->getId(),
+            'data_keys' => array_keys(session()->all()),
+        ],
+    ]);
+})->middleware('web');
+
 // Route untuk create/reset superadmin user (TEMPORARY - HAPUS SETELAH PRODUCTION)
 Route::get('/setup-superadmin', function () {
     try {
