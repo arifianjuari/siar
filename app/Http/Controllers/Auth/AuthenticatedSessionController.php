@@ -175,7 +175,21 @@ class AuthenticatedSessionController extends Controller
             // Pastikan cookie domain null jika kosong (bukan empty string)
             $cookieDomain = !empty($cookieDomain) ? $cookieDomain : null;
             
-            // Gunakan withCookie() untuk memastikan cookie ter-set
+            // PENTING: Hapus cookie lama terlebih dahulu untuk memastikan cookie baru ter-set
+            // Ini penting karena browser mungkin tidak update cookie jika ada cookie lama dengan attributes berbeda
+            $oldCookieValue = $request->cookie($cookieName);
+            if ($oldCookieValue && $oldCookieValue !== $sessionId) {
+                // Hapus cookie lama dengan expire di masa lalu
+                $redirectResponse = $redirectResponse->withCookie(
+                    cookie()->forget($cookieName)
+                );
+                Log::info('Removing old session cookie', [
+                    'old_session_id' => $oldCookieValue,
+                    'new_session_id' => $sessionId,
+                ]);
+            }
+            
+            // Set cookie baru dengan session ID yang benar
             $redirectResponse = $redirectResponse->withCookie(
                 cookie(
                     $cookieName, 
