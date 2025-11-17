@@ -28,6 +28,8 @@ class TenantMiddleware
         if (Auth::check()) {
             $tenant = Auth::user()->tenant;
             if ($tenant) {
+                // Simpan DB asal, lalu switch ke DB tenant untuk proses request
+                $originalDatabase = config('database.connections.mysql.database');
                 config(['database.connections.mysql.database' => $tenant->database]);
 
                 // Simpan tenant_id ke session
@@ -49,7 +51,11 @@ class TenantMiddleware
                 // Simpan tenant ke request untuk digunakan di controller
                 $request->merge(['tenant' => $tenant]);
 
-                return $next($request);
+                // Proses request kemudian kembalikan DB ke asal agar penulisan session
+                // tetap ke database pusat (bukan tenant)
+                $response = $next($request);
+                config(['database.connections.mysql.database' => $originalDatabase]);
+                return $response;
             }
         }
 
@@ -70,6 +76,10 @@ class TenantMiddleware
                 ->first();
 
             if ($tenant) {
+                // Simpan DB asal, lalu switch ke DB tenant saat memproses request
+                $originalDatabase = config('database.connections.mysql.database');
+                config(['database.connections.mysql.database' => $tenant->database]);
+
                 // Set tenant_id ke session
                 session(['tenant_id' => $tenant->id]);
                 session(['tenant_name' => $tenant->name]);
@@ -80,7 +90,9 @@ class TenantMiddleware
                 // Simpan tenant ke request untuk digunakan di controller
                 $request->merge(['tenant' => $tenant]);
 
-                return $next($request);
+                $response = $next($request);
+                config(['database.connections.mysql.database' => $originalDatabase]);
+                return $response;
             }
         }
 

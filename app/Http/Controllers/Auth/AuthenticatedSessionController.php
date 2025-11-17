@@ -74,8 +74,17 @@ class AuthenticatedSessionController extends Controller
                 Log::info('User reguler, mengarahkan ke dashboard biasa');
                 $redirectResponse = redirect()->intended(route('dashboard'));
             }
+
+            // Explicitly queue the session cookie to ensure client adopts the new session ID
+            $cookieName = config('session.cookie');
+            $cookieDomain = config('session.domain');
+            $cookieSecure = request()->isSecure();
+            $cookieSameSite = config('session.same_site');
+            $cookieMinutes = (int) config('session.lifetime');
+            $cookie = cookie($cookieName, $request->session()->getId(), $cookieMinutes, '/', $cookieDomain, $cookieSecure, true, false, $cookieSameSite);
+            $redirectResponse->headers->setCookie($cookie);
             
-            // Log cookie yang akan dikirim
+            // Log cookie yang akan dikirim (setelah explicit session cookie)
             $cookies = $redirectResponse->headers->getCookies();
             $cookieInfo = [];
             foreach ($cookies as $cookie) {
