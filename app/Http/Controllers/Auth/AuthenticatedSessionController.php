@@ -32,21 +32,21 @@ class AuthenticatedSessionController extends Controller
                 'session_driver' => config('session.driver'),
             ]);
 
-            // Login user terlebih dahulu (ini akan menyimpan user ke session)
-            Auth::login($user, $request->filled('remember'));
-            
-            // Regenerate session untuk keamanan
-            // Catatan: regenerate() akan membuat session ID baru tapi mempertahankan data
+            // Regenerate session untuk keamanan SEBELUM login
+            // Ini mencegah session fixation attack
             $request->session()->regenerate();
             
-            // Setelah regenerate, pastikan user masih terautentikasi
-            // Karena regenerate membuat session baru, kita perlu login lagi
+            $sessionIdAfter = $request->session()->getId();
+            
+            // Login user SETELAH regenerate session
+            // Ini akan menyimpan user ke session yang baru
             Auth::login($user, $request->filled('remember'));
             
             // Regenerate CSRF token setelah session regenerate
             $request->session()->regenerateToken();
             
-            $sessionIdAfter = $request->session()->getId();
+            // Pastikan session tersimpan
+            $request->session()->save();
             
             Log::info('Session setelah regenerate', [
                 'user_id' => Auth::id(),
@@ -54,6 +54,8 @@ class AuthenticatedSessionController extends Controller
                 'session_id_before' => $sessionIdBefore,
                 'session_id_after' => $sessionIdAfter,
                 'session_changed' => $sessionIdBefore !== $sessionIdAfter,
+                'session_has_auth' => $request->session()->has('login_web_' . sha1('Illuminate\Auth\SessionGuard')),
+                'session_all_keys' => array_keys($request->session()->all()),
             ]);
 
             // Reload user dengan relationships
