@@ -21,40 +21,19 @@ class AuthenticatedSessionController extends Controller
         try {
             Log::info('Mencoba login', ['email' => $request->email]);
 
+            // Authenticate user
             $request->authenticate();
 
             $user = Auth::user();
-            $sessionIdBefore = $request->session()->getId();
             
             Log::info('Autentikasi berhasil', [
                 'user_id' => $user->id,
                 'email' => $user->email,
-                'session_id_before' => $sessionIdBefore,
                 'session_driver' => config('session.driver'),
             ]);
 
-            // Regenerate session setelah autentikasi (sesuai rekomendasi Laravel)
-            // untuk mencegah session fixation attack
+            // Regenerate session untuk mencegah session fixation attack
             $request->session()->regenerate();
-
-            $sessionIdAfter = $request->session()->getId();
-
-            // Regenerate CSRF token setelah session regenerate
-            $request->session()->regenerateToken();
-
-            // PENTING: Explicitly save session untuk database driver
-            // Tanpa ini, session mungkin tidak tersimpan di database sebelum redirect
-            $request->session()->save();
-
-            Log::info('Session setelah regenerate', [
-                'user_id' => Auth::id(),
-                'is_authenticated' => Auth::check(),
-                'session_id_before' => $sessionIdBefore,
-                'session_id_after' => $sessionIdAfter,
-                'session_changed' => $sessionIdBefore !== $sessionIdAfter,
-                'session_all_keys' => array_keys($request->session()->all()),
-                'session_driver' => config('session.driver'),
-            ]);
 
             // Reload user dengan relationships
             $user = Auth::user()->load(['role', 'tenant']);
@@ -64,226 +43,25 @@ class AuthenticatedSessionController extends Controller
                 session(['tenant_id' => $user->tenant_id]);
                 view()->share('current_tenant', $user->tenant);
             }
-
-            // Buat response redirect
-            $redirectResponse = null;
             
+            Log::info('Session regenerated', [
+                'user_id' => $user->id,
+                'session_id' => $request->session()->getId(),
+                'is_authenticated' => Auth::check(),
+            ]);
+
+            // Determine redirect route based on role
             if ($user->role && $user->role->slug === 'superadmin') {
-                Log::info('User superadmin, mengarahkan ke dashboard superadmin', [
+                Log::info('Redirecting superadmin to dashboard', [
                     'user_id' => $user->id,
                     'role_slug' => $user->role->slug,
-                    'tenant_id' => $user->tenant_id,
-                    'tenant_name' => $user->tenant ? $user->tenant->name : null,
                 ]);
-                $redirectResponse = redirect()->intended(route('superadmin.dashboard'));
-            } else {
-                Log::info('User reguler, mengarahkan ke dashboard biasa');
-                $redirectResponse = redirect()->intended(route('dashboard'));
-            }
-
-            // PENTING: Save session sekali lagi sebelum redirect untuk memastikan
-            // session tersimpan di database (terutama untuk database driver)
-            // Juga pastikan auth data tersimpan di session
-            $request->session()->put('_token', csrf_token());
-            
-            // Force save session ke database
-            $request->session()->save();
-            
-            if (config('session.driver') === 'database') {
-                // Pastikan session tersimpan di database
-                $sessionId = $request->session()->getId();
-                $sessionData = $request->session()->all();
-                
-                // Verifikasi session tersimpan
-                $sessionExists = DB::table('sessions')->where('id', $sessionId)->exists();
-                
-                // Jika session tidak ada di database, insert/update manual
-                if (!$sessionExists) {
-                    try {
-                        // Coba update dulu (jika ada)
-                        $updated = DB::table('sessions')
-                            ->where('id', $sessionId)
-                            ->update([
-                                'user_id' => Auth::id(),
-                                'ip_address' => $request->ip(),
-                                'user_agent' => $request->userAgent(),
-                                'payload' => base64_encode(serialize($sessionData)),
-                                'last_activity' => time(),
-                            ]);
-                        
-                        // Jika tidak ada yang di-update, insert baru
-                        if ($updated === 0) {
-                            DB::table('sessions')->insert([
-                                'id' => $sessionId,
-                                'user_id' => Auth::id(),
-                                'ip_address' => $request->ip(),
-                                'user_agent' => $request->userAgent(),
-                                'payload' => base64_encode(serialize($sessionData)),
-                                'last_activity' => time(),
-                            ]);
-                            Log::info('Session inserted manually ke database', [
-                                'session_id' => $sessionId,
-                            ]);
-                        } else {
-                            Log::info('Session updated manually di database', [
-                                'session_id' => $sessionId,
-                            ]);
-                        }
-                    } catch (\Exception $e) {
-                        Log::error('Error saving session manually', [
-                            'error' => $e->getMessage(),
-                            'session_id' => $sessionId,
-                        ]);
-                    }
-                } else {
-                    // Update last_activity dan user_id jika sudah ada
-                    DB::table('sessions')
-                        ->where('id', $sessionId)
-                        ->update([
-                            'user_id' => Auth::id(),
-                            'last_activity' => time(),
-                        ]);
-                }
-            }
-
-            // PENTING: Verifikasi session tersimpan di database SEBELUM set cookie
-            $sessionId = $request->session()->getId();
-            $sessionExistsInDb = false;
-            
-            if (config('session.driver') === 'database') {
-                $sessionExistsInDb = DB::table('sessions')->where('id', $sessionId)->exists();
-                
-                if (!$sessionExistsInDb) {
-                    Log::error('Session tidak tersimpan di database sebelum set cookie!', [
-                        'session_id' => $sessionId,
-                    ]);
-                    // Coba save sekali lagi
-                    $request->session()->save();
-                    // Tunggu sebentar
-                    usleep(50000); // 50ms
-                    $sessionExistsInDb = DB::table('sessions')->where('id', $sessionId)->exists();
-                }
+                return redirect()->intended(route('superadmin.dashboard'));
             }
             
-            // Set cookie menggunakan withCookie() untuk memastikan cookie ter-set dengan benar
-            $cookieName = config('session.cookie');
-            $cookieDomain = config('session.domain');
-            $cookieSecure = config('session.secure') !== null ? (bool) config('session.secure') : request()->isSecure();
-            $cookieSameSite = config('session.same_site') ?? 'lax';
-            $cookieMinutes = (int) config('session.lifetime');
+            Log::info('Redirecting regular user to dashboard');
+            return redirect()->intended(route('dashboard'));
             
-            // Pastikan cookie domain null jika kosong (bukan empty string)
-            $cookieDomain = !empty($cookieDomain) ? $cookieDomain : null;
-            
-            // PENTING: Hapus cookie lama terlebih dahulu untuk memastikan cookie baru ter-set
-            // Ini penting karena browser mungkin tidak update cookie jika ada cookie lama dengan attributes berbeda
-            $oldCookieValue = $request->cookie($cookieName);
-            
-            Log::info('Cookie check before setting new cookie', [
-                'old_cookie_value' => $oldCookieValue,
-                'new_session_id' => $sessionId,
-                'cookie_name' => $cookieName,
-                'cookies_in_request' => array_keys($request->cookies->all()),
-            ]);
-            
-            // SELALU hapus cookie lama terlebih dahulu, bahkan jika nilainya sama
-            // Ini memastikan browser menerima cookie baru dengan benar
-            $redirectResponse = $redirectResponse->withCookie(
-                cookie(
-                    $cookieName,
-                    null,
-                    -2628000, // Expire di masa lalu (1 bulan lalu)
-                    '/',
-                    $cookieDomain,
-                    $cookieSecure,
-                    true, // httpOnly
-                    false, // raw
-                    $cookieSameSite
-                )
-            );
-            
-            if ($oldCookieValue && $oldCookieValue !== $sessionId) {
-                Log::info('Removing old session cookie (different ID)', [
-                    'old_session_id' => $oldCookieValue,
-                    'new_session_id' => $sessionId,
-                    'cookie_domain' => $cookieDomain,
-                ]);
-            } else if ($oldCookieValue) {
-                Log::info('Removing old session cookie (same ID, but forcing refresh)', [
-                    'session_id' => $oldCookieValue,
-                    'cookie_domain' => $cookieDomain,
-                ]);
-            }
-            
-            // Set cookie baru dengan session ID yang benar
-            $redirectResponse = $redirectResponse->withCookie(
-                cookie(
-                    $cookieName, 
-                    $sessionId, 
-                    $cookieMinutes, 
-                    '/', 
-                    $cookieDomain, 
-                    $cookieSecure, 
-                    true, // httpOnly
-                    false, // raw
-                    $cookieSameSite
-                )
-            );
-            
-            Log::info('Setting session cookie', [
-                'cookie_name' => $cookieName,
-                'session_id' => $sessionId,
-                'session_exists_in_db' => $sessionExistsInDb,
-                'cookie_domain' => $cookieDomain,
-                'cookie_secure' => $cookieSecure,
-                'cookie_same_site' => $cookieSameSite,
-                'cookie_minutes' => $cookieMinutes,
-            ]);
-            
-            // Log cookie yang akan dikirim (setelah explicit session cookie)
-            $cookies = $redirectResponse->headers->getCookies();
-            $cookieInfo = [];
-            foreach ($cookies as $cookie) {
-                $cookieInfo[] = [
-                    'name' => $cookie->getName(),
-                    'domain' => $cookie->getDomain(),
-                    'path' => $cookie->getPath(),
-                    'secure' => $cookie->isSecure(),
-                    'httpOnly' => $cookie->isHttpOnly(),
-                    'sameSite' => $cookie->getSameSite(),
-                ];
-            }
-            
-            // Verifikasi session tersimpan di database (untuk debugging)
-            $sessionInDb = false;
-            if (config('session.driver') === 'database') {
-                try {
-                    $sessionInDb = DB::table('sessions')
-                        ->where('id', $request->session()->getId())
-                        ->exists();
-                } catch (\Exception $e) {
-                    Log::warning('Tidak bisa verifikasi session di database', [
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
-            
-            Log::info('Mengirim redirect response', [
-                'target_url' => $redirectResponse->getTargetUrl(),
-                'session_id' => $request->session()->getId(),
-                'cookies_in_response' => count($cookies),
-                'cookie_details' => $cookieInfo,
-                'session_in_database' => $sessionInDb,
-                'session_config' => [
-                    'cookie_name' => config('session.cookie'),
-                    'domain' => config('session.domain'),
-                    'secure' => config('session.secure'),
-                    'same_site' => config('session.same_site'),
-                    'driver' => config('session.driver'),
-                ],
-            ]);
-            
-            return $redirectResponse;
         } catch (\Exception $e) {
             Log::error('Error saat login', [
                 'email' => $request->email,

@@ -9,17 +9,20 @@ Setelah menerapkan fix dengan `session()->save()`, masih terlempar ke login.
 ### Step 1: Verifikasi Environment Variables
 
 Akses endpoint debug:
+
 ```
 https://siar-main-bot1z9.laravel.cloud/debug-config
 ```
 
 **Pastikan:**
+
 - ✅ `session_config.driver`: `"database"` (bukan `"cookie"`)
 - ✅ `session_config.secure`: `true` (bukan `null` atau `false`)
 - ✅ `session_config.domain`: `null` atau `""` (bukan `.laravel.cloud`)
 - ✅ `env_vars.SESSION_DRIVER`: `"database"`
 
 **Jika tidak sesuai:**
+
 1. Update environment variables di Laravel Cloud
 2. Clear config cache: `php artisan config:clear && php artisan config:cache`
 3. Deploy ulang
@@ -27,15 +30,18 @@ https://siar-main-bot1z9.laravel.cloud/debug-config
 ### Step 2: Verifikasi Tabel Sessions
 
 Akses endpoint:
+
 ```
 https://siar-main-bot1z9.laravel.cloud/debug-database
 ```
 
 **Pastikan:**
+
 - ✅ `sessions_table.exists`: `true`
 - ✅ `sessions_table.count`: Angka (bukan error)
 
 **Jika error:**
+
 ```bash
 php artisan migrate --force
 ```
@@ -43,15 +49,18 @@ php artisan migrate --force
 ### Step 3: Test Session Persistence
 
 Akses endpoint:
+
 ```
 https://siar-main-bot1z9.laravel.cloud/debug-session-test
 ```
 
 **Refresh halaman 3-5 kali**, perhatikan:
+
 - ✅ `session_id`: Harus **SAMA** setiap refresh
 - ✅ `test.match`: Harus `true`
 
 **Jika `session_id` berubah setiap refresh:**
+
 - Session tidak persist → masalah cookie atau session driver
 
 ### Step 4: Login dan Cek Session
@@ -64,6 +73,7 @@ https://siar-main-bot1z9.laravel.cloud/debug-session-test
    ```
 
 **Perhatikan output:**
+
 - ✅ `session_in_db.exists`: `true`
 - ✅ `has_auth_key`: `true`
 - ✅ `auth_user_id`: Ada (bukan `null`)
@@ -71,17 +81,21 @@ https://siar-main-bot1z9.laravel.cloud/debug-session-test
 - ✅ `cookie_info.cookie_value`: Ada (bukan `null`)
 
 **Jika `session_in_db.exists: false`:**
+
 - Session tidak tersimpan di database → masalah dengan session save
 
 **Jika `has_auth_key: false`:**
+
 - Auth data tidak tersimpan di session → masalah dengan login process
 
 **Jika `cookie_info.has_cookie: false`:**
+
 - Cookie tidak ter-set → masalah dengan cookie configuration
 
 ### Step 5: Cek Log Laravel Cloud
 
 Setelah login, cek log untuk melihat:
+
 - `session_in_database`: Harus `true`
 - `session_config.driver`: Harus `"database"`
 - `session_config.secure`: Harus `true`
@@ -91,6 +105,7 @@ Jika ada error terkait database atau session, catat error message.
 ### Step 6: Cek Cookie di Browser
 
 Setelah login, buka Developer Tools (F12) > Application > Cookies:
+
 - ✅ Cookie `siar_session` ada
 - ✅ **Domain**: `siar-main-bot1z9.laravel.cloud` (tanpa titik di depan)
 - ✅ **Secure**: Checked (untuk HTTPS)
@@ -98,6 +113,7 @@ Setelah login, buka Developer Tools (F12) > Application > Cookies:
 - ✅ **Value**: Ada (40 karakter session ID)
 
 **Jika cookie tidak ada atau domain salah:**
+
 - Update `SESSION_DOMAIN=` (kosong) di environment variables
 - Clear config cache dan deploy ulang
 
@@ -108,6 +124,7 @@ Setelah login, buka Developer Tools (F12) > Application > Cookies:
 **Penyebab:** Environment variable `SESSION_DRIVER=database` tidak override injected variable.
 
 **Solusi:**
+
 1. Pastikan `SESSION_DRIVER=database` ada di **Custom Variables** (bukan Injected)
 2. Clear config cache: `php artisan config:clear && php artisan config:cache`
 3. Deploy ulang aplikasi
@@ -117,6 +134,7 @@ Setelah login, buka Developer Tools (F12) > Application > Cookies:
 **Penyebab:** Session tidak tersimpan di database setelah login.
 
 **Solusi:**
+
 1. Cek apakah tabel `sessions` ada: `php artisan migrate --force`
 2. Cek database connection: `php artisan tinker` → `DB::connection()->getPdo()`
 3. Cek log untuk error database
@@ -127,6 +145,7 @@ Setelah login, buka Developer Tools (F12) > Application > Cookies:
 **Penyebab:** Auth data tidak tersimpan di session.
 
 **Solusi:**
+
 1. Pastikan `Auth::login()` dipanggil (bukan hanya `Auth::attempt()`)
 2. Cek apakah ada error di log saat login
 3. Pastikan session driver menggunakan `database`
@@ -136,6 +155,7 @@ Setelah login, buka Developer Tools (F12) > Application > Cookies:
 **Penyebab:** Cookie configuration salah atau cookie tidak ter-kirim.
 
 **Solusi:**
+
 1. Pastikan `SESSION_SECURE_COOKIE=true` (bukan `null` atau kosong)
 2. Pastikan `SESSION_DOMAIN=` (kosong, bukan `.laravel.cloud`)
 3. Cek response headers setelah login (Network tab) → harus ada `Set-Cookie: siar_session=...`
@@ -146,6 +166,7 @@ Setelah login, buka Developer Tools (F12) > Application > Cookies:
 **Penyebab:** Cookie tidak ter-kirim kembali ke server atau session tidak persist.
 
 **Solusi:**
+
 1. Cek cookie di browser → pastikan ada dan domain benar
 2. Cek `SESSION_DOMAIN` → harus kosong
 3. Cek `SESSION_SECURE_COOKIE` → harus `true` untuk HTTPS
@@ -189,9 +210,9 @@ php artisan tinker
 ## 📞 Jika Masih Error
 
 Jika setelah semua langkah di atas masih error, kirimkan:
+
 1. Output dari `/debug-config`
 2. Output dari `/debug-after-login` (setelah login)
 3. Output dari `/debug-session-test` (refresh 3x)
 4. Log dari Laravel Cloud (setelah login)
 5. Screenshot cookie di browser (Developer Tools > Application > Cookies)
-
