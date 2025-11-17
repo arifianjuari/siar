@@ -134,8 +134,17 @@ class ReportController extends Controller
             'counts' => $createdByDay->values()->toArray()
         ];
 
-        // Menyimpan parameter untuk ekspor
-        session(['report_params' => $request->all()]);
+        // Menyimpan parameter untuk ekspor (batasi agar session payload kecil)
+        session(['report_params' => $request->only([
+            'report_type',
+            'start_date',
+            'end_date',
+            'month',
+            'year',
+            'quarter',
+            'document_type',
+            'confidentiality_level',
+        ])]);
 
         return view('modules.Correspondence.reports.preview', compact(
             'correspondences',
