@@ -178,24 +178,39 @@ class AuthenticatedSessionController extends Controller
             // PENTING: Hapus cookie lama terlebih dahulu untuk memastikan cookie baru ter-set
             // Ini penting karena browser mungkin tidak update cookie jika ada cookie lama dengan attributes berbeda
             $oldCookieValue = $request->cookie($cookieName);
+            
+            Log::info('Cookie check before setting new cookie', [
+                'old_cookie_value' => $oldCookieValue,
+                'new_session_id' => $sessionId,
+                'cookie_name' => $cookieName,
+                'cookies_in_request' => array_keys($request->cookies->all()),
+            ]);
+            
+            // SELALU hapus cookie lama terlebih dahulu, bahkan jika nilainya sama
+            // Ini memastikan browser menerima cookie baru dengan benar
+            $redirectResponse = $redirectResponse->withCookie(
+                cookie(
+                    $cookieName,
+                    null,
+                    -2628000, // Expire di masa lalu (1 bulan lalu)
+                    '/',
+                    $cookieDomain,
+                    $cookieSecure,
+                    true, // httpOnly
+                    false, // raw
+                    $cookieSameSite
+                )
+            );
+            
             if ($oldCookieValue && $oldCookieValue !== $sessionId) {
-                // Hapus cookie lama dengan expire di masa lalu, gunakan domain yang sama
-                $redirectResponse = $redirectResponse->withCookie(
-                    cookie(
-                        $cookieName,
-                        null,
-                        -2628000, // Expire di masa lalu (1 bulan lalu)
-                        '/',
-                        $cookieDomain,
-                        $cookieSecure,
-                        true, // httpOnly
-                        false, // raw
-                        $cookieSameSite
-                    )
-                );
-                Log::info('Removing old session cookie', [
+                Log::info('Removing old session cookie (different ID)', [
                     'old_session_id' => $oldCookieValue,
                     'new_session_id' => $sessionId,
+                    'cookie_domain' => $cookieDomain,
+                ]);
+            } else if ($oldCookieValue) {
+                Log::info('Removing old session cookie (same ID, but forcing refresh)', [
+                    'session_id' => $oldCookieValue,
                     'cookie_domain' => $cookieDomain,
                 ]);
             }
