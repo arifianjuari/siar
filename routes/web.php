@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\TenantRoleController;
+use Illuminate\Support\Str;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,6 +52,21 @@ Route::get('/debug-session', function () {
                 'name' => auth()->user()->tenant->name
             ] : null
         ] : null
+    ]);
+})->middleware('web');
+
+// Debug route: fingerprint APP_KEY dan info instance
+Route::get('/debug-key', function () {
+    $appKey = config('app.key');
+    $raw = Str::startsWith($appKey, 'base64:') ? base64_decode(substr($appKey, 7)) : $appKey;
+    $fingerprint = $raw ? substr(hash('sha256', $raw), 0, 16) : null;
+
+    return response()->json([
+        'app_key_fingerprint' => $fingerprint,
+        'app_env' => config('app.env'),
+        'app_url' => config('app.url'),
+        'hostname' => gethostname(),
+        'time' => now()->toDateTimeString(),
     ]);
 })->middleware('web');
 
