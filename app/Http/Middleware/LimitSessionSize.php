@@ -54,6 +54,7 @@ class LimitSessionSize
                     }
                 }
 
+
                 // Recalculate dan log setelah trimming
                 $sessionData = $request->session()->all();
                 $sessionSizeAfter = strlen(serialize($sessionData));
@@ -64,6 +65,38 @@ class LimitSessionSize
                     'session_keys_after' => array_keys($sessionData),
                     'user_id' => auth()->id(),
                 ]);
+
+                // Jika masih terlalu besar, lakukan hard-trim dengan whitelist key esensial saja
+                if ($sessionSizeAfter > 3500) {
+                    $current = $request->session()->all();
+
+                    $allowed = [];
+                    foreach ($current as $key => $value) {
+                        if ($key === '_token' || $key === 'tenant_id' || $key === 'url' || $key === '_previous') {
+                            $allowed[$key] = $value;
+                            continue;
+                        }
+                        if (Str::startsWith($key, ['login_web_', 'password_hash_'])) {
+                            $allowed[$key] = $value;
+                            continue;
+                        }
+                    }
+
+                    // Flush lalu restore hanya key yang diizinkan
+                    $request->session()->flush();
+                    foreach ($allowed as $k => $v) {
+                        $request->session()->put($k, $v);
+                    }
+
+                    $finalData = $request->session()->all();
+                    $finalSize = strlen(serialize($finalData));
+                    Log::warning('Applied hard-trim whitelist to session', [
+                        'size_bytes_before' => $sessionSizeAfter,
+                        'size_bytes_after' => $finalSize,
+                        'kept_keys' => array_keys($finalData),
+                        'user_id' => auth()->id(),
+                    ]);
+                }
             }
         }
 
