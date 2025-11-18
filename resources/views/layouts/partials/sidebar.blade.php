@@ -161,6 +161,8 @@
                                     $moduleUrl = url('modules/risk-management/dashboard');
                                 } elseif ($module->slug == 'document-management') {
                                     $moduleUrl = url('modules/document-management/dashboard');
+                                } elseif ($module->slug == 'correspondence-management') {
+                                    $moduleUrl = url('modules/correspondence/dashboard');
                                 } elseif ($module->slug == 'work-units') {
                                     $moduleUrl = url('work-units-dashboard'); // URL ke dashboard unit kerja
                                 } elseif ($module->slug == 'activity-management') {
@@ -184,6 +186,9 @@
                             if ($module->slug == 'activity-management') {
                                 $isActive = request()->is('activity-management*');
                             }
+                            if ($module->slug == 'correspondence-management') {
+                                $isActive = request()->is('modules/correspondence*');
+                            }
                             
                             // Menentukan ikon yang lebih sesuai berdasarkan slug modul
                             $moduleIcon = '<i data-feather="folder"></i>'; // Default icon
@@ -197,7 +202,7 @@
                                 $moduleIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
                             } elseif ($module->slug == 'product-management') {
                                 $moduleIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-shopping-bag"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>';
-                            } elseif ($module->slug == 'correspondence' || strpos(strtolower($module->name), 'korespondensi') !== false) {
+                            } elseif ($module->slug == 'correspondence' || $module->slug == 'correspondence-management' || strpos(strtolower($module->name), 'korespondensi') !== false) {
                                 $moduleIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mail"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>';
                             } elseif ($module->slug == 'performance-management' || strpos(strtolower($module->name), 'kpi') !== false) {
                                 $moduleIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-activity"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>';
@@ -368,6 +373,9 @@
         border-right: 1px solid #e5e7eb; /* Optional: border pemisah tipis */
         padding-bottom: 90px; /* Tambahkan padding bawah lebih besar untuk menghindari tumpukan dengan menu bottom */
         /* Hapus min-height, height, width, overflow, position agar tidak bentrok dengan .sidebar-wrapper */
+        color: var(--sidebar-text-inactive) !important; /* Pastikan teks terlihat pada latar putih */
+        position: relative; /* Pastikan berada di atas overlay lain */
+        z-index: 1035;
     }
 
     /* Menghapus background pada initial jika tidak ada logo */
@@ -458,6 +466,13 @@
         font-weight: 500 !important; /* Sedikit lebih tebal dari normal */
         line-height: 1.4 !important; /* Sesuaikan line-height jika perlu */
         color: inherit !important; /* Mewarisi warna dari .nav-link */
+    }
+
+    /* Ensure base text color is visible for all text in sidebar */
+    .sidebar a.nav-link,
+    .sidebar a.nav-link .menu-text,
+    .sidebar .menu-text {
+        color: var(--sidebar-text-inactive) !important;
     }
     
     /* Hapus referensi ke tenant info */
@@ -593,6 +608,10 @@
 
         .sidebar-wrapper.show {
             left: 0;
+        }
+        /* Prevent outer grid aside from covering the drawer on mobile */
+        aside.col-12.col-md-3.col-lg-2.p-0 {
+            display: contents !important;
         }
         .sidebar .bottom-nav {
             position: static;

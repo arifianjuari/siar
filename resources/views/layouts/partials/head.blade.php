@@ -93,14 +93,14 @@
     
     .sidebar {
         height: 100%;
-        background-color: var(--dark-color);
-        color: #fff;
+        background-color: #fff; /* selaras dengan sidebar partial */
+        color: #374151; /* teks gelap agar terlihat di latar putih */
         transition: all 0.3s;
         overflow-y: auto;
     }
     
     .sidebar .nav-link {
-        color: rgba(255, 255, 255, 0.75);
+        color: #6B7280; /* teks non-aktif */
         padding: 0.75rem 1.25rem;
         border-radius: 6px;
         margin: 2px 0;
@@ -108,13 +108,15 @@
     }
     
     .sidebar .nav-link:hover {
-        color: #fff;
-        background-color: rgba(255, 255, 255, 0.1);
+        color: #4F46E5; /* primary */
+        background-color: #F3F4F6;
     }
     
     .sidebar .nav-link.active {
-        color: #fff;
-        background-color: var(--primary-color);
+        color: #4F46E5;
+        background-color: transparent;
+        font-weight: 600;
+        border-left: 3px solid #4F46E5;
     }
     
     /* Content Wrapper with proper margin */
@@ -224,6 +226,8 @@
         .sidebar-wrapper.show {
             left: 0;
         }
+        /* cegah aside grid membuat panel putih kosong */
+        aside.col-12.col-md-3.col-lg-2.p-0 { display: contents !important; }
         
         .content-wrapper {
             margin-left: 0 !important;

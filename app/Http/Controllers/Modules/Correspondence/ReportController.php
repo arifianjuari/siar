@@ -18,10 +18,10 @@ class ReportController extends Controller
     public function __construct()
     {
         // Pastikan bahwa middleware modul sudah dijalankan
-        $this->middleware('module:correspondence');
+        $this->middleware('module:correspondence-management');
 
         // Tambahkan middleware izin untuk setiap aksi yang perlu diproteksi
-        $this->middleware('check.permission:correspondence,can_generate_reports')->only(['index', 'generate', 'export']);
+        $this->middleware('check.permission:correspondence-management,can_generate_reports')->only(['index', 'generate', 'export']);
     }
 
     /**

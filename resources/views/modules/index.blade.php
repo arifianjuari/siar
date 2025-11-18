@@ -81,11 +81,13 @@
                                                                 } elseif ($module->slug == 'product-management') {
                                                                     $moduleUrl = url('modules/product-management/products');
                                                                 } elseif ($module->slug == 'risk-management') {
-                                                                    $moduleUrl = url('modules/risk-management');
+                                                                    $moduleUrl = url('modules/risk-management/dashboard');
                                                                 } elseif ($module->slug == 'document-management') {
                                                                     $moduleUrl = url('modules/document-management/dashboard');
                                                                 } elseif ($module->slug == 'correspondence') {
-                                                                    $moduleUrl = url('modules/correspondence');
+                                                                    $moduleUrl = url('modules/correspondence/dashboard');
+                                                                } elseif ($module->slug == 'correspondence-management') {
+                                                                    $moduleUrl = url('modules/correspondence/dashboard');
                                                                 } elseif ($module->slug == 'dashboard') {
                                                                     $moduleUrl = url('dashboard');
                                                                 } else {

@@ -26,13 +26,13 @@ class CorrespondenceController extends Controller
     public function __construct()
     {
         // Pastikan bahwa middleware modul sudah dijalankan
-        $this->middleware('module:correspondence');
+        $this->middleware('module:correspondence-management');
 
         // Tambahkan middleware izin untuk setiap aksi yang perlu diproteksi
-        $this->middleware('check.permission:correspondence,can_create')->only(['create', 'store']);
-        $this->middleware('check.permission:correspondence,can_edit')->only(['edit', 'update']);
-        $this->middleware('check.permission:correspondence,can_delete')->only('destroy');
-        $this->middleware('check.permission:correspondence,can_export')->only(['exportPdf', 'exportWord']);
+        $this->middleware('check.permission:correspondence-management,can_create')->only(['create', 'store']);
+        $this->middleware('check.permission:correspondence-management,can_edit')->only(['edit', 'update']);
+        $this->middleware('check.permission:correspondence-management,can_delete')->only('destroy');
+        $this->middleware('check.permission:correspondence-management,can_export')->only(['exportPdf', 'exportWord']);
     }
 
     /**

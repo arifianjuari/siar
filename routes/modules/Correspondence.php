@@ -15,7 +15,7 @@ use App\Http\Controllers\Modules\Correspondence\ReportController;
 */
 
 // Rute yang dapat diakses setelah login dan memiliki akses ke modul korespondensi
-Route::middleware(['web', 'auth', 'tenant', 'module:correspondence'])->prefix('modules/correspondence')->name('modules.correspondence.')->group(function () {
+Route::middleware(['web', 'auth', 'tenant', 'module:correspondence-management'])->prefix('modules/correspondence')->name('modules.correspondence.')->group(function () {
     // Dashboard Korespondensi
     Route::get('/dashboard', [CorrespondenceController::class, 'dashboard'])->name('dashboard');
 

@@ -52,7 +52,7 @@
             <div class="row">
                 @auth
                     <!-- Sidebar -->
-                    <aside class="col-12 col-md-3 col-lg-2 sidebar-wrapper p-0">
+                    <aside class="col-12 col-md-3 col-lg-2 p-0">
                         @include('layouts.partials.sidebar')
                     </aside>
 
