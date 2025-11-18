@@ -32,11 +32,10 @@ class AuthenticatedSessionController extends Controller
                 'session_driver' => config('session.driver'),
             ]);
 
-            // Regenerate session untuk mencegah session fixation attack
             $request->session()->regenerate();
-            
-            // Clean up old session data to prevent cookie bloat (important for cookie driver)
             $request->session()->forget(['_previous', '_flash']);
+            Auth::login($user);
+            $request->session()->save();
 
             // Reload user dengan relationships
             $user = Auth::user()->load(['role', 'tenant']);
@@ -59,10 +58,14 @@ class AuthenticatedSessionController extends Controller
                     'user_id' => $user->id,
                     'role_slug' => $user->role->slug,
                 ]);
+                // Save session sekali lagi untuk memastikan data auth tersimpan
+                $request->session()->save();
                 return redirect()->intended(route('superadmin.dashboard'));
             }
             
             Log::info('Redirecting regular user to dashboard');
+            // Save session sekali lagi untuk memastikan data auth tersimpan
+            $request->session()->save();
             return redirect()->intended(route('dashboard'));
             
         } catch (\Exception $e) {
