@@ -15,18 +15,22 @@ class KendaliMutuBiayaModuleSeeder extends Seeder
     {
         echo "Mulai seeding modul Kendali Mutu Biaya...\n";
 
-        // Buat modul Kendali Mutu Biaya
-        $module = Module::create([
-            'name' => 'Kendali Mutu Biaya',
-            'code' => 'KMKB',
-            'slug' => 'kendali-mutu-biaya',
-            'description' => 'Modul untuk mengelola clinical pathway dan evaluasi kendali mutu biaya',
-            'icon' => 'fas fa-chart-line',
-            'order' => 10,
-            'is_active' => true
-        ]);
+        // Buat modul Kendali Mutu Biaya atau ambil jika sudah ada
+        $module = Module::firstOrCreate(
+            ['code' => 'KMKB'],
+            [
+                'name' => 'Kendali Mutu Biaya',
+                'slug' => 'kendali-mutu-biaya',
+                'description' => 'Modul untuk mengelola clinical pathway dan evaluasi kendali mutu biaya',
+                'icon' => 'fas fa-chart-line',
+                'order' => 10,
+                'is_active' => true,
+            ]
+        );
 
-        echo "Modul Kendali Mutu Biaya berhasil dibuat.\n";
+        echo $module->wasRecentlyCreated
+            ? "Modul Kendali Mutu Biaya berhasil dibuat.\n"
+            : "Modul Kendali Mutu Biaya sudah ada, menggunakan data yang ada.\n";
 
         // Dapatkan semua tenant
         $tenants = Tenant::all();
