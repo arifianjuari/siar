@@ -18,24 +18,53 @@
             <div class="card-body">
                 <div class="text-center mb-4">
                     @if($tenant->logo)
-                        <img src="{{ asset('storage/' . $tenant->logo) }}?v={{ $tenant->updated_at->timestamp }}" alt="{{ $tenant->name }}" class="img-fluid rounded mb-3" style="max-height: 150px; object-fit: contain;" onerror="this.onerror=null; this.src='{{ asset('storage/' . $tenant->logo) }}?v=' + new Date().getTime();">
+                        @php
+                            // Extract filename from tenant logo path
+                            $logoFilename = basename($tenant->logo);
+                            // Try public/images path first (for Laravel Cloud compatibility), fallback to storage
+                            $publicImagePath = 'images/' . $logoFilename;
+                            $storageImagePath = 'storage/' . $tenant->logo;
+                        @endphp
+                        <img src="{{ asset($publicImagePath) }}?v={{ $tenant->updated_at->timestamp }}" 
+                             alt="{{ $tenant->name }}" 
+                             class="img-fluid rounded mb-3" 
+                             style="max-height: 150px; object-fit: contain;" 
+                             onerror="this.onerror=null; this.src='{{ asset($storageImagePath) }}?v=' + new Date().getTime();">
                         <script>
                             // Pre-load logo untuk mencegah masalah loading pertama kali
                             (function() {
-                                // Fetch logo dari server dengan force reload
-                                fetch('{{ asset('storage/' . $tenant->logo) }}?force_refresh=1&t={{ time() }}', {
+                                var publicPath = '{{ asset($publicImagePath) }}?force_refresh=1&t={{ time() }}';
+                                var storagePath = '{{ asset($storageImagePath) }}?force_refresh=1&t={{ time() }}';
+                                
+                                // Try public path first
+                                fetch(publicPath, {
                                     method: 'GET',
-                                    cache: 'no-store' // Jangan menggunakan cache
-                                }).then(function() {
-                                    console.log('Logo pre-fetched successfully');
-                                    
-                                    // Force refresh logo yang sudah ada
-                                    var img = document.querySelector('img[alt="{{ $tenant->name }}"]');
-                                    if (img) {
-                                        img.src = '{{ asset('storage/' . $tenant->logo) }}?v=' + new Date().getTime();
+                                    cache: 'no-store'
+                                }).then(function(response) {
+                                    if (response.ok) {
+                                        console.log('Logo pre-fetched successfully from public path');
+                                        var img = document.querySelector('img[alt="{{ $tenant->name }}"]');
+                                        if (img) {
+                                            img.src = '{{ asset($publicImagePath) }}?v=' + new Date().getTime();
+                                        }
+                                    } else {
+                                        throw new Error('Public path failed');
                                     }
                                 }).catch(function(err) {
-                                    console.error('Error pre-fetching logo:', err);
+                                    console.log('Trying storage path as fallback');
+                                    // Fallback to storage path
+                                    fetch(storagePath, {
+                                        method: 'GET',
+                                        cache: 'no-store'
+                                    }).then(function() {
+                                        console.log('Logo pre-fetched successfully from storage path');
+                                        var img = document.querySelector('img[alt="{{ $tenant->name }}"]');
+                                        if (img) {
+                                            img.src = '{{ asset($storageImagePath) }}?v=' + new Date().getTime();
+                                        }
+                                    }).catch(function(err) {
+                                        console.error('Error pre-fetching logo from both paths:', err);
+                                    });
                                 });
                             })();
                         </script>
@@ -185,7 +214,11 @@
                         <div class="input-group">
                             <input type="file" class="form-control @error('logo') is-invalid @enderror" id="logo" name="logo" accept="image/jpeg,image/png,image/gif">
                             @if($tenant->logo)
-                                <a href="{{ asset('storage/' . $tenant->logo) }}?v={{ $tenant->updated_at->timestamp }}" target="_blank" class="btn btn-outline-secondary">
+                                @php
+                                    $logoFilename = basename($tenant->logo);
+                                    $publicImagePath = 'images/' . $logoFilename;
+                                @endphp
+                                <a href="{{ asset($publicImagePath) }}?v={{ $tenant->updated_at->timestamp }}" target="_blank" class="btn btn-outline-secondary">
                                     <i class="fas fa-eye"></i> Lihat Logo
                                 </a>
                             @endif
