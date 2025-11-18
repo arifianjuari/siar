@@ -23,22 +23,16 @@ class AuthenticatedSessionController extends Controller
 
             // Authenticate user
             $request->authenticate();
+            // Regenerate session sesuai standar Laravel
+            $request->session()->regenerate();
 
             $user = Auth::user();
-            
+
             Log::info('Autentikasi berhasil', [
                 'user_id' => $user->id,
                 'email' => $user->email,
                 'session_driver' => config('session.driver'),
             ]);
-
-            $request->session()->forget(['_previous', '_flash']);
-            
-            // Re-bind auth to the regenerated session and explicitly persist the guard key
-            Auth::login($user);
-            $authKeyName = Auth::guard()->getName(); // e.g. login_web_...
-            $request->session()->put($authKeyName, $user->getAuthIdentifier());
-            $request->session()->save();
 
             // Reload user dengan relationships
             $user = Auth::user()->load(['role', 'tenant']);
@@ -49,7 +43,7 @@ class AuthenticatedSessionController extends Controller
                 view()->share('current_tenant', $user->tenant);
             }
             
-            Log::info('Session regenerated', [
+            Log::info('Session status', [
                 'user_id' => $user->id,
                 'session_id' => $request->session()->getId(),
                 'is_authenticated' => Auth::check(),
@@ -61,14 +55,10 @@ class AuthenticatedSessionController extends Controller
                     'user_id' => $user->id,
                     'role_slug' => $user->role->slug,
                 ]);
-                // Save session sekali lagi untuk memastikan data auth tersimpan
-                $request->session()->save();
                 return redirect()->intended(route('superadmin.dashboard'));
             }
             
             Log::info('Redirecting regular user to dashboard');
-            // Save session sekali lagi untuk memastikan data auth tersimpan
-            $request->session()->save();
             return redirect()->intended(route('dashboard'));
             
         } catch (\Exception $e) {

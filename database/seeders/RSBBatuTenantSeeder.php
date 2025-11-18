@@ -16,14 +16,16 @@ class RSBBatuTenantSeeder extends Seeder
      */
     public function run(): void
     {
-        // Buat tenant
-        $tenant = Tenant::create([
-            'name' => 'RS Bhayangkara Tk.III Hasta Brata Batu',
-            'domain' => 'rsbbatu',
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // Buat atau ambil tenant (idempotent)
+        $tenant = Tenant::firstOrCreate(
+            ['domain' => 'rsbbatu'],
+            [
+                'name' => 'RS Bhayangkara Tk.III Hasta Brata Batu',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
 
         // Buat role tenant admin (or get existing)
         $adminRole = Role::firstOrCreate(
@@ -40,19 +42,23 @@ class RSBBatuTenantSeeder extends Seeder
             ]
         );
 
-        // Buat user admin
-        $adminUser = User::create([
-            'name' => 'Admin RSBB',
-            'email' => 'adminrsbbatu@gmail.com',
-            'password' => Hash::make('asdfasdf'),
-            'tenant_id' => $tenant->id,
-            'role_id' => $adminRole->id,
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // Buat atau update user admin (idempotent berdasarkan email)
+        $adminUser = User::updateOrCreate(
+            [
+                'email' => 'adminrsbbatu@gmail.com',
+            ],
+            [
+                'name' => 'Admin RSBB',
+                'password' => Hash::make('asdfasdf'),
+                'tenant_id' => $tenant->id,
+                'role_id' => $adminRole->id,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
 
-        $this->command->info('Tenant RS Bhayangkara Tk.III Hasta Brata Batu berhasil dibuat!');
+        $this->command->info('Tenant RS Bhayangkara Tk.III Hasta Brata Batu tersedia (dibuat atau sudah ada).');
         $this->command->info('Email: adminrsbbatu@gmail.com');
         $this->command->info('Password: asdfasdf');
     }
