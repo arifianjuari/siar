@@ -23,24 +23,23 @@ class LimitSessionSize
 
         // Hanya jalankan untuk cookie driver
         if (config('session.driver') === 'cookie') {
-            // Clean up flash messages yang sudah digunakan
-            $request->session()->reflash(); // Keep flash for one more request
-            
-            // Batasi jumlah flash keys (max 5)
-            $flashData = $request->session()->get('_flash', []);
-            if (isset($flashData['new']) && count($flashData['new']) > 5) {
-                // Ambil 5 terakhir saja
-                $flashData['new'] = array_slice($flashData['new'], -5);
-                $request->session()->put('_flash', $flashData);
-            }
-
-            // Log warning jika session terlalu besar (untuk debugging)
+            // Hitung ukuran session saat ini
             $sessionData = $request->session()->all();
             $sessionSize = strlen(serialize($sessionData));
-            
-            if ($sessionSize > 3072) { // 3KB threshold (cookie limit is usually 4KB)
-                Log::warning('Session size approaching cookie limit', [
-                    'size_bytes' => $sessionSize,
+
+            // Jika mendekati batas cookie (~4KB), hapus data yang cenderung besar
+            if ($sessionSize > 3500) { // ~3.5KB threshold
+                foreach (['_old_input', 'errors', 'report_params'] as $key) {
+                    if ($request->session()->has($key)) {
+                        $request->session()->forget($key);
+                    }
+                }
+
+                // Recalculate dan log setelah trimming
+                $sessionData = $request->session()->all();
+                $sessionSize = strlen(serialize($sessionData));
+                Log::warning('Trimmed session to avoid cookie too large', [
+                    'size_bytes_after' => $sessionSize,
                     'session_keys' => array_keys($sessionData),
                     'user_id' => auth()->id(),
                 ]);
