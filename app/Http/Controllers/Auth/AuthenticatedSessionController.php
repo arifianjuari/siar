@@ -32,9 +32,12 @@ class AuthenticatedSessionController extends Controller
                 'session_driver' => config('session.driver'),
             ]);
 
-            $request->session()->regenerate();
             $request->session()->forget(['_previous', '_flash']);
+            
+            // Re-bind auth to the regenerated session and explicitly persist the guard key
             Auth::login($user);
+            $authKeyName = Auth::guard()->getName(); // e.g. login_web_...
+            $request->session()->put($authKeyName, $user->getAuthIdentifier());
             $request->session()->save();
 
             // Reload user dengan relationships
