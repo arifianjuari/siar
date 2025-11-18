@@ -34,6 +34,9 @@ class AuthenticatedSessionController extends Controller
 
             // Regenerate session untuk mencegah session fixation attack
             $request->session()->regenerate();
+            
+            // Clean up old session data to prevent cookie bloat (important for cookie driver)
+            $request->session()->forget(['_previous', '_flash']);
 
             // Reload user dengan relationships
             $user = Auth::user()->load(['role', 'tenant']);

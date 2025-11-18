@@ -39,9 +39,10 @@ class SetTenantId
             abort(403, 'Tenant Anda tidak aktif. Silahkan hubungi administrator.');
         }
 
-        // Set tenant_id ke session
-        session(['tenant_id' => $user->tenant_id]);
-        session(['tenant_name' => $tenant->name]);
+        // Set tenant_id ke session HANYA jika belum ada
+        if (!session()->has('tenant_id') || session('tenant_id') !== $user->tenant_id) {
+            session(['tenant_id' => $user->tenant_id]);
+        }
 
         return $next($request);
     }

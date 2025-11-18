@@ -32,9 +32,10 @@ class TenantMiddleware
                 $originalDatabase = config('database.connections.mysql.database');
                 config(['database.connections.mysql.database' => $tenant->database]);
 
-                // Simpan tenant_id ke session
-                session(['tenant_id' => $tenant->id]);
-                session(['tenant_name' => $tenant->name]);
+                // Simpan tenant_id ke session HANYA jika belum ada (hindari write berulang)
+                if (!session()->has('tenant_id') || session('tenant_id') !== $tenant->id) {
+                    session(['tenant_id' => $tenant->id]);
+                }
 
                 // Share tenant data ke semua view
                 view()->share('current_tenant', $tenant);
@@ -80,9 +81,10 @@ class TenantMiddleware
                 $originalDatabase = config('database.connections.mysql.database');
                 config(['database.connections.mysql.database' => $tenant->database]);
 
-                // Set tenant_id ke session
-                session(['tenant_id' => $tenant->id]);
-                session(['tenant_name' => $tenant->name]);
+                // Set tenant_id ke session HANYA jika belum ada
+                if (!session()->has('tenant_id') || session('tenant_id') !== $tenant->id) {
+                    session(['tenant_id' => $tenant->id]);
+                }
 
                 // Share tenant data ke semua view
                 view()->share('current_tenant', $tenant);

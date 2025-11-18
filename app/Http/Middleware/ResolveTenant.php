@@ -41,9 +41,10 @@ class ResolveTenant
             abort(403, 'Tenant ini tidak aktif. Silahkan hubungi administrator.');
         }
 
-        // Set tenant ID ke session
-        session(['tenant_id' => $tenant->id]);
-        session(['tenant_name' => $tenant->name]);
+        // Set tenant ID ke session HANYA jika belum ada
+        if (!session()->has('tenant_id') || session('tenant_id') !== $tenant->id) {
+            session(['tenant_id' => $tenant->id]);
+        }
 
         // Jika user login, pastikan dia memiliki akses ke tenant ini
         if (Auth::check() && Auth::user()->tenant_id !== $tenant->id) {

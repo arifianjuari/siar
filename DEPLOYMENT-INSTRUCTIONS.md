@@ -2,11 +2,14 @@
 
 ## Problem
 
-Session tidak persist setelah login di Laravel Cloud karena konflik antara `SESSION_DRIVER=database` (custom) dan `SESSION_DRIVER=cookie` (injected by Laravel Cloud).
+1. Session tidak persist setelah login di Laravel Cloud karena konflik antara `SESSION_DRIVER=database` (custom) dan `SESSION_DRIVER=cookie` (injected by Laravel Cloud).
+2. **"400 Bad Request - Request Header Or Cookie Too Large"** error karena session data terlalu besar dalam cookie.
 
 ## Solution
 
-Accept cookie-based sessions dan simplify authentication logic.
+1. Accept cookie-based sessions dan simplify authentication logic.
+2. Optimize middleware to prevent repeated session writes.
+3. Add session size monitoring and cleanup.
 
 ---
 
@@ -160,6 +163,7 @@ php artisan cache:clear
 - Conflicts with Laravel Cloud's injected `SESSION_DRIVER=cookie`
 - Complex cookie management
 - Race conditions with session saving
+- **Repeated session writes on every request causing cookie bloat**
 
 ### After (Cookie Sessions):
 
@@ -167,6 +171,9 @@ php artisan cache:clear
 - Works with Laravel Cloud's cookie driver
 - Proper session regeneration
 - No manual cookie handling needed
+- **Optimized session writes** - only write when data changes
+- **Session size monitoring** via `LimitSessionSize` middleware
+- **Automatic flash message cleanup** to prevent accumulation
 
 ---
 
@@ -183,6 +190,32 @@ php artisan cache:clear
 ## Files Modified
 
 1. `app/Http/Controllers/Auth/AuthenticatedSessionController.php`
+
    - Removed 250+ lines of database session logic
    - Simplified to standard Laravel authentication flow
+   - Added session cleanup after login
    - Works seamlessly with cookie-based sessions
+
+2. `app/Http/Middleware/TenantMiddleware.php`
+
+   - Optimized to only write `tenant_id` if not already set
+   - Removed redundant `tenant_name` writes (use relationship instead)
+
+3. `app/Http/Middleware/SetTenantId.php`
+   - Only write to session when tenant changes
+4. `app/Http/Middleware/ResolveTenant.php`
+
+   - Only write to session when tenant changes
+
+5. `app/Http/Middleware/ResolveTenantByDomain.php`
+
+   - Only write to session when tenant changes
+
+6. `app/Http/Middleware/LimitSessionSize.php` ✨ NEW
+
+   - Monitors session size and logs warnings
+   - Cleans up flash messages automatically
+   - Prevents cookie bloat
+
+7. `app/Http/Kernel.php`
+   - Registered `LimitSessionSize` middleware in web group

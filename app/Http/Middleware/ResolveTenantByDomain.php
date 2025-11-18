@@ -38,8 +38,10 @@ class ResolveTenantByDomain
             return redirect()->route('dashboard')->with('error', 'Tenant tidak ditemukan.');
         }
 
-        // Set tenant id ke session
-        session(['tenant_id' => $tenant->id]);
+        // Set tenant id ke session HANYA jika belum ada
+        if (!session()->has('tenant_id') || session('tenant_id') !== $tenant->id) {
+            session(['tenant_id' => $tenant->id]);
+        }
 
         return $next($request);
     }
