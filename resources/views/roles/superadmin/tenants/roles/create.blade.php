@@ -1,6 +1,7 @@
 @extends('roles.superadmin.layout')
 
-@section('title', 'Tambah Role Baru')
+@php $hideDefaultHeader = true; @endphp
+
 
 @section('content')
 <div class="container-fluid">
@@ -52,16 +53,32 @@
 
                         <div class="mb-3">
                             <label for="role_slug" class="form-label">Tipe Role <span class="text-danger">*</span></label>
-                            @php $hasTenantAdmin = $tenant->roles()->where('slug', 'tenant-admin')->exists(); @endphp
+                            @php 
+                                // Fresh query untuk memastikan data terbaru
+                                $existingRoleSlugs = \App\Models\Role::where('tenant_id', $tenant->id)
+                                    ->pluck('slug')
+                                    ->toArray();
+                                    
+                                $roleTypes = [
+                                    'tenant-admin' => 'Tenant Admin',
+                                    'manajemen-strategis' => 'Manajemen Strategis',
+                                    'manajemen-eksekutif' => 'Manajemen Eksekutif',
+                                    'manajemen-operasional' => 'Manajemen Operasional',
+                                    'staf' => 'Staf'
+                                ];
+                            @endphp
                             <select class="form-select @error('role_slug') is-invalid @enderror" id="role_slug" name="role_slug" required>
                                 <option value="">Pilih Tipe Role</option>
-                                <option value="tenant-admin" {{ old('role_slug') == 'tenant-admin' ? 'selected' : '' }} {{ $hasTenantAdmin ? 'disabled' : '' }}>Tenant Admin {{ $hasTenantAdmin ? '(sudah ada)' : '' }}</option>
-                                <option value="manajemen-strategis" {{ old('role_slug') == 'manajemen-strategis' ? 'selected' : '' }}>Manajemen Strategis</option>
-                                <option value="manajemen-eksekutif" {{ old('role_slug') == 'manajemen-eksekutif' ? 'selected' : '' }}>Manajemen Eksekutif</option>
-                                <option value="manajemen-operasional" {{ old('role_slug') == 'manajemen-operasional' ? 'selected' : '' }}>Manajemen Operasional</option>
-                                <option value="staf" {{ old('role_slug') == 'staf' ? 'selected' : '' }}>Staf</option>
+                                @foreach($roleTypes as $slug => $label)
+                                    @php $isUsed = in_array($slug, $existingRoleSlugs); @endphp
+                                    <option value="{{ $slug }}" 
+                                        {{ old('role_slug') == $slug ? 'selected' : '' }} 
+                                        {{ $isUsed ? 'disabled' : '' }}>
+                                        {{ $label }} {{ $isUsed ? '(sudah ada)' : '' }}
+                                    </option>
+                                @endforeach
                             </select>
-                            <div class="form-text">Pilih tipe role yang menentukan hak akses pengguna.</div>
+                            <div class="form-text">Pilih tipe role yang menentukan hak akses pengguna. Tipe yang sudah digunakan akan dinonaktifkan.</div>
                             @error('role_slug')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -78,8 +95,7 @@
                         
                         <div class="mb-4">
                             <div class="form-check">
-                                <input type="hidden" name="is_active" value="0">
-                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}>
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', '1') == '1' ? 'checked' : '' }}>
                                 <label class="form-check-label" for="is_active">
                                     Role Aktif
                                 </label>
@@ -98,4 +114,34 @@
         </div>
     </div>
 </div>
-@endsection 
+@endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const roleSlugSelect = document.getElementById('role_slug');
+    
+    form.addEventListener('submit', function(e) {
+        const selectedOption = roleSlugSelect.options[roleSlugSelect.selectedIndex];
+        
+        // Cek jika option yang dipilih adalah disabled
+        if (selectedOption.disabled) {
+            e.preventDefault();
+            alert('Tipe role yang Anda pilih sudah digunakan. Silakan pilih tipe role yang lain.');
+            roleSlugSelect.value = '';
+            roleSlugSelect.focus();
+            return false;
+        }
+        
+        // Cek jika belum memilih tipe role
+        if (!roleSlugSelect.value) {
+            e.preventDefault();
+            alert('Silakan pilih tipe role terlebih dahulu.');
+            roleSlugSelect.focus();
+            return false;
+        }
+    });
+});
+</script>
+@endpush 

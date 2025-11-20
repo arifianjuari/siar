@@ -185,6 +185,20 @@ return [
         // Modul Service Provider
         App\Providers\ModuleServiceProvider::class,
 
+        // Module Service Providers
+        Modules\Dashboard\Providers\DashboardServiceProvider::class,
+        Modules\ActivityManagement\Providers\ActivityManagementServiceProvider::class,
+        Modules\RiskManagement\Providers\RiskManagementServiceProvider::class,
+        Modules\UserManagement\Providers\UserManagementServiceProvider::class,
+        Modules\DocumentManagement\Providers\DocumentManagementServiceProvider::class,
+        Modules\ProductManagement\Providers\ProductManagementServiceProvider::class,
+        Modules\WorkUnit\Providers\WorkUnitServiceProvider::class,
+        Modules\Correspondence\Providers\CorrespondenceServiceProvider::class,
+        Modules\KendaliMutuBiaya\Providers\KendaliMutuBiayaServiceProvider::class,
+        Modules\PerformanceManagement\Providers\PerformanceManagementServiceProvider::class,
+        Modules\SPOManagement\Providers\SPOManagementServiceProvider::class,
+        Modules\SPOManagement\Providers\RouteServiceProvider::class,
+
         // Safety Hook Service Provider
         App\Providers\SafetyHookServiceProvider::class,
 

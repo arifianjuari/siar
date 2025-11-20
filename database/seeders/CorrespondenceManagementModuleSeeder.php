@@ -21,7 +21,7 @@ class CorrespondenceManagementModuleSeeder extends Seeder
         if (!$module) {
             $this->command->info('Modul Correspondence Management tidak ditemukan. Membuat modul baru...');
             $module = Module::create([
-                'name' => 'Correspondence Management',
+                'name' => 'Korespondensi',
                 'slug' => 'correspondence-management',
                 'description' => 'Modul untuk mengelola surat-menyurat',
                 'icon' => 'fa-envelope',
@@ -34,6 +34,7 @@ class CorrespondenceManagementModuleSeeder extends Seeder
             $this->command->info('Modul Correspondence Management sudah ada, memastikan kode dan slug sesuai');
             // Update jika perlu
             $module->update([
+                'name' => 'Korespondensi',
                 'icon' => 'fa-envelope',
                 'code' => 'CORRES',
                 'is_active' => true

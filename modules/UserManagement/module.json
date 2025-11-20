@@ -1,0 +1,14 @@
+{
+  "name": "UserManagement",
+  "alias": "user-management",
+  "description": "Module for managing users, roles and permissions",
+  "version": "1.0.0",
+  "keywords": ["user", "role", "permission", "management"],
+  "active": 1,
+  "order": 1,
+  "providers": [
+    "Modules\\UserManagement\\Providers\\UserManagementServiceProvider"
+  ],
+  "aliases": {},
+  "files": []
+}

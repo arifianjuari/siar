@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             CorrespondenceManagementModuleSeeder::class,
             DocumentManagementModuleSeeder::class,
             PerformanceManagementModuleSeeder::class,
+            ProductManagementModuleSeeder::class,
             ModuleProductSeeder::class,
             TenantModuleSeeder::class,
             RoleModulePermissionSeeder::class,

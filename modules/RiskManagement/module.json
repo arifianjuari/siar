@@ -1,0 +1,14 @@
+{
+  "name": "RiskManagement",
+  "alias": "risk-management",
+  "description": "Module for managing risk reports and analysis",
+  "version": "1.0.0",
+  "keywords": ["risk", "report", "analysis", "management"],
+  "active": 1,
+  "order": 2,
+  "providers": [
+    "Modules\\RiskManagement\\Providers\\RiskManagementServiceProvider"
+  ],
+  "aliases": {},
+  "files": []
+}

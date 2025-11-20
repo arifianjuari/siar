@@ -1,6 +1,6 @@
 @extends('roles.superadmin.layout')
 
-@section('title', 'Tambah Tenant Baru')
+@php $hideDefaultHeader = true; @endphp
 
 @section('content')
 <div class="container-fluid">
@@ -165,8 +165,23 @@
 
 @push('scripts')
 <script>
+let isSubmitting = false;
+
 document.getElementById('tenant-form').addEventListener('submit', function(e) {
     e.preventDefault();
+    
+    // Prevent double submission
+    if (isSubmitting) {
+        return false;
+    }
+    
+    isSubmitting = true;
+    
+    // Disable submit button
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memproses...';
     
     const formData = new FormData(this);
     
@@ -201,6 +216,10 @@ document.getElementById('tenant-form').addEventListener('submit', function(e) {
             }
 
             alert('Terjadi kesalahan: ' + ((data && data.message) ? data.message : 'Respon tidak valid'));
+            // Re-enable button on error
+            isSubmitting = false;
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
             return;
         }
 
@@ -210,10 +229,20 @@ document.getElementById('tenant-form').addEventListener('submit', function(e) {
             try { message = await response.text(); } catch (_) { message = 'Unknown error'; }
         }
         alert('Terjadi kesalahan: ' + message);
+        
+        // Re-enable button on error
+        isSubmitting = false;
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
     })
     .catch(error => {
         console.error('Error:', error);
         alert('Terjadi kesalahan saat menyimpan data: ' + (error && error.message ? error.message : error));
+        
+        // Re-enable button on error
+        isSubmitting = false;
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
     });
 });
 </script>

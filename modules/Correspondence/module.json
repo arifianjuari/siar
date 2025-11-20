@@ -1,0 +1,20 @@
+{
+  "name": "Correspondence",
+  "alias": "correspondence",
+  "description": "Module for managing correspondence letters (incoming and outgoing)",
+  "version": "1.0.0",
+  "keywords": [
+    "correspondence",
+    "letter",
+    "surat-menyurat",
+    "document",
+    "report"
+  ],
+  "active": 1,
+  "order": 6,
+  "providers": [
+    "Modules\\Correspondence\\Providers\\CorrespondenceServiceProvider"
+  ],
+  "aliases": {},
+  "files": []
+}

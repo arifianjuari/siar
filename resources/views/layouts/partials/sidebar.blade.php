@@ -1,50 +1,16 @@
-@php
-    // Mendapatkan modul aktif untuk tenant
-    $activeModules = [];
-    try {
-        if (auth()->check()) {
-            $tenant_id = session('tenant_id');
-            if ($tenant_id) {
-                $tenant = \App\Models\Tenant::find($tenant_id);
-                if ($tenant) {
-                    $activeModules = $tenant->modules()
-                        ->where('tenant_modules.is_active', true)
-                        ->orderBy('name')
-                        ->get();
-                }
-            }
-        }
-    } catch (\Exception $e) {
-        // Jika terjadi error, biarkan $activeModules kosong
-    }
-
-    // Cek role tenant admin
-    $isTenantAdmin = false;
-    try {
-        if (auth()->check() && auth()->user()->role && auth()->user()->role->slug === 'tenant-admin') {
-            $isTenantAdmin = true;
-        }
-    } catch (\Exception $e) {
-        // Abaikan error
-    }
-
-    // Cek role superadmin
-    $isSuperAdmin = false;
-    try {
-        if (auth()->check() && auth()->user()->role && auth()->user()->role->slug === 'superadmin') {
-            $isSuperAdmin = true;
-        }
-    } catch (\Exception $e) {
-        // Abaikan error
-    }
-@endphp
+{{-- 
+    Data sidebar (activeModules, isTenantAdmin, isSuperAdmin) 
+    disediakan oleh SidebarComposer dengan caching untuk performa optimal
+--}}
 
 <div class="sidebar-wrapper">
     <aside class="sidebar rounded-end p-0 menu-uniform" x-data="{ activeDropdown: null }">
     <!-- Feather Icons script tidak lagi diperlukan karena ikon sudah inline SVG -->
 
-    <!-- Sidebar Navigation -->
-    <div class="p-3">
+    <!-- Scrollable Sidebar Content -->
+    <div class="sidebar-content">
+        <!-- Sidebar Navigation -->
+        <div class="p-3">
         <!-- Dashboard - Always available -->
         <a href="{{ route('dashboard') }}" class="nav-link sidebar-link {{ request()->routeIs('dashboard*') ? 'active' : '' }} mb-2">
             <div class="d-flex align-items-center">
@@ -143,8 +109,9 @@
             @foreach($activeModules as $module)
                 @if($module && !empty($module->slug) && function_exists('hasModulePermission') && hasModulePermission($module->slug))
                     @php
-                        // Skip unit kerja dan SPO modules here, we'll show them in a new section
-                        if ($module->slug == 'work-units' || $module->slug == 'spo-management') {
+                        // Skip unit kerja, SPO, dan user-management modules here
+                        // user-management dipindahkan ke menu settings di navbar
+                        if (in_array($module->slug, ['work-units', 'work-unit', 'spo-management', 'user-management'])) {
                             continue;
                         }
                     @endphp
@@ -156,17 +123,19 @@
                                 if ($module->slug == 'user-management') {
                                     $moduleUrl = 'javascript:void(0);'; // Untuk dropdown, hindari navigasi
                                 } elseif ($module->slug == 'product-management') {
-                                    $moduleUrl = url('modules/product-management/products');
+                                    $moduleUrl = url('product-management/products');
                                 } elseif ($module->slug == 'risk-management') {
-                                    $moduleUrl = url('modules/risk-management/dashboard');
+                                    $moduleUrl = url('risk-management/dashboard');
                                 } elseif ($module->slug == 'document-management') {
-                                    $moduleUrl = url('modules/document-management/dashboard');
+                                    $moduleUrl = url('document-management/dashboard');
                                 } elseif ($module->slug == 'correspondence-management') {
-                                    $moduleUrl = url('modules/correspondence/dashboard');
-                                } elseif ($module->slug == 'work-units') {
+                                    $moduleUrl = url('correspondence'); // URL ke dashboard korespondensi
+                                } elseif ($module->slug == 'work-units' || $module->slug == 'work-unit') {
                                     $moduleUrl = url('work-units-dashboard'); // URL ke dashboard unit kerja
                                 } elseif ($module->slug == 'activity-management') {
                                     $moduleUrl = url('activity-management'); // URL ke dashboard pengelolaan kegiatan
+                                } elseif ($module->slug == 'performance-management') {
+                                    $moduleUrl = url('performance-management'); // URL ke dashboard performance management
                                 } else {
                                     $moduleUrl = url('modules/' . $module->slug);
                                 }
@@ -176,18 +145,28 @@
                             
                             $isActive = request()->is('modules/' . $module->slug . '*');
                             
-                            // Sesuaikan $isActive khusus untuk work-units jika perlu
-                            if ($module->slug == 'work-units') {
+                            // Sesuaikan $isActive untuk setiap modul berdasarkan URL pattern
+                            if ($module->slug == 'work-units' || $module->slug == 'work-unit') {
                                 $isActive = (request()->is('work-units*') || request()->is('work-units-dashboard*')) 
                                           && !request()->is('work-units/spo*');
-                            }
-                            
-                            // Sesuaikan $isActive khusus untuk activity-management
-                            if ($module->slug == 'activity-management') {
+                            } elseif ($module->slug == 'activity-management') {
                                 $isActive = request()->is('activity-management*');
-                            }
-                            if ($module->slug == 'correspondence-management') {
-                                $isActive = request()->is('modules/correspondence*');
+                            } elseif ($module->slug == 'correspondence-management') {
+                                $isActive = request()->is('correspondence*');
+                            } elseif ($module->slug == 'document-management') {
+                                $isActive = request()->is('document-management*');
+                            } elseif ($module->slug == 'risk-management') {
+                                $isActive = request()->is('risk-management*');
+                            } elseif ($module->slug == 'product-management') {
+                                $isActive = request()->is('product-management*');
+                            } elseif ($module->slug == 'user-management') {
+                                $isActive = request()->is('user-management*');
+                            } elseif ($module->slug == 'performance-management') {
+                                $isActive = request()->is('performance-management*');
+                            } elseif ($module->slug == 'kendali-mutu-biaya') {
+                                $isActive = request()->is('kendali-mutu-biaya*');
+                            } elseif ($module->slug == 'spo-management') {
+                                $isActive = request()->is('work-units/spo*');
                             }
                             
                             // Menentukan ikon yang lebih sesuai berdasarkan slug modul
@@ -252,7 +231,7 @@
                                 </div>
                             </button>
                             <div id="userManagementSubmenu" class="collapse" style="padding-left: 1.5rem; margin-top: 5px;">
-                                <a href="{{ url('modules/user-management/users') }}" 
+                                <a href="{{ url('user-management/users') }}" 
                                    class="nav-link {{ request()->is('*user-management/users*') ? 'active' : '' }} my-1">
                                     <div class="d-flex align-items-center">
                                         <div class="icon-sidebar">
@@ -261,7 +240,7 @@
                                         <span class="menu-text">Pengguna</span>
                                     </div>
                                 </a>
-                                <a href="{{ url('modules/user-management/roles') }}" 
+                                <a href="{{ url('user-management/roles') }}" 
                                    class="nav-link {{ request()->is('*user-management/roles*') ? 'active' : '' }} my-1">
                                     <div class="d-flex align-items-center">
                                         <div class="icon-sidebar">
@@ -302,7 +281,7 @@
         
         <!-- 1. Profil Unit Saya sebagai menu teratas -->
         @if($userWorkUnitId)
-        <a href="{{ route('work-units.dashboard', $userWorkUnitId) }}" 
+        <a href="{{ route('modules.work-units.dashboard', $userWorkUnitId) }}" 
            class="nav-link sidebar-link {{ request()->is('work-units/*/dashboard') && !request()->is('work-units/spo*') ? 'active' : '' }} mb-2">
             <div class="d-flex align-items-center">
                 <div class="icon-sidebar">
@@ -324,26 +303,27 @@
             </div>
         </a>
         @endif
-    </div>
-    
-    <!-- Bottom Area -->
-    <div class="mt-auto p-3 border-top border-light bottom-nav">
-        <a href="{{ route('tenant.document-references.index') }}" class="nav-link {{ request()->routeIs('tenant.document-references.*') ? 'active' : '' }} mb-2">
-            <div class="d-flex align-items-center">
-                <div class="icon-sidebar">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bookmark"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+        
+        <!-- Bottom Area -->
+        <div class="mt-auto p-3 border-top border-light bottom-nav">
+            <a href="{{ route('tenant.document-references.index') }}" class="nav-link {{ request()->routeIs('tenant.document-references.*') ? 'active' : '' }} mb-2">
+                <div class="d-flex align-items-center">
+                    <div class="icon-sidebar">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bookmark"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                    </div>
+                    <span class="menu-text text-truncate" style="max-width: 140px;">Daftar Referensi</span>
                 </div>
-                <span class="menu-text text-truncate" style="max-width: 140px;">Daftar Referensi</span>
-            </div>
-        </a>
-        <a href="{{ route('pages.help') }}" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="right" title="Bantuan & Dokumentasi">
-            <div class="d-flex align-items-center">
-                <div class="icon-sidebar">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-life-buoy"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"></line><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"></line></svg>
+            </a>
+            <a href="{{ route('pages.help') }}" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="right" title="Bantuan & Dokumentasi">
+                <div class="d-flex align-items-center">
+                    <div class="icon-sidebar">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-life-buoy"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"></line><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"></line></svg>
+                    </div>
+                    <span class="menu-text text-truncate" style="max-width: 140px;">Bantuan</span>
                 </div>
-                <span class="menu-text text-truncate" style="max-width: 140px;">Bantuan</span>
-            </div>
-        </a>
+            </a>
+        </div>
+        </div>
     </div>
     </aside>
 </div>
@@ -371,11 +351,48 @@
         background-color: var(--sidebar-bg) !important; /* Latar belakang putih */
         font-family: Roboto, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif; /* Font bersih */
         border-right: 1px solid #e5e7eb; /* Optional: border pemisah tipis */
-        padding-bottom: 90px; /* Tambahkan padding bawah lebih besar untuk menghindari tumpukan dengan menu bottom */
         /* Hapus min-height, height, width, overflow, position agar tidak bentrok dengan .sidebar-wrapper */
         color: var(--sidebar-text-inactive) !important; /* Pastikan teks terlihat pada latar putih */
         position: relative; /* Pastikan berada di atas overlay lain */
         z-index: 1035;
+        height: 100vh; /* Full viewport height */
+        overflow: hidden; /* Hide overflow on main container */
+    }
+
+    /* Scrollable sidebar content */
+    .sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+        /* Custom scrollbar styling */
+        scrollbar-width: thin;
+        scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+    }
+
+    /* Webkit scrollbar styling */
+    .sidebar-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .sidebar-content::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .sidebar-content::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.5);
+        border-radius: 3px;
+        transition: background-color 0.2s ease;
+    }
+
+    .sidebar-content::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(156, 163, 175, 0.8);
+    }
+
+    /* Ensure bottom area stays at bottom when content is short */
+    .sidebar-content > .p-3:first-child {
+        flex: 1;
     }
 
     /* Menghapus background pada initial jika tidak ada logo */

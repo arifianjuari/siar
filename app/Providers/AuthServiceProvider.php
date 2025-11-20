@@ -17,6 +17,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         \App\Models\RiskAnalysis::class => \App\Policies\RiskAnalysisPolicy::class,
         SPO::class => SPOPolicy::class,
+        \Modules\ProductManagement\Models\Product::class => \App\Policies\ProductPolicy::class,
     ];
 
     /**

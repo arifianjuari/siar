@@ -1,13 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Modules\UserManagement\UserController;
-use App\Http\Controllers\Modules\UserManagement\RoleController;
 use App\Http\Controllers\Modules\ProductManagement\ProductController;
 use App\Http\Controllers\TenantController;
-use App\Http\Controllers\SuperAdmin\TenantManagementController;
-use App\Http\Controllers\SuperAdmin\ModuleManagementController;
-use App\Http\Controllers\SuperAdmin\UserManagementController;
+use App\Http\Controllers\Superadmin\TenantManagementController;
+use App\Http\Controllers\Superadmin\ModuleManagementController;
+use App\Http\Controllers\Superadmin\UserManagementController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -406,22 +404,12 @@ Route::get('/setup-superadmin', function () {
     }
 });
 
-// Dashboard utama - gunakan hanya middleware auth, tanpa tenant
-Route::get('/dashboard', function () {
-    // Untuk debug
-    if (auth()->check()) {
-        \Illuminate\Support\Facades\Log::info('User berhasil mengakses dashboard', [
-            'user_id' => auth()->id(),
-            'email' => auth()->user()->email,
-            'role' => auth()->user()->role->name ?? 'tidak ada role',
-            'tenant' => auth()->user()->tenant->name ?? 'tidak ada tenant'
-        ]);
-    } else {
-        \Illuminate\Support\Facades\Log::warning('Akses dashboard oleh user tidak terotentikasi');
-    }
-
-    return roleView('dashboard', 'pages.dashboard');
-})->middleware('auth')->name('dashboard');
+// Dashboard utama - menggunakan DashboardController dari modul Dashboard
+// Route ini akan di-override oleh modul Dashboard jika modul tersebut aktif
+// Fallback jika modul Dashboard tidak tersedia
+Route::get('/dashboard', [\Modules\Dashboard\Http\Controllers\DashboardController::class, 'index'])
+    ->middleware('auth')
+    ->name('dashboard');
 
 // Profile routes
 Route::middleware(['auth'])->group(function () {
@@ -463,25 +451,29 @@ Route::prefix('superadmin')->name('superadmin.')->middleware(['auth', 'superadmi
             Route::get('/{role}/permissions/edit', [TenantRoleController::class, 'editPermissions'])->name('permissions.edit');
             Route::match(['put', 'patch'], '/{role}/permissions', [TenantRoleController::class, 'updatePermissions'])->name('permissions.update');
         });
+
+        // User Management
+        Route::prefix('{tenant}/users')->name('users.')->group(function () {
+            Route::get('/', [App\Http\Controllers\TenantUserController::class, 'index'])->name('index');
+            Route::get('/create', [App\Http\Controllers\TenantUserController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\TenantUserController::class, 'store'])->name('store');
+            Route::get('/{user}/edit', [App\Http\Controllers\TenantUserController::class, 'edit'])->name('edit');
+            Route::match(['put', 'patch'], '/{user}', [App\Http\Controllers\TenantUserController::class, 'update'])->name('update');
+            Route::delete('/{user}', [App\Http\Controllers\TenantUserController::class, 'destroy'])->name('destroy');
+            Route::post('/{user}/reset-password', [App\Http\Controllers\TenantUserController::class, 'resetPassword'])->name('reset-password');
+        });
     });
 
-    // Risk Management
-    Route::prefix('risk-management')->name('risk-management.')->group(function () {
-        Route::get('reports', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'index'])->name('reports.index');
-        Route::get('reports/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'show'])->name('reports.show');
-        Route::get('reports/create', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'create'])->name('reports.create');
-        Route::post('reports', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'store'])->name('reports.store');
-        Route::get('reports/{id}/edit', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'edit'])->name('reports.edit');
-        Route::put('reports/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'update'])->name('reports.update');
-        Route::delete('reports/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'destroy'])->name('reports.destroy');
-    });
+    // Risk Management Module Routes - Moved to modules/RiskManagement/Http/routes.php
+    // Routes are now loaded via RiskManagementServiceProvider
 
     // Tenant Monitoring
-    Route::get('tenants/monitor', [App\Http\Controllers\SuperAdmin\TenantMonitoringController::class, 'index'])->name('tenants.monitor');
-    Route::get('tenants/monitor/{tenant}', [App\Http\Controllers\SuperAdmin\TenantMonitoringController::class, 'show'])->name('tenants.monitor.show');
+    Route::get('tenants/monitor', [App\Http\Controllers\Superadmin\TenantMonitoringController::class, 'index'])->name('tenants.monitor');
+    Route::get('tenants/monitor/{tenant}', [App\Http\Controllers\Superadmin\TenantMonitoringController::class, 'show'])->name('tenants.monitor.show');
 
     // Module Management
     Route::resource('modules', ModuleManagementController::class);
+    Route::post('modules/sync-filesystem', [ModuleManagementController::class, 'syncFromFilesystem'])->name('modules.sync');
     Route::post('modules/{module}/activate-for-all', [ModuleManagementController::class, 'activateForAll'])->name('modules.activate-for-all');
     Route::post('modules/{module}/deactivate-for-all', [ModuleManagementController::class, 'deactivateForAll'])->name('modules.deactivate-for-all');
 
@@ -500,158 +492,27 @@ Route::middleware(['auth', 'tenant'])->prefix('modules')->name('modules.')->grou
     // User Management Module - Routes didefinisikan di routes/modules/UserManagement.php
     // Route::prefix('user-management') dihapus karena sudah ada di UserManagement.php
 
-    // Product Management Module
-    Route::prefix('product-management')->name('product-management.')->middleware('module:product-management')->group(function () {
-        // Products
-        Route::resource('products', App\Http\Controllers\Modules\ProductManagement\ProductController::class);
-    });
+    // Product Management Module Routes - Moved to modules/ProductManagement/Http/routes.php
+    // Routes are now loaded via ProductManagementServiceProvider
 
-    // Risk Management Module
-    Route::prefix('risk-management')->name('risk-management.')->middleware('module:risk-management')->group(function () {
-        // Dashboard route - Dapat dilihat oleh semua pengguna yang memiliki akses ke modul
-        Route::get('/', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'dashboard'])->name('index');
+    // Risk Management Module Routes - Moved to modules/RiskManagement/Http/routes.php
+    // Routes are now loaded via RiskManagementServiceProvider
 
-        Route::get('/dashboard', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'dashboard'])->name('dashboard');
-
-        // Konfigurasi Akses Analisis Risiko - Khusus untuk tenant admin
-        Route::get('/analysis-config', [App\Http\Controllers\Modules\RiskManagement\RiskManagementController::class, 'showAnalysisConfig'])
-            ->name('analysis-config');
-        Route::post('/analysis-config', [App\Http\Controllers\Modules\RiskManagement\RiskManagementController::class, 'saveAnalysisConfig'])
-            ->name('save-analysis-config');
-
-        // Melihat daftar laporan risiko - Memerlukan izin can_view
-        Route::get('risk-reports', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'index'])
-            ->name('risk-reports.index');
-
-        // Membuat laporan risiko baru - Memerlukan izin can_create
-        Route::get('risk-reports/create', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'create'])
-            ->middleware('check.permission:risk-management,can_create')
-            ->name('risk-reports.create');
-        Route::post('risk-reports', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'store'])
-            ->middleware('check.permission:risk-management,can_create')
-            ->name('risk-reports.store');
-
-        // Melihat detail laporan risiko - Memerlukan izin can_view
-        Route::get('risk-reports/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'show'])
-            ->name('risk-reports.show');
-
-        // Mengedit laporan risiko - Memerlukan izin can_edit
-        Route::get('risk-reports/{id}/edit', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'edit'])
-            ->middleware('check.permission:risk-management,can_edit')
-            ->name('risk-reports.edit');
-        Route::put('risk-reports/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'update'])
-            ->middleware('check.permission:risk-management,can_edit')
-            ->name('risk-reports.update');
-
-        // Menghapus laporan risiko - Memerlukan izin can_delete
-        Route::delete('risk-reports/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'destroy'])
-            ->middleware('check.permission:risk-management,can_delete')
-            ->name('risk-reports.destroy');
-
-        // Dashboard route
-        Route::get('risk-reports/dashboard', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'dashboard'])->name('risk-reports.dashboard');
-
-        // Approval routes - Memerlukan izin can_edit
-        Route::put('risk-reports/{id}/mark-in-review', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'markInReview'])
-            ->middleware('check.permission:risk-management,can_edit')
-            ->name('risk-reports.mark-in-review');
-        Route::put('risk-reports/{id}/approve', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'approve'])
-            ->middleware('check.permission:risk-management,can_edit')
-            ->name('risk-reports.approve');
-
-        // QR Code route - Dapat diakses oleh semua yang memiliki izin can_view
-        Route::get('risk-reports/{id}/qr-code', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'generateQr'])
-            ->name('risk-reports.qr-code');
-
-        // Export Word routes - Memerlukan izin can_export
-        Route::get('risk-reports/{id}/export-awal', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'exportWordAwal'])
-            ->middleware('check.permission:risk-management,can_export')
-            ->name('risk-reports.export-awal');
-        Route::get('risk-reports/{id}/export-akhir', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'exportWordAkhir'])
-            ->middleware('check.permission:risk-management,can_export')
-            ->name('risk-reports.export-akhir');
-
-        // Risk Analysis Routes - Memerlukan izin can_create
-        Route::get('risk-reports/{reportId}/risk-analysis/create', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'create'])
-            ->middleware('check.permission:risk-management,can_create')
-            ->name('risk-analysis.create');
-        Route::post('risk-reports/{reportId}/risk-analysis', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'store'])
-            ->middleware('check.permission:risk-management,can_create')
-            ->name('risk-analysis.store');
-        Route::get('risk-reports/{reportId}/risk-analysis/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'show'])
-            ->name('risk-analysis.show');
-        Route::get('risk-reports/{reportId}/risk-analysis/{id}/edit', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'edit'])
-            ->middleware('check.permission:risk-management,can_create')
-            ->name('risk-analysis.edit');
-        Route::put('risk-reports/{reportId}/risk-analysis/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'update'])
-            ->middleware('check.permission:risk-management,can_create')
-            ->name('risk-analysis.update');
-        Route::get('risk-reports/{reportId}/risk-analysis/{id}/qr-code', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'generateQr'])
-            ->name('risk-analysis.qr-code');
-
-        // Rute untuk hubungan dengan modul kegiatan
-        Route::post('risk-reports/{id}/link-activity', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'linkActivity'])
-            ->middleware('check.permission:risk-management,can_edit')
-            ->name('risk-reports.link-activity');
-        Route::post('risk-reports/{id}/unlink-activity', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'unlinkActivity'])
-            ->middleware('check.permission:risk-management,can_edit')
-            ->name('risk-reports.unlink-activity');
-        Route::post('risk-reports/{id}/create-activity', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'createActivityFromRisk'])
-            ->middleware('check.permission:risk-management,can_edit')
-            ->name('risk-reports.create-activity');
-    });
-
-    // Rute Manajemen Modul - PINDAHKAN KE BAWAH
+    // Rute Manajemen Modul
     Route::get('/', [App\Http\Controllers\ModuleController::class, 'index'])->name('index');
     Route::post('/request-activation', [App\Http\Controllers\ModuleController::class, 'requestActivation'])->name('request-activation');
 
-    // Route khusus untuk Korespondensi
-    Route::get('/correspondence', [App\Http\Controllers\Modules\Correspondence\CorrespondenceController::class, 'index'])->name('correspondence.index');
+    // Document Management Module Routes - Moved to modules/DocumentManagement/Http/routes.php
+    // Routes are now loaded via DocumentManagementServiceProvider
 
+    // Correspondence Module Routes - Moved to modules/Correspondence/Http/routes.php
+    // Routes are now loaded via CorrespondenceServiceProvider
+    
+    // Correspondence routes now loaded via CorrespondenceServiceProvider
+
+    // Route catch-all untuk detail modul - HARUS DI PALING BAWAH
+    // Agar tidak menimpa route modul yang spesifik
     Route::get('/{slug}', [App\Http\Controllers\ModuleController::class, 'show'])->name('show');
-
-    /**
-     * Document Management Module
-     */
-    Route::prefix('document-management')->name('document-management.')->middleware('module:document-management')->group(function () {
-        // Dashboard
-        Route::get('/dashboard', [\App\Http\Controllers\Modules\DocumentManagement\DocumentManagementController::class, 'dashboard'])->name('dashboard');
-
-        // Documents routes
-        Route::resource('documents', \App\Http\Controllers\Modules\DocumentManagement\DocumentController::class)
-            ->except(['show', 'edit', 'update']);
-        
-        // Custom routes dengan middleware tambahan
-        Route::get('documents/{document}', [\App\Http\Controllers\Modules\DocumentManagement\DocumentController::class, 'show'])
-            ->name('documents.show')
-            ->middleware(['check.permission:document-management,can_view', 'tenant.document']);
-
-        Route::get('documents/{document}/edit', [\App\Http\Controllers\Modules\DocumentManagement\DocumentController::class, 'edit'])
-            ->name('documents.edit')
-            ->middleware(['check.permission:document-management,can_edit', 'tenant.document']);
-
-        Route::put('documents/{document}', [\App\Http\Controllers\Modules\DocumentManagement\DocumentController::class, 'update'])
-            ->name('documents.update')
-            ->middleware(['check.permission:document-management,can_edit', 'tenant.document']);
-
-        // Dokumen Revisi Route
-        Route::post('documents/{id}/revise', [\App\Http\Controllers\Modules\DocumentManagement\DocumentController::class, 'revise'])
-            ->name('documents.revise')
-            ->middleware(['check.permission:document-management,can_create', 'tenant.document']);
-
-        // Documents By Tag Route
-        Route::get('documents-by-tag/{slug}', [\App\Http\Controllers\Modules\DocumentManagement\DocumentManagementController::class, 'documentsByTag'])
-            ->name('documents-by-tag');
-
-        // Documents By Type Route
-        Route::get('documents-by-type/{type}', [\App\Http\Controllers\Modules\DocumentManagement\DocumentManagementController::class, 'documentsByType'])
-            ->name('documents-by-type');
-    });
-
-    /**
-     * Correspondence Module - Routes didefinisikan di routes/modules/Correspondence.php
-     * Route dihapus karena sudah ada di Correspondence.php untuk menghindari duplicate
-     */
 });
 
 // Tenant routes - akses melalui subdomain
@@ -672,114 +533,14 @@ Route::domain('{tenant}.' . env('APP_URL_BASE'))->middleware(['tenant.resolve'])
         // Module routes - dikelompokkan berdasarkan modul
         Route::prefix('modules')->name('tenant.modules.')->group(function () {
 
-            // User Management Module
-            Route::prefix('user-management')->name('user-management.')->middleware('module:user-management')->group(function () {
-                // Users
-                Route::resource('users', UserController::class);
+            // User Management Module Routes - Moved to modules/UserManagement/Http/routes.php
+            // Routes are now loaded via UserManagementServiceProvider
 
-                // Roles
-                Route::resource('roles', RoleController::class);
-            });
+            // Product Management Module Routes - Moved to modules/ProductManagement/Http/routes.php
+            // Routes are now loaded via ProductManagementServiceProvider
 
-            // Product Management Module
-            Route::prefix('product-management')->name('product-management.')->middleware('module:product-management')->group(function () {
-                // Products
-                Route::resource('products', ProductController::class);
-            });
-
-            // Risk Management Module
-            Route::prefix('risk-management')->name('risk-management.')->middleware('module:risk-management')->group(function () {
-                // Dashboard route - Dapat dilihat oleh semua pengguna yang memiliki akses ke modul
-                Route::get('/', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'dashboard'])->name('index');
-                Route::get('/dashboard', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'dashboard'])->name('dashboard');
-
-                // Konfigurasi Akses Analisis Risiko - Khusus untuk tenant admin
-                Route::get('/analysis-config', [App\Http\Controllers\Modules\RiskManagement\RiskManagementController::class, 'showAnalysisConfig'])
-                    ->name('analysis-config');
-                Route::post('/analysis-config', [App\Http\Controllers\Modules\RiskManagement\RiskManagementController::class, 'saveAnalysisConfig'])
-                    ->name('save-analysis-config');
-
-                // Melihat daftar laporan risiko - Memerlukan izin can_view
-                Route::get('risk-reports', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'index'])
-                    ->name('risk-reports.index');
-
-                // Membuat laporan risiko baru - Memerlukan izin can_create
-                Route::get('risk-reports/create', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'create'])
-                    ->middleware('check.permission:risk-management,can_create')
-                    ->name('risk-reports.create');
-                Route::post('risk-reports', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'store'])
-                    ->middleware('check.permission:risk-management,can_create')
-                    ->name('risk-reports.store');
-
-                // Melihat detail laporan risiko - Memerlukan izin can_view
-                Route::get('risk-reports/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'show'])
-                    ->name('risk-reports.show');
-
-                // Mengedit laporan risiko - Memerlukan izin can_edit
-                Route::get('risk-reports/{id}/edit', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'edit'])
-                    ->middleware('check.permission:risk-management,can_edit')
-                    ->name('risk-reports.edit');
-                Route::put('risk-reports/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'update'])
-                    ->middleware('check.permission:risk-management,can_edit')
-                    ->name('risk-reports.update');
-
-                // Menghapus laporan risiko - Memerlukan izin can_delete
-                Route::delete('risk-reports/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'destroy'])
-                    ->middleware('check.permission:risk-management,can_delete')
-                    ->name('risk-reports.destroy');
-
-                // Dashboard route
-                Route::get('risk-reports/dashboard', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'dashboard'])->name('risk-reports.dashboard');
-
-                // Approval routes - Memerlukan izin can_edit
-                Route::put('risk-reports/{id}/mark-in-review', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'markInReview'])
-                    ->middleware('check.permission:risk-management,can_edit')
-                    ->name('risk-reports.mark-in-review');
-                Route::put('risk-reports/{id}/approve', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'approve'])
-                    ->middleware('check.permission:risk-management,can_edit')
-                    ->name('risk-reports.approve');
-
-                // QR Code route - Dapat diakses oleh semua yang memiliki izin can_view
-                Route::get('risk-reports/{id}/qr-code', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'generateQr'])
-                    ->name('risk-reports.qr-code');
-
-                // Export Word routes - Memerlukan izin can_export
-                Route::get('risk-reports/{id}/export-awal', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'exportWordAwal'])
-                    ->middleware('check.permission:risk-management,can_export')
-                    ->name('risk-reports.export-awal');
-                Route::get('risk-reports/{id}/export-akhir', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'exportWordAkhir'])
-                    ->middleware('check.permission:risk-management,can_export')
-                    ->name('risk-reports.export-akhir');
-
-                // Risk Analysis Routes - Memerlukan izin can_create
-                Route::get('risk-reports/{reportId}/risk-analysis/create', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'create'])
-                    ->middleware('check.permission:risk-management,can_create')
-                    ->name('risk-analysis.create');
-                Route::post('risk-reports/{reportId}/risk-analysis', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'store'])
-                    ->middleware('check.permission:risk-management,can_create')
-                    ->name('risk-analysis.store');
-                Route::get('risk-reports/{reportId}/risk-analysis/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'show'])
-                    ->name('risk-analysis.show');
-                Route::get('risk-reports/{reportId}/risk-analysis/{id}/edit', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'edit'])
-                    ->middleware('check.permission:risk-management,can_create')
-                    ->name('risk-analysis.edit');
-                Route::put('risk-reports/{reportId}/risk-analysis/{id}', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'update'])
-                    ->middleware('check.permission:risk-management,can_create')
-                    ->name('risk-analysis.update');
-                Route::get('risk-reports/{reportId}/risk-analysis/{id}/qr-code', [App\Http\Controllers\Modules\RiskManagement\RiskAnalysisController::class, 'generateQr'])
-                    ->name('risk-analysis.qr-code');
-
-                // Rute untuk hubungan dengan modul kegiatan
-                Route::post('risk-reports/{id}/link-activity', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'linkActivity'])
-                    ->middleware('check.permission:risk-management,can_edit')
-                    ->name('risk-reports.link-activity');
-                Route::post('risk-reports/{id}/unlink-activity', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'unlinkActivity'])
-                    ->middleware('check.permission:risk-management,can_edit')
-                    ->name('risk-reports.unlink-activity');
-                Route::post('risk-reports/{id}/create-activity', [App\Http\Controllers\Modules\RiskManagement\RiskReportController::class, 'createActivityFromRisk'])
-                    ->middleware('check.permission:risk-management,can_edit')
-                    ->name('risk-reports.create-activity');
-            });
+            // Risk Management Module Routes - Moved to modules/RiskManagement/Http/routes.php
+            // Routes are now loaded via RiskManagementServiceProvider
         });
     });
 });
@@ -906,6 +667,8 @@ Route::middleware(['auth'])->prefix('tenant')->name('tenant.')->group(function (
     Route::get('/profile', [App\Http\Controllers\TenantController::class, 'profile'])->middleware('disable.debug')->name('profile');
     Route::post('/profile', [App\Http\Controllers\TenantController::class, 'updateProfile'])->middleware('disable.debug')->name('profile.update');
     Route::get('/settings', [App\Http\Controllers\TenantController::class, 'settings'])->name('settings');
+    // Fallback endpoint untuk melayani logo tanpa bergantung pada symlink storage
+    Route::get('/logo', [App\Http\Controllers\TenantController::class, 'logo'])->name('logo');
     Route::post('/settings', [App\Http\Controllers\TenantController::class, 'updateSettings'])->name('settings.update');
 
     // Unit Kerja Management
@@ -953,48 +716,13 @@ Route::get('/help', function () {
     return view('pages.help');
 })->name('pages.help');
 
-// Unit Kerja routes (dashboard terletak di modules/WorkUnit.php)
-Route::middleware(['web', 'auth', 'tenant', 'check.permission:work-units,can_view'])
-    ->get('/work-units-dashboard', [App\Http\Controllers\Modules\WorkUnitController::class, 'globalDashboard'])
-    ->name('work-units.global-dashboard');
+// Work Unit Module Routes - Moved to modules/WorkUnit/Http/routes.php
+// Routes are now loaded via WorkUnitServiceProvider
 
-// Activity Management Module Routes
-Route::middleware(['web', 'auth', 'tenant', 'module:activity-management'])
-    ->prefix('activity-management')
-    ->name('modules.activity-management.')
-    ->group(function () {
-        // Dashboard
-        Route::get('/', [App\Http\Controllers\Modules\ActivityManagement\DashboardController::class, 'index'])
-            ->name('dashboard');
+// Activity Management Module Routes - Moved to modules/ActivityManagement/Http/routes.php
+// Routes are now loaded via ActivityManagementServiceProvider
 
-        // Activity routes
-        Route::resource('activities', App\Http\Controllers\Modules\ActivityManagement\ActivityController::class);
-        Route::put('activities/{uuid}/update-status', [App\Http\Controllers\Modules\ActivityManagement\ActivityController::class, 'updateStatus'])
-            ->name('activities.update-status');
-
-        // Activity comments
-        Route::resource('comments', App\Http\Controllers\Modules\ActivityManagement\ActivityCommentController::class)
-            ->except(['index', 'show', 'create']);
-        Route::get('activities/{activity}/comments', [App\Http\Controllers\Modules\ActivityManagement\ActivityCommentController::class, 'index'])
-            ->name('comments.index');
-
-        // Activity assignees
-        Route::resource('assignees', App\Http\Controllers\Modules\ActivityManagement\ActivityAssigneeController::class)
-            ->except(['index', 'show', 'create']);
-        Route::get('activities/{activity}/assignees', [App\Http\Controllers\Modules\ActivityManagement\ActivityAssigneeController::class, 'index'])
-            ->name('assignees.index');
-
-        // Actionable items
-        Route::resource('actionable-items', App\Http\Controllers\Modules\ActivityManagement\ActionableItemController::class)
-            ->except(['index', 'show', 'create']);
-        Route::get('activities/{activity}/actionable-items', [App\Http\Controllers\Modules\ActivityManagement\ActionableItemController::class, 'index'])
-            ->name('actionable-items.index');
-    });
-
-// Route langsung untuk dashboard SPO
-Route::get('/work-units/spo/dashboard', [\App\Http\Controllers\Modules\WorkUnit\SPOController::class, 'dashboard'])
-    ->name('work-units.spo.dashboard.direct')
-    ->middleware(['web', 'auth', 'tenant']);
+// SPO Dashboard routes moved to module
 
 // Route untuk debugging gambar (gunakan middleware auth jika diinginkan)
 Route::post('/log-image-error', function (Request $request) {
@@ -1009,23 +737,9 @@ Route::post('/log-image-error', function (Request $request) {
 })->middleware('web');
 
 require __DIR__ . '/modules/ActivityManagement.php';
-require __DIR__ . '/modules/WorkUnit.php';
-require __DIR__ . '/modules/Correspondence.php';
-require __DIR__ . '/modules/UserManagement.php';
-require __DIR__ . '/modules/KendaliMutuBiaya.php';
+// WorkUnit routes now loaded via WorkUnitServiceProvider
+// Correspondence routes now loaded via CorrespondenceServiceProvider
+// UserManagement routes now loaded via UserManagementServiceProvider
+// KendaliMutuBiaya routes now loaded via KendaliMutuBiayaServiceProvider
 
-// Tenant User Management Routes
-Route::middleware(['auth', 'superadmin'])->group(function () {
-    Route::prefix('superadmin/tenants/{tenant}/users')
-        ->name('superadmin.tenants.users.')
-        ->controller(App\Http\Controllers\TenantUserController::class)
-        ->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::get('/create', 'create')->name('create');
-            Route::post('/', 'store')->name('store');
-            Route::get('/{user}/edit', 'edit')->name('edit');
-            Route::put('/{user}', 'update')->name('update');
-            Route::delete('/{user}', 'destroy')->name('destroy');
-            Route::post('/{user}/reset-password', 'resetPassword')->name('reset-password');
-        });
-});
+// Tenant User Management Routes - Moved to superadmin.tenants.users group above (line 465-474)

@@ -1,14 +1,26 @@
 <?php
 
-use App\Http\Controllers\Modules\WorkUnit\SPOController;
-use App\Http\Controllers\Modules\WorkUnitController;
-use App\Http\Controllers\Modules\WorkUnitFixController;
+use Modules\WorkUnit\Http\Controllers\WorkUnitController;
+use Modules\WorkUnit\Http\Controllers\WorkUnitFixController;
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| Work Unit Module Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for the Work Unit module.
+| These routes use the 'web', 'auth', 'tenant' middleware and permission checks.
+|
+*/
+
+// Main Work Unit Routes
 Route::middleware(['web', 'auth', 'tenant', 'check.permission:work-units,can_view'])
     ->prefix('work-units')
-    ->name('work-units.')
+    ->name('modules.work-units.')
     ->group(function () {
+        
+        // Work Unit CRUD
         Route::get('/', [WorkUnitController::class, 'index'])->name('index');
 
         Route::middleware('check.permission:work-units,can_create')
@@ -28,56 +40,25 @@ Route::middleware(['web', 'auth', 'tenant', 'check.permission:work-units,can_vie
                 Route::delete('/{workUnit}', [WorkUnitController::class, 'destroy'])->name('destroy');
             });
 
-        // Route untuk dashboard unit kerja
+        // Work Unit Dashboard
         Route::get('/{workUnit}/dashboard', [WorkUnitController::class, 'dashboard'])
-            ->middleware('check.permission:work-units,can_view') // Pastikan permission sesuai
+            ->middleware('check.permission:work-units,can_view')
             ->name('dashboard');
 
-        // Route untuk SPO
-        Route::prefix('spo')->name('spo.')->group(function () {
-            Route::get('/', [SPOController::class, 'index'])->name('index');
+        // Global Dashboard
+        Route::get('/global-dashboard', [WorkUnitController::class, 'globalDashboard'])
+            ->middleware('check.permission:work-units,can_view')
+            ->name('global-dashboard');
 
-            // Tambahkan route dashboard SPO
-            Route::get('/dashboard', [SPOController::class, 'dashboard'])->name('dashboard');
-
-            Route::middleware('check.permission:work-units,can_create')
-                ->group(function () {
-                    Route::get('/create', [SPOController::class, 'create'])->name('create');
-                    Route::post('/', [SPOController::class, 'store'])->name('store');
-                });
-
-            Route::middleware('check.permission:work-units,can_view')
-                ->group(function () {
-                    Route::get('/{spo}', [SPOController::class, 'show'])->name('show');
-                });
-
-            Route::middleware('check.permission:work-units,can_edit')
-                ->group(function () {
-                    Route::get('/{spo}/edit', [SPOController::class, 'edit'])->name('edit');
-                    Route::put('/{spo}', [SPOController::class, 'update'])->name('update');
-                });
-
-            Route::middleware('check.permission:work-units,can_delete')
-                ->group(function () {
-                    Route::delete('/{spo}', [SPOController::class, 'destroy'])->name('destroy');
-                });
-
-            // Route untuk generate PDF
-            Route::get('/{spo}/generate-pdf', [SPOController::class, 'generatePdf'])->name('generate-pdf');
-
-            // Route untuk generate QR code
-            Route::get('/{spo}/qr-code', [SPOController::class, 'generateQr'])->name('qr-code');
-        });
+        // Note: SPO routes have been moved to SPOManagement module
+        // See modules/SPOManagement/Http/routes.php
     });
 
-// Rute perbaikan tanpa middleware permission untuk debugging
+// Fix Routes (for debugging - without strict permissions)
 Route::middleware(['web', 'auth', 'tenant'])
     ->prefix('work-units-fix')
-    ->name('work-units.fix.')
+    ->name('modules.work-units.fix.')
     ->group(function () {
-        // Daftar unit kerja (perbaikan)
         Route::get('/', [WorkUnitFixController::class, 'index'])->name('index');
-
-        // Dashboard unit kerja (perbaikan)
         Route::get('/{workUnit}/dashboard', [WorkUnitFixController::class, 'dashboard'])->name('dashboard');
     });

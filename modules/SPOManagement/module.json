@@ -1,0 +1,12 @@
+{
+  "name": "SPOManagement",
+  "alias": "spo-management",
+  "description": "Modul untuk mengelola Standar Prosedur Operasional (SPO) rumah sakit",
+  "keywords": ["spo", "standar", "prosedur", "operasional", "dokumen"],
+  "priority": 7,
+  "providers": [
+    "Modules\\SPOManagement\\Providers\\SPOManagementServiceProvider",
+    "Modules\\SPOManagement\\Providers\\RouteServiceProvider"
+  ],
+  "files": []
+}

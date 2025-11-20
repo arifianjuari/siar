@@ -18,73 +18,63 @@ return new class extends Migration
                 'name' => 'Kendali Mutu Kendali Biaya',
                 'description' => 'Modul untuk manajemen clinical pathway dan kendali mutu dan biaya',
                 'slug' => 'kendali-mutu-biaya',
+                'code' => 'KMKB',
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
         }
 
         // Ambil ID modul
-        $moduleId = DB::table('modules')->where('slug', 'kendali-mutu-biaya')->first()->id;
-
-        // Tambahkan permissions untuk modul
-        $permissions = [
-            'view_clinical_pathway',
-            'create_clinical_pathway',
-            'edit_clinical_pathway',
-            'delete_clinical_pathway',
-            'view_cp_evaluation',
-            'create_cp_evaluation',
-            'edit_cp_evaluation',
-            'delete_cp_evaluation',
-            'view_cp_tariff',
-            'create_cp_tariff',
-            'edit_cp_tariff',
-            'delete_cp_tariff'
-        ];
-
-        $roleModulePermissions = [];
+        $module = DB::table('modules')->where('slug', 'kendali-mutu-biaya')->first();
+        if (!$module) {
+            return; // Skip jika modul tidak ditemukan
+        }
+        
+        $moduleId = $module->id;
 
         // Dapatkan semua roles
         $roles = DB::table('roles')->get();
 
-        // Untuk setiap role, tambahkan permissions
+        // Untuk setiap role, tambahkan permissions menggunakan struktur boolean
         foreach ($roles as $role) {
-            foreach ($permissions as $permission) {
-                // Cek apakah permission sudah ada
-                $permissionExists = DB::table('role_module_permissions')
-                    ->where('role_id', $role->id)
-                    ->where('module_id', $moduleId)
-                    ->where('permission', $permission)
-                    ->exists();
+            // Cek apakah permission sudah ada
+            $permissionExists = DB::table('role_module_permissions')
+                ->where('role_id', $role->id)
+                ->where('module_id', $moduleId)
+                ->exists();
 
-                if (!$permissionExists) {
-                    // Berikan semua permission ke superadmin
-                    if ($role->name === 'Super Admin') {
-                        $roleModulePermissions[] = [
-                            'role_id' => $role->id,
-                            'module_id' => $moduleId,
-                            'permission' => $permission,
-                            'created_at' => now(),
-                            'updated_at' => now()
-                        ];
-                    }
-                    // Berikan permission view ke admin
-                    elseif ($role->name === 'Admin' && str_starts_with($permission, 'view_')) {
-                        $roleModulePermissions[] = [
-                            'role_id' => $role->id,
-                            'module_id' => $moduleId,
-                            'permission' => $permission,
-                            'created_at' => now(),
-                            'updated_at' => now()
-                        ];
-                    }
+            if (!$permissionExists) {
+                // Berikan semua permission ke superadmin
+                if ($role->name === 'Super Admin') {
+                    DB::table('role_module_permissions')->insert([
+                        'role_id' => $role->id,
+                        'module_id' => $moduleId,
+                        'can_view' => true,
+                        'can_create' => true,
+                        'can_edit' => true,
+                        'can_delete' => true,
+                        'can_export' => true,
+                        'can_import' => true,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
+                // Berikan permission view ke admin
+                elseif ($role->name === 'Admin') {
+                    DB::table('role_module_permissions')->insert([
+                        'role_id' => $role->id,
+                        'module_id' => $moduleId,
+                        'can_view' => true,
+                        'can_create' => false,
+                        'can_edit' => false,
+                        'can_delete' => false,
+                        'can_export' => false,
+                        'can_import' => false,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
                 }
             }
-        }
-
-        // Insert permissions yang belum ada
-        if (!empty($roleModulePermissions)) {
-            DB::table('role_module_permissions')->insert($roleModulePermissions);
         }
     }
 

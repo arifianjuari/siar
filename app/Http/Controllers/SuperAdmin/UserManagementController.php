@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\SuperAdmin;
+namespace App\Http\Controllers\Superadmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -20,7 +20,13 @@ class UserManagementController extends Controller
     public function index(Request $request)
     {
         // Dapatkan semua pengguna dengan relasi tenant dan role
-        $query = User::with(['tenant', 'role']);
+        // Superadmin perlu melihat role dari semua tenant, jadi kita bypass tenant scope
+        $query = User::with([
+            'tenant',
+            'role' => function ($query) {
+                $query->withoutGlobalScope('tenant_id');
+            }
+        ]);
 
         // Filter berdasarkan tenant
         if ($request->filled('tenant')) {
@@ -106,7 +112,12 @@ class UserManagementController extends Controller
      */
     public function show(User $user)
     {
-        $user->load(['tenant', 'role']);
+        $user->load([
+            'tenant',
+            'role' => function ($query) {
+                $query->withoutGlobalScope('tenant_id');
+            }
+        ]);
 
         // Dapatkan log aktivitas pengguna
         $activityLogs = ActivityLog::where('user_id', $user->id)

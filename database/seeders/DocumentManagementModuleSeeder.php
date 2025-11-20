@@ -21,7 +21,7 @@ class DocumentManagementModuleSeeder extends Seeder
         if (!$module) {
             $this->command->info('Modul Document Management tidak ditemukan. Membuat modul baru...');
             $module = Module::create([
-                'name' => 'Document Management',
+                'name' => 'Dokumen',
                 'slug' => 'document-management',
                 'description' => 'Modul untuk mengelola dokumen dan file',
                 'icon' => 'fa-file-alt',
@@ -34,6 +34,7 @@ class DocumentManagementModuleSeeder extends Seeder
             $this->command->info('Modul Document Management sudah ada, memastikan kode dan slug sesuai');
             // Update jika perlu
             $module->update([
+                'name' => 'Dokumen',
                 'icon' => 'fa-file-alt',
                 'code' => 'DOCMANAGE',
                 'is_active' => true

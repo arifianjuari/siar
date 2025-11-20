@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Modules\Dashboard\DashboardController;
-use App\Http\Controllers\Modules\Dashboard\PageController;
+use Modules\Dashboard\Http\Controllers\DashboardController;
+use Modules\Dashboard\Http\Controllers\PageController;
 
 /*
 |--------------------------------------------------------------------------

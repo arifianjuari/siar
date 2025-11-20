@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Controllers\Modules\ActivityManagement\ActionableItemController;
-use App\Http\Controllers\Modules\ActivityManagement\ActivityAssigneeController;
-use App\Http\Controllers\Modules\ActivityManagement\ActivityCommentController;
-use App\Http\Controllers\Modules\ActivityManagement\ActivityController;
+use Modules\ActivityManagement\Http\Controllers\ActionableItemController;
+use Modules\ActivityManagement\Http\Controllers\ActivityAssigneeController;
+use Modules\ActivityManagement\Http\Controllers\ActivityCommentController;
+use Modules\ActivityManagement\Http\Controllers\ActivityController;
+use Modules\ActivityManagement\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,6 +20,12 @@ Route::middleware(['web', 'auth', 'tenant', 'module:activity-management'])
     ->prefix('activity-management')
     ->name('activity-management.')
     ->group(function () {
+        // Dashboard
+        Route::get('/', [DashboardController::class, 'index'])
+            ->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('index');
+        
         // Index - View list of activities
         Route::get('activities', [ActivityController::class, 'index'])
             ->name('activities.index');

@@ -1,6 +1,6 @@
 @extends('roles.superadmin.layout')
 
-@section('title', 'Edit Role')
+@php $hideDefaultHeader = true; @endphp
 
 @section('content')
 <div class="container-fluid">
@@ -67,7 +67,7 @@
                         
                         <div class="mb-4">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', $role->is_active) ? 'checked' : '' }}>
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', $role->is_active ? '1' : '0') == '1' ? 'checked' : '' }}>
                                 <label class="form-check-label" for="is_active">
                                     Role Aktif
                                 </label>

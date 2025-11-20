@@ -1,0 +1,14 @@
+{
+  "name": "PerformanceManagement",
+  "alias": "performance-management",
+  "description": "Modul untuk mengelola indikator kinerja individu (KPI), nilai, dan template",
+  "version": "1.0.0",
+  "keywords": ["performance", "kpi", "indicator", "score", "management"],
+  "active": 1,
+  "order": 50,
+  "providers": [
+    "Modules\\PerformanceManagement\\Providers\\PerformanceManagementServiceProvider"
+  ],
+  "aliases": {},
+  "files": []
+}

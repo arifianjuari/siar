@@ -346,7 +346,13 @@
                                     <tr>
                                         <td>{{ $user->name }}</td>
                                         <td>{{ $user->email }}</td>
-                                        <td>{{ $user->role ? $user->role->name : '-' }}</td>
+                                        <td>
+                                            @if($user->role)
+                                                <span class="badge bg-info">{{ $user->role->name }}</span>
+                                            @else
+                                                <span class="badge bg-secondary" title="Role ID: {{ $user->role_id ?? 'NULL' }}">-</span>
+                                            @endif
+                                        </td>
                                         <td>{!! $user->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-danger">Nonaktif</span>' !!}</td>
                                         <td>{{ $user->last_login_at ? $user->last_login_at->format('d M Y H:i') : 'Belum Pernah Login' }}</td>
                                         <td class="text-center">
@@ -456,46 +462,38 @@
                 const tenantId = this.dataset.tenantId;
                 const currentStatus = this.dataset.currentStatus;
                 const newStatus = currentStatus === '1' ? '0' : '1';
-                
-                // Update UI optimistically
                 const statusBadge = document.getElementById(`module-status-${moduleId}`);
-                if (newStatus === '1') {
-                    statusBadge.className = 'badge bg-success';
-                    statusBadge.textContent = 'Aktif';
-                    this.className = 'btn btn-sm btn-outline-danger toggle-module';
-                    this.textContent = 'Nonaktifkan';
-                } else {
-                    statusBadge.className = 'badge bg-danger';
-                    statusBadge.textContent = 'Nonaktif';
-                    this.className = 'btn btn-sm btn-outline-success toggle-module';
-                    this.textContent = 'Aktifkan';
-                }
                 
-                this.dataset.currentStatus = newStatus;
+                // Disable button during request
+                this.disabled = true;
+                const originalText = this.textContent;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Loading...';
                 
                 // Send AJAX request
                 fetch(`/superadmin/tenants/${tenantId}/toggle-module`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({
                         module_id: moduleId,
                         is_active: newStatus === '1'
                     })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(err.message || 'Terjadi kesalahan pada server');
+                        });
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
-                        // Success handling (optional toast notification)
-                        console.log('Module status updated successfully');
-                    } else {
-                        // Revert UI changes on error
-                        console.error('Error updating module status:', data.message);
-                        this.dataset.currentStatus = currentStatus;
-                        
-                        if (currentStatus === '1') {
+                        // Update UI on success
+                        if (newStatus === '1') {
                             statusBadge.className = 'badge bg-success';
                             statusBadge.textContent = 'Aktif';
                             this.className = 'btn btn-sm btn-outline-danger toggle-module';
@@ -506,13 +504,44 @@
                             this.className = 'btn btn-sm btn-outline-success toggle-module';
                             this.textContent = 'Aktifkan';
                         }
+                        this.dataset.currentStatus = newStatus;
+                        
+                        // Show success message
+                        showAlert('success', data.message || 'Status modul berhasil diperbarui');
+                    } else {
+                        throw new Error(data.message || 'Gagal memperbarui status modul');
                     }
                 })
                 .catch(error => {
-                    console.error('AJAX request failed:', error);
+                    console.error('Error toggling module:', error);
+                    this.textContent = originalText;
+                    showAlert('danger', error.message || 'Terjadi kesalahan saat memperbarui status modul');
+                })
+                .finally(() => {
+                    this.disabled = false;
                 });
             });
         });
+        
+        // Helper function to show alert
+        function showAlert(type, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            const container = document.querySelector('.container-fluid');
+            const firstRow = container.querySelector('.row');
+            container.insertBefore(alertDiv, firstRow.nextSibling);
+            
+            // Auto dismiss after 5 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
     });
 </script>
 @endpush 

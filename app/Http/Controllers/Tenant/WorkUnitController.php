@@ -39,7 +39,7 @@ class WorkUnitController extends Controller
             'tenant_id' => $tenantId
         ]);
 
-        return view('tenant.work_units.index', compact('workUnits'));
+        return view('roles.tenant.work_units.index', compact('workUnits'));
     }
 
     /**
@@ -60,7 +60,7 @@ class WorkUnitController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('tenant.work_units.create', compact('parentUnits', 'users'));
+        return view('roles.tenant.work_units.create', compact('parentUnits', 'users'));
     }
 
     /**
@@ -132,7 +132,7 @@ class WorkUnitController extends Controller
         // Load children and parent
         $workUnit->load(['children', 'parent', 'headOfUnit']);
 
-        return view('tenant.work_units.show', compact('workUnit'));
+        return view('roles.tenant.work_units.show', compact('workUnit'));
     }
 
     /**
@@ -159,7 +159,7 @@ class WorkUnitController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('tenant.work_units.edit', compact('workUnit', 'parentUnits', 'users'));
+        return view('roles.tenant.work_units.edit', compact('workUnit', 'parentUnits', 'users'));
     }
 
     /**

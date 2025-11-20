@@ -375,6 +375,56 @@ class TenantController extends Controller
     }
 
     /**
+     * Stream logo tenant langsung dari storage tanpa bergantung pada symlink.
+     */
+    public function logo(Request $request)
+    {
+        $tenant = Tenant::find(session('tenant_id'));
+        if (!$tenant || !$tenant->logo) {
+            abort(404);
+        }
+
+        try {
+            $storagePath = storage_path('app/public/' . $tenant->logo); // e.g. tenant_logos/filename
+            if (!file_exists($storagePath)) {
+                // Coba juga path di public/images (jika ada)
+                $fallbackPublic = public_path('images/' . basename($tenant->logo));
+                if (file_exists($fallbackPublic)) {
+                    return response()->file($fallbackPublic, [
+                        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                        'Pragma' => 'no-cache',
+                        'Expires' => '0',
+                    ]);
+                }
+                abort(404);
+            }
+
+            // Tentukan mime type sederhana dari ekstensi
+            $ext = strtolower(pathinfo($storagePath, PATHINFO_EXTENSION));
+            $mime = match ($ext) {
+                'jpg', 'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                default => 'application/octet-stream',
+            };
+
+            return response()->file($storagePath, [
+                'Content-Type' => $mime,
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Gagal menayangkan logo tenant', [
+                'error' => $e->getMessage(),
+                'tenant_id' => $tenant?->id,
+                'logo' => $tenant?->logo,
+            ]);
+            abort(404);
+        }
+    }
+
+    /**
      * Tampilkan halaman pengaturan tenant
      */
     public function settings()

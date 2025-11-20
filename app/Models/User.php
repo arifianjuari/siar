@@ -122,6 +122,18 @@ class User extends Authenticatable
     }
 
     /**
+     * Cek apakah user adalah superadmin
+     * 
+     * @return bool
+     */
+    public function isSuperadmin(): bool
+    {
+        return $this->role && 
+               (strtolower($this->role->name) === 'super admin' || 
+                strtolower($this->role->slug) === 'super-admin');
+    }
+
+    /**
      * Cek apakah user memiliki role tertentu
      */
     public function hasRole(string $roleSlug): bool
@@ -214,5 +226,72 @@ class User extends Authenticatable
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
         ]);
+    }
+
+    /**
+     * Check if user has access to a specific tenant
+     * 
+     * @param int $tenantId
+     * @return bool
+     */
+    public function hasAccessToTenant(int $tenantId): bool
+    {
+        // Superadmin has access to all tenants
+        if ($this->isSuperadmin()) {
+            return true;
+        }
+
+        // User can only access their own tenant
+        return $this->tenant_id === $tenantId;
+    }
+
+    /**
+     * Switch user's current tenant context (with validation)
+     * 
+     * @param int $tenantId
+     * @throws \Exception
+     */
+    public function switchTenant(int $tenantId): void
+    {
+        // Validate user has access to the target tenant
+        if (!$this->hasAccessToTenant($tenantId)) {
+            \Illuminate\Support\Facades\Log::warning('Unauthorized tenant switch attempt', [
+                'user_id' => $this->id,
+                'user_email' => $this->email,
+                'from_tenant' => $this->tenant_id,
+                'to_tenant' => $tenantId,
+                'ip' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            throw new \Exception('User tidak memiliki akses ke tenant ini');
+        }
+
+        // Validate target tenant exists and is active
+        $targetTenant = Tenant::where('id', $tenantId)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$targetTenant) {
+            throw new \Exception('Tenant tidak ditemukan atau tidak aktif');
+        }
+
+        // Log successful tenant switch for audit
+        \Illuminate\Support\Facades\Log::info('Tenant switch successful', [
+            'user_id' => $this->id,
+            'user_email' => $this->email,
+            'from_tenant' => $this->tenant_id,
+            'to_tenant' => $tenantId,
+            'ip' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
+
+        // Update session with new tenant
+        session(['tenant_id' => $tenantId]);
+
+        // Clear user's permission cache after tenant switch
+        if (app()->bound(\App\Services\PermissionService::class)) {
+            app(\App\Services\PermissionService::class)->clearUserCache($this);
+        }
     }
 }

@@ -26,7 +26,12 @@
                         $tenantLogo = $tenant->logo;
                         $tenantName = $tenant->name;
                         if ($tenantLogo) {
-                            $logoExists = Storage::disk('public')->exists($tenantLogo);
+                            // Cek keberadaan file di public/images (prioritas) atau storage public sebagai fallback
+                            $logoFilename = basename($tenantLogo);
+                            $publicImagePath = 'images/' . $logoFilename;
+                            $publicFileExists = file_exists(public_path($publicImagePath));
+                            $storageFileExists = Storage::disk('public')->exists($tenantLogo);
+                            $logoExists = $publicFileExists || $storageFileExists;
                         }
                     }
 
@@ -36,7 +41,8 @@
                         'tenant_name' => $tenantName,
                         'logo_path' => $tenantLogo,
                         'logo_exists' => $logoExists,
-                        'asset_url' => $tenantLogo ? asset('storage/' . $tenantLogo) : null,
+                        'asset_public_url' => isset($publicImagePath) ? asset($publicImagePath) : null,
+                        'asset_storage_url' => $tenantLogo ? asset('storage/' . $tenantLogo) : null,
                         'app_url' => config('app.url'),
                         'request_host' => request()->getHost()
                     ]);
@@ -48,11 +54,19 @@
             
             <div class="tenant-branding d-flex align-items-center">
                 @if ($tenantLogo && $logoExists)
-                    <img src="{{ asset('storage/' . $tenantLogo) }}?v={{ isset($tenant) && $tenant->updated_at ? $tenant->updated_at->timestamp : time() }}" 
-                         alt="{{ $tenantName }}" 
+                    @php
+                        $logoFilename = basename($tenantLogo);
+                        $publicImagePath = 'images/' . $logoFilename;
+                        $ts = isset($tenant) && $tenant->updated_at ? $tenant->updated_at->timestamp : time();
+                        $primaryUrl = asset($publicImagePath) . '?v=' . $ts;
+                        $routeFallbackUrl = route('tenant.logo') . '?v=' . $ts;
+                        $storageFallbackUrl = asset('storage/' . $tenantLogo) . '?v=' . $ts;
+                    @endphp
+                    <img src="{{ $primaryUrl }}" 
+                         alt="" aria-label="{{ $tenantName }}"
                          class="tenant-logo d-inline-block align-top me-2" 
                          style="height: 36px; width: auto;" 
-                         onerror="this.onerror=null; this.src='{{ asset('storage/' . $tenantLogo) }}?v=' + new Date().getTime();">
+                         onerror="this.onerror=null; this.src='{{ $routeFallbackUrl }}'; this.addEventListener('error', function(){ this.src='{{ $storageFallbackUrl }}'; }, { once: true });">
                     
                     <script>
                         // Buat variable global untuk logo timestamp
@@ -106,13 +120,19 @@
                         
                         // Execute immediate untuk prefetch logo
                         (function() {
-                            // Prefetch logo saat script dijalankan
-                            var logoUrl = '{{ asset('storage/' . $tenantLogo) }}?force_refresh=1&t={{ time() }}';
+                            // Prefetch logo saat script dijalankan - gunakan public path terlebih dahulu, lalu route fallback
+                            var logoUrlPrimary = '{{ asset(isset($publicImagePath) ? $publicImagePath : ('storage/' . $tenantLogo)) }}?force_refresh=1&t={{ time() }}';
+                            var logoUrlFallback = '{{ route('tenant.logo') }}?force_refresh=1&t={{ time() }}';
                             
                             // Buat link prefetch
                             var link = document.createElement('link');
                             link.rel = 'prefetch';
-                            link.href = logoUrl;
+                            link.href = logoUrlPrimary;
+                            document.head.appendChild(link);
+                            var link2 = document.createElement('link');
+                            link2.rel = 'prefetch';
+                            link2.href = logoUrlFallback;
+                            document.head.appendChild(link2);
                             document.head.appendChild(link);
                             
                             // Update logo saat DOM sudah ready
@@ -208,6 +228,13 @@
                     </a></li>
                     <li><a class="dropdown-item py-2" href="{{ route('modules.index') }}">
                         <i class="fas fa-cubes me-2 text-muted"></i> Daftar Modul
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item py-2" href="{{ url('user-management/users') }}">
+                        <i class="fas fa-users me-2 text-muted"></i> Kelola Pengguna
+                    </a></li>
+                    <li><a class="dropdown-item py-2" href="{{ url('user-management/roles') }}">
+                        <i class="fas fa-user-shield me-2 text-muted"></i> Kelola Role
                     </a></li>
                 </ul>
             </div>

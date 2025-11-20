@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\SuperAdmin;
+namespace App\Http\Controllers\Superadmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Module;
@@ -21,7 +21,13 @@ class TenantManagementController extends Controller
      */
     public function index()
     {
-        $tenants = Tenant::withCount(['users', 'roles'])
+        // Load tenants dengan count users dan roles (bypass global scope untuk roles)
+        $tenants = Tenant::withCount([
+                'users',
+                'roles' => function ($query) {
+                    $query->withoutGlobalScope('tenant_id');
+                }
+            ])
             ->orderBy('name')
             ->paginate(10);
 
@@ -138,16 +144,26 @@ class TenantManagementController extends Controller
      */
     public function show(Tenant $tenant)
     {
-        $tenant->load(['modules', 'users' => function ($q) {
-            $q->withTrashed();
-        }, 'roles']);
+        // Load relasi dengan bypass global scope untuk roles
+        $tenant->load([
+            'modules',
+            'users' => function ($q) {
+                $q->withTrashed();
+            },
+            'roles' => function ($q) {
+                $q->withoutGlobalScope('tenant_id');
+            }
+        ]);
 
         $userCount = $tenant->users()->count();
         $activeModules = $tenant->activeModules()->count();
         $adminUsers = $tenant->users()->whereHas('role', function ($q) {
-            $q->where('slug', 'tenant-admin');
+            $q->withoutGlobalScope('tenant_id')->where('slug', 'tenant-admin');
         })->get();
-        $users = $tenant->users()->paginate(10);
+        // Superadmin perlu melihat role dari semua tenant, jadi kita bypass tenant scope
+        $users = $tenant->users()->with(['role' => function ($query) {
+            $query->withoutGlobalScope('tenant_id');
+        }])->paginate(10);
 
         return view('roles.superadmin.tenants.show', compact('tenant', 'userCount', 'activeModules', 'adminUsers', 'users'));
     }
@@ -279,23 +295,43 @@ class TenantManagementController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => $validator->errors()->first()]);
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
         }
 
         try {
-            $tenant->modules()->updateExistingPivot($request->module_id, [
-                'is_active' => $request->is_active
-            ]);
+            // Check if module is already attached to tenant
+            $moduleExists = $tenant->modules()->where('module_id', $request->module_id)->exists();
+            
+            if ($moduleExists) {
+                // Update existing pivot
+                $tenant->modules()->updateExistingPivot($request->module_id, [
+                    'is_active' => $request->is_active
+                ]);
+            } else {
+                // Attach module with status
+                $tenant->modules()->attach($request->module_id, [
+                    'is_active' => $request->is_active
+                ]);
+            }
 
+            $statusText = $request->is_active ? 'diaktifkan' : 'dinonaktifkan';
+            
             return response()->json([
                 'success' => true,
-                'message' => 'Status modul berhasil diperbarui'
+                'message' => 'Modul berhasil ' . $statusText
             ]);
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error toggling module', [
+                'tenant_id' => $tenant->id,
+                'module_id' => $request->module_id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ]);
+            ], 500);
         }
     }
 
@@ -379,6 +415,7 @@ class TenantManagementController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100',
+            'role_slug' => 'required|string|max:100',
             'description' => 'nullable|string|max:255',
             'is_active' => 'boolean',
         ]);
@@ -390,42 +427,28 @@ class TenantManagementController extends Controller
         }
 
         try {
-            // Generate slug dari nama
-            $slug = Str::slug($request->name);
+            // Gunakan role_slug dari form (bukan generate dari name)
+            $slug = $request->role_slug;
 
-            // Cegah duplikasi khusus slug tenant-admin
-            if ($slug === 'tenant-admin') {
-                $alreadyHasTenantAdmin = Role::where('tenant_id', $tenant->id)
-                    ->where('slug', 'tenant-admin')
-                    ->exists();
-                if ($alreadyHasTenantAdmin) {
-                    return redirect()->back()
-                        ->with('error', 'Role Tenant Admin sudah ada untuk tenant ini.')
-                        ->withInput();
-                }
-            }
-
-            // Pastikan slug unik untuk tenant
-            $exists = Role::where('tenant_id', $tenant->id)
+            // Cek apakah slug sudah digunakan di tenant ini
+            $existingRole = Role::where('tenant_id', $tenant->id)
                 ->where('slug', $slug)
-                ->exists();
-
-            if ($exists) {
-                $slug = $slug . '-' . time();
+                ->first();
+                
+            if ($existingRole) {
+                return redirect()->back()
+                    ->with('error', 'Tipe role "' . ucwords(str_replace('-', ' ', $slug)) . '" sudah ada untuk tenant ini. Silakan pilih tipe role yang berbeda.')
+                    ->withInput();
             }
 
-            // Buat role baru (aman dari duplikasi)
-            Role::firstOrCreate(
-                [
-                    'tenant_id' => $tenant->id,
-                    'slug' => $slug,
-                ],
-                [
-                    'name' => $request->name,
-                    'description' => $request->description,
-                    'is_active' => $request->has('is_active'),
-                ]
-            );
+            // Buat role baru
+            Role::create([
+                'tenant_id' => $tenant->id,
+                'name' => $request->name,
+                'slug' => $slug,
+                'description' => $request->description,
+                'is_active' => $request->has('is_active'),
+            ]);
 
             return redirect()->route('superadmin.tenants.show', $tenant)
                 ->with('success', 'Role berhasil ditambahkan.');

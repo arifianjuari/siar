@@ -324,7 +324,7 @@ $hideDefaultHeader = true;
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-bottom">
                     <h5 class="mb-0">Unit Kerja</h5>
-                    <a href="{{ route('work-units.index') }}" class="btn btn-sm btn-outline-primary">
+                    <a href="{{ route('modules.work-units.index') }}" class="btn btn-sm btn-outline-primary">
                         <i class="fas fa-external-link-alt me-1"></i> Lihat semua
                     </a>
                 </div>
@@ -334,7 +334,7 @@ $hideDefaultHeader = true;
                             @foreach ($recentWorkUnits as $unit)
                             <div class="list-group-item px-0">
                                 <div class="d-flex justify-content-between align-items-start mb-1">
-                                    <a href="{{ route('work-units.dashboard', $unit->id) }}" class="text-decoration-none fw-medium">
+                                    <a href="{{ route('modules.work-units.dashboard', $unit->id) }}" class="text-decoration-none fw-medium">
                                         {{ $unit->unit_name }}
                                     </a>
                                     <span class="badge bg-light text-dark">{{ $unit->unit_code }}</span>

@@ -29,25 +29,16 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        Log::info('LoginRequest: Mencoba autentikasi', ['email' => $this->email]);
-
         $credentials = $this->only('email', 'password');
         $remember = $this->boolean('remember');
 
         if (!Auth::attempt($credentials, $remember)) {
             RateLimiter::hit($this->throttleKey());
 
-            Log::warning('LoginRequest: Autentikasi gagal', ['email' => $this->email]);
-
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
         }
-
-        Log::info('LoginRequest: Autentikasi berhasil', [
-            'user_id' => Auth::id(),
-            'email' => Auth::user()->email
-        ]);
 
         RateLimiter::clear($this->throttleKey());
     }

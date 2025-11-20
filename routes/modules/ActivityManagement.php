@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Controllers\Modules\ActivityManagement\ActionableItemController;
-use App\Http\Controllers\Modules\ActivityManagement\ActivityAssigneeController;
-use App\Http\Controllers\Modules\ActivityManagement\ActivityCommentController;
-use App\Http\Controllers\Modules\ActivityManagement\ActivityController;
+use Modules\ActivityManagement\Http\Controllers\ActionableItemController;
+use Modules\ActivityManagement\Http\Controllers\ActivityAssigneeController;
+use Modules\ActivityManagement\Http\Controllers\ActivityCommentController;
+use Modules\ActivityManagement\Http\Controllers\ActivityController;
+use Modules\ActivityManagement\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -50,6 +51,9 @@ Route::middleware(['web', 'auth', 'tenant', 'module:activity-management'])
 
         // Status update
         Route::put('activities/{uuid}/status', [ActivityController::class, 'updateStatus'])->name('activities.update-status');
+        
+        // Progress update
+        Route::put('activities/{uuid}/progress', [ActivityController::class, 'updateProgress'])->name('activities.update-progress');
 
         // Activity Comments
         Route::get('activities/{activityUuid}/comments', [ActivityCommentController::class, 'index'])->name('comments.index');
@@ -61,25 +65,19 @@ Route::middleware(['web', 'auth', 'tenant', 'module:activity-management'])
         Route::get('activities/{uuid}/actionable-items', [ActionableItemController::class, 'index'])
             ->name('actionable-items.index');
         Route::post('activities/{uuid}/actionable-items', [ActionableItemController::class, 'store'])
-            ->middleware('check.permission:activity-management,can_edit')
             ->name('actionable-items.store');
         Route::put('activities/{uuid}/actionable-items/{itemUuid}', [ActionableItemController::class, 'update'])
-            ->middleware('check.permission:activity-management,can_edit')
             ->name('actionable-items.update');
         Route::delete('activities/{uuid}/actionable-items/{itemUuid}', [ActionableItemController::class, 'destroy'])
-            ->middleware('check.permission:activity-management,can_edit')
             ->name('actionable-items.destroy');
         Route::put('activities/{uuid}/actionable-items/{itemUuid}/toggle', [ActionableItemController::class, 'toggle'])
-            ->middleware('check.permission:activity-management,can_edit')
             ->name('actionable-items.toggle');
 
         // Activity Assignees Management
         Route::get('activities/{uuid}/assignees', [ActivityAssigneeController::class, 'index'])
             ->name('assignees.index');
         Route::post('activities/{uuid}/assignees', [ActivityAssigneeController::class, 'store'])
-            ->middleware('check.permission:activity-management,can_edit')
             ->name('assignees.store');
         Route::delete('activities/{uuid}/assignees/{assigneeId}', [ActivityAssigneeController::class, 'destroy'])
-            ->middleware('check.permission:activity-management,can_edit')
             ->name('assignees.destroy');
     });

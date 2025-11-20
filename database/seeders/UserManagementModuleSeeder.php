@@ -25,7 +25,7 @@ class UserManagementModuleSeeder extends Seeder
         if (!$module) {
             // Buat modul baru jika belum ada
             $module = new Module();
-            $module->name = 'User Management';
+            $module->name = 'Kelola Pengguna';
             $module->description = 'Modul untuk mengelola pengguna dan peran dalam sistem';
             $module->code = 'user_management';
             $module->slug = 'user-management';
@@ -36,7 +36,7 @@ class UserManagementModuleSeeder extends Seeder
             echo "Modul User Management berhasil dibuat!\n";
         } else {
             // Update data modul yang sudah ada
-            $module->name = 'User Management';
+            $module->name = 'Kelola Pengguna';
             $module->description = 'Modul untuk mengelola pengguna dan peran dalam sistem';
             $module->code = 'user_management';
             $module->slug = 'user-management';

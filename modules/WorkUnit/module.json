@@ -1,0 +1,18 @@
+{
+  "name": "WorkUnit",
+  "alias": "work-unit",
+  "description": "Module for managing work units (organizational structure) and SPO documents",
+  "version": "1.0.0",
+  "keywords": [
+    "work-unit",
+    "unit-kerja",
+    "organization",
+    "spo",
+    "standard-operating-procedure"
+  ],
+  "active": 1,
+  "order": 5,
+  "providers": ["Modules\\WorkUnit\\Providers\\WorkUnitServiceProvider"],
+  "aliases": {},
+  "files": []
+}

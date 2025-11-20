@@ -160,3 +160,18 @@ if (!function_exists('roleView')) {
             : view($fallback ?? $view, $data);
     }
 }
+
+if (!function_exists('module_path')) {
+    /**
+     * Get the path to a module's directory
+     *
+     * @param string $name Module name
+     * @param string $path Additional path
+     * @return string
+     */
+    function module_path($name, $path = '')
+    {
+        $modulePath = base_path("modules/{$name}");
+        return $path ? $modulePath . '/' . $path : $modulePath;
+    }
+}

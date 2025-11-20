@@ -36,11 +36,8 @@ class ModuleServiceProvider extends ServiceProvider
             $routeFiles = File::files($routesPath);
 
             foreach ($routeFiles as $routeFile) {
-                $moduleName = pathinfo($routeFile->getFilename(), PATHINFO_FILENAME);
                 Route::middleware('web')
                     ->group($routeFile->getPathname());
-
-                $this->app['log']->info("Module routes registered: {$moduleName}");
             }
         }
     }
@@ -58,8 +55,6 @@ class ModuleServiceProvider extends ServiceProvider
             foreach ($moduleFolders as $moduleFolder) {
                 $moduleName = basename($moduleFolder);
                 $this->loadViewsFrom($moduleFolder, "modules.{$moduleName}");
-
-                $this->app['log']->info("Module views registered: {$moduleName}");
             }
         }
     }

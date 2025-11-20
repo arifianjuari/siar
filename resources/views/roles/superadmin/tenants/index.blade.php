@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@php($hideDefaultHeader = true)
+@php $hideDefaultHeader = true; @endphp
 
 @section('content')
 <div class="container-fluid">

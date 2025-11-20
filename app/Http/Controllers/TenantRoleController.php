@@ -20,7 +20,11 @@ class TenantRoleController extends Controller
 
     public function index(Tenant $tenant)
     {
-        $roles = $tenant->roles()->withCount('users')->get();
+        // Bypass global scope untuk melihat semua roles dari tenant ini
+        $roles = $tenant->roles()
+            ->withoutGlobalScope('tenant_id')
+            ->withCount('users')
+            ->get();
         return view('roles.superadmin.tenants.roles.index', compact('tenant', 'roles'));
     }
 
@@ -48,7 +52,7 @@ class TenantRoleController extends Controller
                     }),
                 ],
                 'description' => 'nullable|string',
-                'is_active' => 'required|boolean'
+                'is_active' => 'nullable|boolean'
             ]);
 
             // Cek apakah role sudah ada
@@ -57,21 +61,24 @@ class TenantRoleController extends Controller
                 ->first();
 
             if ($existingRole) {
-                return back()->with('error', 'Role ' . $this->defaultRoles[$validated['role_slug']] . ' sudah ada di tenant ini.');
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Role ' . $this->defaultRoles[$validated['role_slug']] . ' sudah ada di tenant ini.'
+                    ], 422);
+                }
+                return back()->with('error', 'Role ' . $this->defaultRoles[$validated['role_slug']] . ' sudah ada di tenant ini.')
+                    ->withInput();
             }
 
             // Buat role dengan pengaman duplikasi
-            $role = Role::firstOrCreate(
-                [
-                    'tenant_id' => $tenant->id,
-                    'slug' => $validated['role_slug'],
-                ],
-                [
-                    'name' => $validated['name'],
-                    'description' => $validated['description'],
-                    'is_active' => $validated['is_active'],
-                ]
-            );
+            $role = Role::create([
+                'tenant_id' => $tenant->id,
+                'slug' => $validated['role_slug'],
+                'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
+                'is_active' => $request->boolean('is_active', true),
+            ]);
 
             if ($request->ajax()) {
                 return response()->json([
@@ -84,24 +91,31 @@ class TenantRoleController extends Controller
             return redirect()->route('superadmin.tenants.roles.index', $tenant)
                 ->with('success', 'Role berhasil dibuat.');
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error creating role', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => $e->getMessage()
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ], 422);
             }
 
-            return back()->with('error', $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
-    public function edit(Tenant $tenant, Role $role)
+    public function edit(Tenant $tenant, $roleId)
     {
-        // Pastikan role milik tenant yang benar
-        if ($role->tenant_id !== $tenant->id) {
-            return redirect()->route('superadmin.tenants.show', $tenant)
-                ->with('error', 'Role tidak ditemukan untuk tenant ini.');
-        }
+        // Get role without global scope untuk superadmin
+        $role = Role::withoutGlobalScope('tenant_id')
+            ->where('id', $roleId)
+            ->where('tenant_id', $tenant->id)
+            ->firstOrFail();
 
         // Cek apakah role adalah tenant-admin
         if ($role->slug === 'tenant-admin') {
@@ -112,17 +126,23 @@ class TenantRoleController extends Controller
         return view('roles.superadmin.tenants.roles.edit', compact('tenant', 'role'));
     }
 
-    public function update(Request $request, Tenant $tenant, Role $role)
+    public function update(Request $request, Tenant $tenant, $roleId)
     {
         try {
-            // Pastikan role milik tenant yang benar
-            if ($role->tenant_id !== $tenant->id) {
-                return redirect()->route('superadmin.tenants.show', $tenant)
-                    ->with('error', 'Role tidak ditemukan untuk tenant ini.');
-            }
+            // Get role without global scope untuk superadmin
+            $role = Role::withoutGlobalScope('tenant_id')
+                ->where('id', $roleId)
+                ->where('tenant_id', $tenant->id)
+                ->firstOrFail();
 
             // Cek apakah role adalah tenant-admin
             if ($role->slug === 'tenant-admin') {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Role Admin Tenant tidak dapat diubah.'
+                    ], 403);
+                }
                 return redirect()->back()
                     ->with('error', 'Role Admin Tenant tidak dapat diubah.');
             }
@@ -130,13 +150,13 @@ class TenantRoleController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
-                'is_active' => 'required|boolean'
+                'is_active' => 'nullable|boolean'
             ]);
 
             $role->update([
                 'name' => $validated['name'],
-                'description' => $validated['description'],
-                'is_active' => $validated['is_active']
+                'description' => $validated['description'] ?? null,
+                'is_active' => $request->boolean('is_active', false)
             ]);
 
             if ($request->ajax()) {
@@ -150,42 +170,99 @@ class TenantRoleController extends Controller
             return redirect()->route('superadmin.tenants.roles.index', $tenant)
                 ->with('success', 'Role berhasil diperbarui.');
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error updating role', [
+                'tenant_id' => $tenant->id,
+                'role_id' => $role->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => $e->getMessage()
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ], 422);
             }
 
-            return back()->with('error', $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
-    public function destroy(Tenant $tenant, Role $role)
+    public function destroy(Request $request, Tenant $tenant, $roleId)
     {
-        // Pastikan role milik tenant yang benar
-        if ($role->tenant_id !== $tenant->id) {
-            return redirect()->route('superadmin.tenants.show', $tenant)
-                ->with('error', 'Role tidak ditemukan untuk tenant ini.');
-        }
+        // Get role without global scope untuk superadmin
+        $role = Role::withoutGlobalScope('tenant_id')
+            ->where('id', $roleId)
+            ->where('tenant_id', $tenant->id)
+            ->firstOrFail();
 
         // Cek apakah role adalah tenant-admin
         if ($role->slug === 'tenant-admin') {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Role Admin Tenant tidak dapat dihapus.'
+                ], 403);
+            }
             return redirect()->back()
                 ->with('error', 'Role Admin Tenant tidak dapat dihapus.');
         }
 
+        // Cek apakah role masih digunakan oleh user
+        $userCount = $role->users()->count();
+        if ($userCount > 0) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Role tidak dapat dihapus karena masih digunakan oleh {$userCount} pengguna."
+                ], 422);
+            }
+            return redirect()->back()
+                ->with('error', "Role tidak dapat dihapus karena masih digunakan oleh {$userCount} pengguna.");
+        }
+
         try {
+            $roleName = $role->name;
             $role->delete();
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Role '{$roleName}' berhasil dihapus."
+                ]);
+            }
+
             return redirect()->route('superadmin.tenants.roles.index', $tenant)
-                ->with('success', 'Role berhasil dihapus.');
+                ->with('success', "Role '{$roleName}' berhasil dihapus.");
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error deleting role', [
+                'tenant_id' => $tenant->id,
+                'role_id' => $role->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menghapus role: ' . $e->getMessage()
+                ], 500);
+            }
+
             return back()->with('error', 'Gagal menghapus role: ' . $e->getMessage());
         }
     }
 
-    public function editPermissions(Tenant $tenant, Role $role)
+    public function editPermissions(Tenant $tenant, $roleId)
     {
+        // Get role without global scope untuk superadmin
+        $role = Role::withoutGlobalScope('tenant_id')
+            ->where('id', $roleId)
+            ->where('tenant_id', $tenant->id)
+            ->with('permissions')
+            ->firstOrFail();
+
         $modules = $tenant->modules;
         $permissions = $role->permissions;
 
@@ -198,9 +275,15 @@ class TenantRoleController extends Controller
         return view('roles.superadmin.tenants.roles.permissions', compact('tenant', 'role', 'modules', 'permissions', 'rolePermissions'));
     }
 
-    public function updatePermissions(Request $request, Tenant $tenant, Role $role)
+    public function updatePermissions(Request $request, Tenant $tenant, $roleId)
     {
         try {
+            // Get role without global scope untuk superadmin
+            $role = Role::withoutGlobalScope('tenant_id')
+                ->where('id', $roleId)
+                ->where('tenant_id', $tenant->id)
+                ->firstOrFail();
+
             $validated = $request->validate([
                 'permissions' => 'array'
             ]);

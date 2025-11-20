@@ -5,9 +5,20 @@
 @section('header')
 <div class="d-flex justify-content-between align-items-center">
     <h2 class="mb-0">Manajemen Modul</h2>
-    <a href="{{ route('superadmin.modules.create') }}" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i> Tambah Modul
-    </a>
+    <div>
+        <form action="{{ route('superadmin.modules.sync') }}" method="POST" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-success me-2" title="Sync modules from filesystem">
+                <i class="fas fa-sync me-2"></i> Sync dari Filesystem
+                @if(isset($discoveredCount) && $discoveredCount > 0)
+                    <span class="badge bg-light text-dark">{{ $discoveredCount }}</span>
+                @endif
+            </button>
+        </form>
+        <a href="{{ route('superadmin.modules.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i> Tambah Manual
+        </a>
+    </div>
 </div>
 @endsection
 
@@ -28,9 +39,37 @@
         </div>
     @endif
 
+    <!-- Discovered Modules Alert -->
+    @if(isset($filesystemModules) && count($filesystemModules) > 0)
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <h5 class="alert-heading"><i class="fas fa-folder me-2"></i> Modul Terdeteksi dari Filesystem</h5>
+            <p class="mb-2">Ditemukan <strong>{{ $discoveredCount }}</strong> modul di folder <code>modules/</code></p>
+            <ul class="mb-2">
+                @foreach($filesystemModules as $fsModule)
+                    <li>
+                        <strong>{{ $fsModule['name'] }}</strong>
+                        @if($fsModule['exists_in_db'])
+                            <span class="badge bg-success">Sudah di Database</span>
+                        @else
+                            <span class="badge bg-warning">Belum di Database</span>
+                        @endif
+                        @if(isset($fsModule['version']))
+                            <small class="text-muted">(v{{ $fsModule['version'] }})</small>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+            <p class="mb-0">Klik tombol <strong>"Sync dari Filesystem"</strong> untuk menambahkan modul yang belum terdaftar ke database.</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Daftar Modul di Database</h5>
+                </div>
                 <div class="card-body">
                     <div class="table-container">
                         <table class="table table-hover">

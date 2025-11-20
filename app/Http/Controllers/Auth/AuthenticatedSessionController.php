@@ -19,8 +19,6 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request)
     {
         try {
-            Log::info('Mencoba login', ['email' => $request->email]);
-
             // Authenticate user
             $request->authenticate();
             // Regenerate session sesuai standar Laravel
@@ -28,44 +26,27 @@ class AuthenticatedSessionController extends Controller
 
             $user = Auth::user();
 
-            Log::info('Autentikasi berhasil', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'session_driver' => config('session.driver'),
-            ]);
-
-            // Reload user dengan relationships
-            $user = Auth::user()->load(['role', 'tenant']);
-
+            // Load relationships secara explicit
+            $user->load(['role', 'tenant']);
+            
             // Set tenant ke session jika user bukan superadmin
             if ($user->role && $user->role->slug !== 'superadmin' && $user->tenant) {
                 session(['tenant_id' => $user->tenant_id]);
                 view()->share('current_tenant', $user->tenant);
             }
-            
-            Log::info('Session status', [
-                'user_id' => $user->id,
-                'session_id' => $request->session()->getId(),
-                'is_authenticated' => Auth::check(),
-            ]);
 
             // Determine redirect route based on role
             if ($user->role && $user->role->slug === 'superadmin') {
-                Log::info('Redirecting superadmin to dashboard', [
-                    'user_id' => $user->id,
-                    'role_slug' => $user->role->slug,
-                ]);
                 return redirect()->intended(route('superadmin.dashboard'));
             }
             
-            Log::info('Redirecting regular user to dashboard');
             return redirect()->intended(route('dashboard'));
             
         } catch (\Exception $e) {
-            Log::error('Error saat login', [
+            // Only log critical errors
+            Log::error('Login error', [
                 'email' => $request->email,
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
             ]);
 
             throw $e;

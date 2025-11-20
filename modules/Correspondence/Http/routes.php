@@ -1,47 +1,49 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Modules\Correspondence\CorrespondenceController;
-use App\Http\Controllers\Modules\Correspondence\ReportController;
+use Modules\Correspondence\Http\Controllers\CorrespondenceController;
+use Modules\Correspondence\Http\Controllers\ReportController;
 
 /*
 |--------------------------------------------------------------------------
 | Correspondence Module Routes
 |--------------------------------------------------------------------------
 |
-| Di sini adalah tempat untuk mendefinisikan route modul Korespondensi
-| Semua rute akan otomatis diberi prefiks "modules/correspondence"
+| Here is where you can register web routes for the Correspondence module.
+| These routes use the 'web', 'auth', 'tenant', and 'module:correspondence-management' middleware.
 |
 */
 
-// Rute yang dapat diakses setelah login dan memiliki akses ke modul korespondensi
-Route::middleware(['auth', 'tenant', 'module:correspondence'])->prefix('correspondence')->name('correspondence.')->group(function () {
-    // Dashboard Korespondensi
-    Route::get('/dashboard', [CorrespondenceController::class, 'dashboard'])->name('dashboard');
+Route::middleware(['web', 'auth', 'tenant', 'module.permission:correspondence-management'])
+    ->prefix('correspondence')
+    ->name('modules.correspondence.')
+    ->group(function () {
+        
+        // Dashboard - Root & /dashboard
+        Route::get('/', [CorrespondenceController::class, 'dashboard'])->name('index');
+        Route::get('/dashboard', [CorrespondenceController::class, 'dashboard'])->name('dashboard');
 
-    // Manajemen Surat/Nota Dinas
-    Route::resource('letters', CorrespondenceController::class);
+        // Letters Resource Routes
+        Route::resource('letters', CorrespondenceController::class);
 
-    // Export Surat/Nota Dinas
-    Route::get('/letters/{id}/export-pdf', [CorrespondenceController::class, 'exportPdf'])->name('letters.export-pdf');
-    Route::get('/letters/{id}/export-word', [CorrespondenceController::class, 'exportWord'])->name('letters.export-word');
+        // Export Routes
+        Route::get('/letters/{id}/export-pdf', [CorrespondenceController::class, 'exportPdf'])->name('letters.export-pdf');
+        Route::get('/letters/{id}/export-word', [CorrespondenceController::class, 'exportWord'])->name('letters.export-word');
 
-    // Route untuk melihat QR Code
-    Route::get('/letters/{id}/qr-code', [CorrespondenceController::class, 'generateQr'])->name('letters.qr-code');
+        // QR Code Routes
+        Route::get('/letters/{id}/qr-code', [CorrespondenceController::class, 'generateQr'])->name('letters.qr-code');
+        Route::get('/letters/{id}/qr-code-base64', [CorrespondenceController::class, 'generateQrBase64'])->name('letters.qr-code-base64');
 
-    // Route alternatif dengan Base64 embedded QR code
-    Route::get('/letters/{id}/qr-code-base64', [CorrespondenceController::class, 'generateQrBase64'])->name('letters.qr-code-base64');
+        // QR Code Test
+        Route::get('/qr-test', function () {
+            return view('correspondence::letters.qr-test');
+        })->name('qr-test');
 
-    // QR Code Test
-    Route::get('/qr-test', function () {
-        return view('modules.Correspondence.letters.qr-test');
-    })->name('qr-test');
+        // Search and Filter
+        Route::get('/search', [CorrespondenceController::class, 'search'])->name('search');
 
-    // Filter dan pencarian
-    Route::get('/search', [CorrespondenceController::class, 'search'])->name('search');
-
-    // Laporan
-    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/generate', [ReportController::class, 'generate'])->name('reports.generate');
-    Route::post('/reports/export', [ReportController::class, 'export'])->name('reports.export');
-});
+        // Reports
+        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/generate', [ReportController::class, 'generate'])->name('reports.generate');
+        Route::post('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+    });

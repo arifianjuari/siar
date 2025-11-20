@@ -26,6 +26,9 @@ class Role extends Model
         'slug',
         'description',
         'is_active',
+        'parent_role_id',
+        'level',
+        'inherit_permissions',
     ];
 
     /**
@@ -35,7 +38,95 @@ class Role extends Model
      */
     protected $casts = [
         'is_active' => 'boolean',
+        'inherit_permissions' => 'boolean',
+        'level' => 'integer',
     ];
+
+    /**
+     * Maximum depth for role hierarchy
+     */
+    const MAX_HIERARCHY_DEPTH = 10;
+
+    /**
+     * Boot method to add model events
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Validate circular dependency before saving
+        static::saving(function ($role) {
+            if ($role->parent_role_id) {
+                // Check for circular dependency
+                $ancestors = static::getAncestors($role->parent_role_id);
+                if (in_array($role->id, $ancestors)) {
+                    throw new \Exception('Circular dependency detected in role hierarchy');
+                }
+
+                // Check hierarchy depth
+                if (count($ancestors) >= static::MAX_HIERARCHY_DEPTH) {
+                    throw new \Exception('Role hierarchy depth exceeds maximum limit of ' . static::MAX_HIERARCHY_DEPTH);
+                }
+
+                // Set the level based on parent
+                $parent = static::find($role->parent_role_id);
+                $role->level = ($parent ? $parent->level : 0) + 1;
+            } else {
+                $role->level = 0;
+            }
+        });
+    }
+
+    /**
+     * Get all ancestors of a role
+     */
+    public static function getAncestors($roleId, $ancestors = [])
+    {
+        $role = static::find($roleId);
+        if (!$role || !$role->parent_role_id) {
+            return $ancestors;
+        }
+
+        // Prevent infinite loop
+        if (in_array($role->parent_role_id, $ancestors)) {
+            return $ancestors;
+        }
+
+        $ancestors[] = $role->parent_role_id;
+        return static::getAncestors($role->parent_role_id, $ancestors);
+    }
+
+    /**
+     * Relationship with parent role
+     */
+    public function parentRole(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'parent_role_id');
+    }
+
+    /**
+     * Relationship with child roles
+     */
+    public function childRoles(): HasMany
+    {
+        return $this->hasMany(Role::class, 'parent_role_id');
+    }
+
+    /**
+     * Get all descendant roles (recursive)
+     */
+    public function getAllDescendants()
+    {
+        $descendants = collect();
+        $children = $this->childRoles;
+
+        foreach ($children as $child) {
+            $descendants->push($child);
+            $descendants = $descendants->merge($child->getAllDescendants());
+        }
+
+        return $descendants;
+    }
 
     /**
      * Ambil semua permission yang terhubung dengan role ini

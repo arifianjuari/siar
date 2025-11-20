@@ -12,7 +12,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register PermissionService as singleton
+        $this->app->singleton(\App\Services\PermissionService::class, function ($app) {
+            return new \App\Services\PermissionService();
+        });
     }
 
     /**
@@ -24,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
         $this->registerGlobalHelpers();
         $this->registerBladeDirectives();
         $this->configureDebugMode();
+        $this->registerViewComposers();
 
         // Set default pagination view to Bootstrap 5
         \Illuminate\Pagination\Paginator::useBootstrap();
@@ -170,8 +174,9 @@ class AppServiceProvider extends ServiceProvider
             config(['app.debug' => false]);
 
             // Juga matikan berbagai komponen debug lainnya
-            if (class_exists('\Barryvdh\Debugbar\Facade')) {
-                \Barryvdh\Debugbar\Facade::disable();
+            // Check if Debugbar is registered in the app container
+            if (app()->bound('debugbar')) {
+                app('debugbar')->disable();
             }
 
             // Daftarkan view share untuk digunakan di seluruh view
@@ -182,5 +187,17 @@ class AppServiceProvider extends ServiceProvider
                 cookie()->queue('no_debug', '1', 60); // 60 menit
             }
         }
+    }
+
+    /**
+     * Register view composers
+     */
+    protected function registerViewComposers(): void
+    {
+        // Sidebar composer untuk optimasi performa
+        \Illuminate\Support\Facades\View::composer(
+            'layouts.partials.sidebar',
+            \App\Http\ViewComposers\SidebarComposer::class
+        );
     }
 }

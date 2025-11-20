@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class SetTenantId
 {
@@ -32,9 +33,15 @@ class SetTenantId
             abort(403, 'Anda tidak terhubung dengan tenant manapun.');
         }
 
-        // Cek apakah tenant user aktif
-        $tenant = Tenant::find($user->tenant_id);
+        // Cek apakah tenant user aktif (dengan caching untuk performa)
+        $cacheKey = 'tenant_status_' . $user->tenant_id;
+        $tenant = Cache::remember($cacheKey, 300, function () use ($user) {
+            return Tenant::select('id', 'is_active', 'name')->find($user->tenant_id);
+        });
+        
         if (!$tenant || !$tenant->is_active) {
+            // Clear cache jika tenant tidak aktif
+            Cache::forget($cacheKey);
             Auth::logout();
             abort(403, 'Tenant Anda tidak aktif. Silahkan hubungi administrator.');
         }

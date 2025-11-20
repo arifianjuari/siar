@@ -21,7 +21,7 @@ class PerformanceManagementModuleSeeder extends Seeder
         if (!$module) {
             $this->command->info('Modul Performance Management tidak ditemukan. Membuat modul baru...');
             $module = Module::create([
-                'name' => 'Performance Management',
+                'name' => 'KPI',
                 'slug' => 'performance-management',
                 'description' => 'Modul untuk mengelola kinerja dan KPI',
                 'icon' => 'fa-chart-line',
@@ -34,6 +34,7 @@ class PerformanceManagementModuleSeeder extends Seeder
             $this->command->info('Modul Performance Management sudah ada, memastikan kode dan slug sesuai');
             // Update jika perlu
             $module->update([
+                'name' => 'KPI',
                 'icon' => 'fa-chart-line',
                 'code' => 'PERF',
                 'is_active' => true

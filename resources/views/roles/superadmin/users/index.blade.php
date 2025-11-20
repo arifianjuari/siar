@@ -51,9 +51,15 @@
                                         <td>{{ $user->name }}</td>
                                         <td>{{ $user->email }}</td>
                                         <td>
-                                            <span class="badge bg-info">
-                                                {{ $user->role->name ?? 'Tidak ada role' }}
-                                            </span>
+                                            @if($user->role)
+                                                <span class="badge bg-info">
+                                                    {{ $user->role->name }}
+                                                </span>
+                                            @else
+                                                <span class="badge bg-secondary" title="Role ID: {{ $user->role_id ?? 'NULL' }}">
+                                                    Tidak ada role
+                                                </span>
+                                            @endif
                                         </td>
                                         <td>
                                             <span class="badge bg-primary">

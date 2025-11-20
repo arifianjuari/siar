@@ -77,17 +77,17 @@
                                                         try {
                                                             if (!empty($module->slug)) {
                                                                 if ($module->slug == 'user-management') {
-                                                                    $moduleUrl = url('modules/user-management/users');
+                                                                    $moduleUrl = url('user-management/users');
                                                                 } elseif ($module->slug == 'product-management') {
-                                                                    $moduleUrl = url('modules/product-management/products');
+                                                                    $moduleUrl = url('product-management/products');
                                                                 } elseif ($module->slug == 'risk-management') {
-                                                                    $moduleUrl = url('modules/risk-management/dashboard');
+                                                                    $moduleUrl = url('risk-management/dashboard');
                                                                 } elseif ($module->slug == 'document-management') {
-                                                                    $moduleUrl = url('modules/document-management/dashboard');
+                                                                    $moduleUrl = url('document-management/dashboard');
                                                                 } elseif ($module->slug == 'correspondence') {
-                                                                    $moduleUrl = url('modules/correspondence/dashboard');
+                                                                    $moduleUrl = url('correspondence/dashboard');
                                                                 } elseif ($module->slug == 'correspondence-management') {
-                                                                    $moduleUrl = url('modules/correspondence/dashboard');
+                                                                    $moduleUrl = url('correspondence/dashboard');
                                                                 } elseif ($module->slug == 'dashboard') {
                                                                     $moduleUrl = url('dashboard');
                                                                 } else {

@@ -1,6 +1,6 @@
 @extends('roles.superadmin.layout')
 
-@php($hideDefaultHeader = true)
+@php $hideDefaultHeader = true; @endphp
 
 @section('title', 'Hak Akses Modul Role')
 

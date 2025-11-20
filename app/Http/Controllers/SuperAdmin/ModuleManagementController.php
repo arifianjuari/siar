@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\SuperAdmin;
+namespace App\Http\Controllers\Superadmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Module;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -22,7 +23,161 @@ class ModuleManagementController extends Controller
             $query->where('tenant_modules.is_active', true);
         }])->paginate(10);
 
-        return view('roles.superadmin.modules.index', compact('modules'));
+        // Detect modules from filesystem
+        $filesystemModules = $this->discoverModulesFromFilesystem();
+        $discoveredCount = count($filesystemModules);
+
+        return view('roles.superadmin.modules.index', compact('modules', 'filesystemModules', 'discoveredCount'));
+    }
+
+    /**
+     * Discover modules from filesystem by scanning modules/ directory
+     */
+    private function discoverModulesFromFilesystem()
+    {
+        $discovered = [];
+        $modulesPath = base_path('modules');
+
+        if (!is_dir($modulesPath)) {
+            return $discovered;
+        }
+
+        $directories = array_filter(glob($modulesPath . '/*'), 'is_dir');
+
+        foreach ($directories as $dir) {
+            $moduleName = basename($dir);
+            $moduleJsonPath = $dir . '/module.json';
+            $configPath = $dir . '/Config/config.php';
+
+            $moduleData = [
+                'name' => $moduleName,
+                'path' => $dir,
+                'exists_in_db' => false,
+                'metadata' => null,
+            ];
+
+            // Check if module.json exists
+            if (file_exists($moduleJsonPath)) {
+                $json = json_decode(file_get_contents($moduleJsonPath), true);
+                if ($json) {
+                    $moduleData['metadata'] = $json;
+                    $moduleData['name'] = $json['name'] ?? $moduleName;
+                    $moduleData['description'] = $json['description'] ?? '';
+                    $moduleData['version'] = $json['version'] ?? '1.0.0';
+                    $moduleData['alias'] = $json['alias'] ?? Str::slug($moduleName);
+                }
+            } elseif (file_exists($configPath)) {
+                // Fallback to config.php
+                $config = include $configPath;
+                if (is_array($config)) {
+                    $moduleData['metadata'] = $config;
+                    $moduleData['name'] = $config['name'] ?? $moduleName;
+                    $moduleData['description'] = $config['description'] ?? '';
+                    $moduleData['version'] = $config['version'] ?? '1.0.0';
+                    $moduleData['alias'] = $config['alias'] ?? Str::slug($moduleName);
+                }
+            }
+
+            // Check if exists in database
+            $existingModule = Module::where('slug', $moduleData['alias'] ?? Str::slug($moduleName))->first();
+            $moduleData['exists_in_db'] = !is_null($existingModule);
+            $moduleData['db_module'] = $existingModule;
+
+            $discovered[] = $moduleData;
+        }
+
+        return $discovered;
+    }
+
+    /**
+     * Sync modules from filesystem to database
+     */
+    public function syncFromFilesystem()
+    {
+        try {
+            DB::beginTransaction();
+            
+            $filesystemModules = $this->discoverModulesFromFilesystem();
+            $created = 0;
+            $updated = 0;
+            $deleted = 0;
+            
+            // Collect slugs from filesystem
+            $filesystemSlugs = [];
+
+            foreach ($filesystemModules as $fsModule) {
+                $slug = $fsModule['alias'] ?? Str::slug($fsModule['name']);
+                $filesystemSlugs[] = $slug;
+                
+                // Generate code from slug (uppercase with underscores)
+                $code = strtoupper(str_replace('-', '_', $slug));
+                
+                $moduleData = [
+                    'name' => $fsModule['name'],
+                    'code' => $code,
+                    'slug' => $slug,
+                    'description' => $fsModule['description'] ?? 'Module ' . $fsModule['name'],
+                    'icon' => 'fa-cube', // Default icon, can be customized later
+                ];
+
+                $existingModule = Module::where('slug', $slug)->first();
+
+                if (!$existingModule) {
+                    Module::create($moduleData);
+                    $created++;
+                } else {
+                    // Update description if changed
+                    if ($existingModule->description !== $moduleData['description']) {
+                        $existingModule->update(['description' => $moduleData['description']]);
+                        $updated++;
+                    }
+                }
+            }
+
+            // Delete modules that no longer exist in filesystem
+            $orphanedModules = Module::whereNotIn('slug', $filesystemSlugs)->get();
+            
+            foreach ($orphanedModules as $orphanedModule) {
+                // Check if module is used by any tenant
+                $usedByTenants = $orphanedModule->tenants()->wherePivot('is_active', true)->count();
+                
+                if ($usedByTenants > 0) {
+                    // Don't delete, just mark as inactive or skip
+                    \Illuminate\Support\Facades\Log::warning('Module not deleted because it is used by tenants', [
+                        'module_id' => $orphanedModule->id,
+                        'module_slug' => $orphanedModule->slug,
+                        'used_by_tenants' => $usedByTenants
+                    ]);
+                    continue;
+                }
+                
+                // Safe to delete - not used by any tenant
+                $orphanedModule->delete();
+                $deleted++;
+            }
+
+            DB::commit();
+
+            $message = "Sinkronisasi selesai. Dibuat: {$created}, Diperbarui: {$updated}, Dihapus: {$deleted}";
+            
+            if ($orphanedModules->count() > $deleted) {
+                $skipped = $orphanedModules->count() - $deleted;
+                $message .= ". {$skipped} modul tidak dihapus karena masih digunakan oleh tenant.";
+            }
+            
+            return redirect()->route('superadmin.modules.index')
+                ->with('success', $message);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            \Illuminate\Support\Facades\Log::error('Module sync failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->back()
+                ->with('error', 'Sinkronisasi gagal: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -53,9 +208,12 @@ class ModuleManagementController extends Controller
         try {
             // Generate slug dari nama
             $slug = Str::slug($request->name);
+            // Generate code from slug (uppercase with underscores)
+            $code = strtoupper(str_replace('-', '_', $slug));
 
             Module::create([
                 'name' => $request->name,
+                'code' => $code,
                 'slug' => $slug,
                 'description' => $request->description,
                 'icon' => $request->icon,
