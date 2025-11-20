@@ -191,42 +191,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: formData,
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 },
                 credentials: 'same-origin',
                 redirect: 'follow',
                 signal: controller.signal
             })
             .then(async response => {
+                clearTimeout(timeoutId);
+                
                 // Check if response is redirect
                 if (response.redirected) {
                     window.location.href = response.url;
                     return;
                 }
                 
-                // Check response status
-                if (!response.ok) {
-                    const text = await response.text();
-                    console.error('Response error:', response.status, text);
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
+                // Parse JSON response
+                const data = await response.json();
                 
-                // Try to parse as JSON, fallback to text
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    return response.json();
-                } else {
-                    // HTML response (redirect happened)
+                // Check if sync was successful
+                if (data.success) {
+                    console.log('Sync successful:', data);
+                    
+                    // Show success message
+                    const message = data.message + '\n\n' +
+                        'Created: ' + data.data.created + '\n' +
+                        'Updated: ' + data.data.updated + '\n' +
+                        'Deleted: ' + data.data.deleted;
+                    
+                    alert(message);
+                    
+                    // Reload page to show updated modules
                     window.location.reload();
-                    return null;
+                } else {
+                    // Show error message from server
+                    throw new Error(data.message || 'Sync failed');
                 }
-            })
-            .then(data => {
-                if (data) {
-                    console.log('Sync response:', data);
-                }
-                // Reload page to show results
-                setTimeout(() => window.location.reload(), 500);
             })
             .catch(error => {
                 clearTimeout(timeoutId);

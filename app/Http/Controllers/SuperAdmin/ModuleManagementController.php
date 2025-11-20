@@ -142,8 +142,24 @@ class ModuleManagementController extends Controller
             if (empty($filesystemModules)) {
                 DB::rollBack();
                 \Illuminate\Support\Facades\Log::warning('No modules found in filesystem');
+                
+                $message = 'Tidak ada modul yang ditemukan di direktori modules/. Pastikan direktori modules/ exists dan readable.';
+                
+                // Return JSON for AJAX requests
+                if (request()->ajax() || request()->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $message,
+                        'data' => [
+                            'created' => 0,
+                            'updated' => 0,
+                            'deleted' => 0
+                        ]
+                    ], 404);
+                }
+                
                 return redirect()->route('superadmin.modules.index')
-                    ->with('warning', 'Tidak ada modul yang ditemukan di direktori modules/. Pastikan direktori modules/ exists dan readable.');
+                    ->with('warning', $message);
             }
             
             $created = 0;
@@ -213,6 +229,26 @@ class ModuleManagementController extends Controller
                 $message .= ". {$skipped} modul tidak dihapus karena masih digunakan oleh tenant.";
             }
             
+            \Illuminate\Support\Facades\Log::info('Module sync completed successfully', [
+                'created' => $created,
+                'updated' => $updated,
+                'deleted' => $deleted
+            ]);
+            
+            // Return JSON for AJAX requests
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'data' => [
+                        'created' => $created,
+                        'updated' => $updated,
+                        'deleted' => $deleted,
+                        'skipped' => $orphanedModules->count() - $deleted
+                    ]
+                ]);
+            }
+            
             return redirect()->route('superadmin.modules.index')
                 ->with('success', $message);
         } catch (\Exception $e) {
@@ -222,6 +258,15 @@ class ModuleManagementController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
+            
+            // Return JSON for AJAX requests
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sinkronisasi gagal: ' . $e->getMessage(),
+                    'error' => $e->getMessage()
+                ], 500);
+            }
             
             return redirect()->back()
                 ->with('error', 'Sinkronisasi gagal: ' . $e->getMessage());
