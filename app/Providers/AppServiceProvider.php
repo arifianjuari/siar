@@ -26,15 +26,17 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
         $this->registerGlobalHelpers();
         
-        // Ensure view cache directory exists before registering Blade directives
-        $this->ensureViewCacheDirectoryExists();
-        
-        $this->registerBladeDirectives();
-        $this->configureDebugMode();
-        $this->registerViewComposers();
-        
-        // Set default pagination view to Bootstrap 5
-        \Illuminate\Pagination\Paginator::useBootstrap();
+        // Skip view-related operations during package discovery to avoid cache path errors
+        // Package discovery happens during composer install before storage directories exist
+        if ($this->shouldRegisterViewServices()) {
+            $this->ensureViewCacheDirectoryExists();
+            $this->registerBladeDirectives();
+            $this->configureDebugMode();
+            $this->registerViewComposers();
+            
+            // Set default pagination view to Bootstrap 5
+            \Illuminate\Pagination\Paginator::useBootstrap();
+        }
 
         // Register morphMap for ActivityAssignee
         \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
@@ -49,6 +51,31 @@ class AppServiceProvider extends ServiceProvider
             }
             \Doctrine\DBAL\Types\Type::getType('enum')->canRequireSQLConversion(true);
         }
+    }
+
+    /**
+     * Determine if view services should be registered
+     * Skip during package discovery to prevent cache path errors
+     */
+    protected function shouldRegisterViewServices(): bool
+    {
+        // Check if we're running package:discover command
+        if ($this->app->runningInConsole()) {
+            $argv = $_SERVER['argv'] ?? [];
+            // Skip if running package:discover
+            if (in_array('package:discover', $argv)) {
+                return false;
+            }
+        }
+        
+        // Also check if storage/framework/views directory exists
+        // If it doesn't exist yet, skip (will be created by build script)
+        $viewPath = base_path('storage/framework/views');
+        if (!is_dir($viewPath)) {
+            return false;
+        }
+        
+        return true;
     }
 
     /**
