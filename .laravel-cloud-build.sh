@@ -14,7 +14,14 @@ mkdir -p storage/app/public
 mkdir -p storage/framework/cache/data
 mkdir -p storage/framework/sessions
 mkdir -p storage/framework/views
+mkdir -p storage/framework/testing
 mkdir -p storage/logs
+
+# Create .gitkeep files to ensure directories are preserved
+touch storage/framework/cache/data/.gitkeep
+touch storage/framework/sessions/.gitkeep
+touch storage/framework/views/.gitkeep
+touch storage/framework/testing/.gitkeep
 
 # Set permissions early
 echo "🔐 Setting initial permissions..."

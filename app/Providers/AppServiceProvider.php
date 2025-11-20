@@ -26,17 +26,15 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
         $this->registerGlobalHelpers();
         
-        // Only register Blade directives and view-related operations if view cache path exists
-        // This prevents errors during composer install/package discovery
-        $viewCachePath = config('view.compiled');
-        if ($viewCachePath && is_dir($viewCachePath)) {
-            $this->registerBladeDirectives();
-            $this->configureDebugMode();
-            $this->registerViewComposers();
-            
-            // Set default pagination view to Bootstrap 5
-            \Illuminate\Pagination\Paginator::useBootstrap();
-        }
+        // Ensure view cache directory exists before registering Blade directives
+        $this->ensureViewCacheDirectoryExists();
+        
+        $this->registerBladeDirectives();
+        $this->configureDebugMode();
+        $this->registerViewComposers();
+        
+        // Set default pagination view to Bootstrap 5
+        \Illuminate\Pagination\Paginator::useBootstrap();
 
         // Register morphMap for ActivityAssignee
         \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
@@ -50,6 +48,24 @@ class AppServiceProvider extends ServiceProvider
                 \Doctrine\DBAL\Types\Type::addType('enum', 'Doctrine\DBAL\Types\StringType');
             }
             \Doctrine\DBAL\Types\Type::getType('enum')->canRequireSQLConversion(true);
+        }
+    }
+
+    /**
+     * Ensure view cache directory exists
+     */
+    protected function ensureViewCacheDirectoryExists(): void
+    {
+        $viewCachePath = config('view.compiled', storage_path('framework/views'));
+        
+        // Create directory if it doesn't exist
+        if (!is_dir($viewCachePath)) {
+            mkdir($viewCachePath, 0755, true);
+        }
+        
+        // Ensure it's writable
+        if (!is_writable($viewCachePath)) {
+            @chmod($viewCachePath, 0755);
         }
     }
 
