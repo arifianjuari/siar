@@ -56,16 +56,32 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function ensureViewCacheDirectoryExists(): void
     {
-        $viewCachePath = config('view.compiled', storage_path('framework/views'));
-        
-        // Create directory if it doesn't exist
-        if (!is_dir($viewCachePath)) {
-            mkdir($viewCachePath, 0755, true);
-        }
-        
-        // Ensure it's writable
-        if (!is_writable($viewCachePath)) {
-            @chmod($viewCachePath, 0755);
+        try {
+            // Get view cache path, fallback to default if config not available
+            $viewCachePath = config('view.compiled');
+            
+            // If config returns empty/null (during package discovery), use default path
+            if (empty($viewCachePath)) {
+                $viewCachePath = storage_path('framework/views');
+            }
+            
+            // Validate path is not empty and is a valid string
+            if (!is_string($viewCachePath) || trim($viewCachePath) === '') {
+                return; // Skip if path is invalid
+            }
+            
+            // Create directory if it doesn't exist
+            if (!is_dir($viewCachePath)) {
+                @mkdir($viewCachePath, 0755, true);
+            }
+            
+            // Ensure it's writable
+            if (is_dir($viewCachePath) && !is_writable($viewCachePath)) {
+                @chmod($viewCachePath, 0755);
+            }
+        } catch (\Exception $e) {
+            // Silently fail during package discovery or other edge cases
+            // The directory will be created by the build script anyway
         }
     }
 
