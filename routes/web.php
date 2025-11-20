@@ -742,4 +742,9 @@ require __DIR__ . '/modules/ActivityManagement.php';
 // UserManagement routes now loaded via UserManagementServiceProvider
 // KendaliMutuBiaya routes now loaded via KendaliMutuBiayaServiceProvider
 
+// Debug routes (remove in production or protect with superadmin middleware)
+if (file_exists(__DIR__ . '/modules/debug.php')) {
+    require __DIR__ . '/modules/debug.php';
+}
+
 // Tenant User Management Routes - Moved to superadmin.tenants.users group above (line 465-474)
