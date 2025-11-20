@@ -24,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
+        
+        // Fix view cache path if config is invalid
+        $this->fixViewCachePathConfig();
+        
         $this->registerGlobalHelpers();
         
         // Skip view-related operations during package discovery to avoid cache path errors
@@ -54,6 +58,24 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
+     * Fix view cache path config if it's invalid
+     * This prevents "invalid cache path" errors in production
+     */
+    protected function fixViewCachePathConfig(): void
+    {
+        $currentPath = config('view.compiled');
+        
+        // If config path is empty or invalid, set it to the correct default
+        if (empty($currentPath) || !is_string($currentPath) || trim($currentPath) === '') {
+            $correctPath = storage_path('framework/views');
+            config(['view.compiled' => $correctPath]);
+            
+            // Also update the view config in the container
+            $this->app['config']->set('view.compiled', $correctPath);
+        }
+    }
+
+    /**
      * Determine if view services should be registered
      * Skip during package discovery to prevent cache path errors
      */
@@ -68,10 +90,16 @@ class AppServiceProvider extends ServiceProvider
             }
         }
         
-        // Also check if storage/framework/views directory exists
-        // If it doesn't exist yet, skip (will be created by build script)
-        $viewPath = base_path('storage/framework/views');
-        if (!is_dir($viewPath)) {
+        // Check if view compiled path is valid
+        $viewCachePath = config('view.compiled');
+        
+        // If config returns empty/null/invalid, skip
+        if (empty($viewCachePath) || !is_string($viewCachePath)) {
+            return false;
+        }
+        
+        // Check if the path exists and is writable
+        if (!is_dir($viewCachePath) || !is_writable($viewCachePath)) {
             return false;
         }
         
