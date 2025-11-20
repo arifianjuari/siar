@@ -7,6 +7,19 @@ set -e
 
 echo "🚀 Starting Laravel Cloud build process..."
 
+# Ensure required directories exist
+echo "📁 Creating required directories..."
+mkdir -p bootstrap/cache
+mkdir -p storage/app/public
+mkdir -p storage/framework/cache/data
+mkdir -p storage/framework/sessions
+mkdir -p storage/framework/views
+mkdir -p storage/logs
+
+# Set permissions early
+echo "🔐 Setting initial permissions..."
+chmod -R 775 storage bootstrap/cache
+
 # Install dependencies
 echo "📦 Installing Composer dependencies..."
 composer install --no-dev --optimize-autoloader --no-interaction
@@ -28,10 +41,6 @@ php artisan event:cache
 # Create storage link
 echo "🔗 Creating storage link..."
 php artisan storage:link || true
-
-# Set permissions
-echo "🔐 Setting permissions..."
-chmod -R 775 storage bootstrap/cache || true
 
 echo "✅ Build process completed successfully!"
 

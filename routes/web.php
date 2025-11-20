@@ -3,9 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Modules\ProductManagement\ProductController;
 use App\Http\Controllers\TenantController;
-use App\Http\Controllers\Superadmin\TenantManagementController;
-use App\Http\Controllers\Superadmin\ModuleManagementController;
-use App\Http\Controllers\Superadmin\UserManagementController;
+use App\Http\Controllers\SuperAdmin\TenantManagementController;
+use App\Http\Controllers\SuperAdmin\ModuleManagementController;
+use App\Http\Controllers\SuperAdmin\UserManagementController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -468,8 +468,8 @@ Route::prefix('superadmin')->name('superadmin.')->middleware(['auth', 'superadmi
     // Routes are now loaded via RiskManagementServiceProvider
 
     // Tenant Monitoring
-    Route::get('tenants/monitor', [App\Http\Controllers\Superadmin\TenantMonitoringController::class, 'index'])->name('tenants.monitor');
-    Route::get('tenants/monitor/{tenant}', [App\Http\Controllers\Superadmin\TenantMonitoringController::class, 'show'])->name('tenants.monitor.show');
+    Route::get('tenants/monitor', [App\Http\Controllers\SuperAdmin\TenantMonitoringController::class, 'index'])->name('tenants.monitor');
+    Route::get('tenants/monitor/{tenant}', [App\Http\Controllers\SuperAdmin\TenantMonitoringController::class, 'show'])->name('tenants.monitor.show');
 
     // Module Management
     Route::resource('modules', ModuleManagementController::class);
