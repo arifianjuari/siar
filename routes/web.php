@@ -474,6 +474,11 @@ Route::prefix('superadmin')->name('superadmin.')->middleware(['auth', 'superadmi
     // Module Management
     Route::resource('modules', ModuleManagementController::class);
     Route::post('modules/sync-filesystem', [ModuleManagementController::class, 'syncFromFilesystem'])->name('modules.sync');
+    Route::get('modules/sync-filesystem', function() {
+        // Redirect GET to POST with fresh CSRF token
+        return redirect()->route('superadmin.modules.index')
+            ->with('info', 'Please use the "Sync dari Filesystem" button to sync modules.');
+    });
     Route::post('modules/{module}/activate-for-all', [ModuleManagementController::class, 'activateForAll'])->name('modules.activate-for-all');
     Route::post('modules/{module}/deactivate-for-all', [ModuleManagementController::class, 'deactivateForAll'])->name('modules.deactivate-for-all');
 

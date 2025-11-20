@@ -6,10 +6,10 @@
 <div class="d-flex justify-content-between align-items-center">
     <h2 class="mb-0">Manajemen Modul</h2>
     <div>
-        <form action="{{ route('superadmin.modules.sync') }}" method="POST" class="d-inline">
+        <form action="{{ route('superadmin.modules.sync') }}" method="POST" class="d-inline" id="syncForm">
             @csrf
-            <button type="submit" class="btn btn-success me-2" title="Sync modules from filesystem">
-                <i class="fas fa-sync me-2"></i> Sync dari Filesystem
+            <button type="submit" class="btn btn-success me-2" id="syncButton" title="Sync modules from filesystem">
+                <i class="fas fa-sync me-2" id="syncIcon"></i> Sync dari Filesystem
                 @if(isset($discoveredCount) && $discoveredCount > 0)
                     <span class="badge bg-light text-dark">{{ $discoveredCount }}</span>
                 @endif
@@ -154,4 +154,58 @@
         </div>
     </div>
 </div>
-@endsection 
+@endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const syncForm = document.getElementById('syncForm');
+    const syncButton = document.getElementById('syncButton');
+    const syncIcon = document.getElementById('syncIcon');
+    
+    if (syncForm && syncButton) {
+        syncForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Disable button and show loading
+            syncButton.disabled = true;
+            syncIcon.classList.add('fa-spin');
+            syncButton.innerHTML = '<i class="fas fa-sync fa-spin me-2"></i> Syncing...';
+            
+            // Get fresh CSRF token
+            fetch('{{ route("superadmin.modules.sync") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                    return null;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                    // Handle JSON response if any
+                    console.log(data);
+                }
+                // Reload page to show results
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Sync error:', error);
+                alert('Error saat sync modules. Silakan coba lagi atau gunakan command: php artisan modules:sync');
+                syncButton.disabled = false;
+                syncIcon.classList.remove('fa-spin');
+                syncButton.innerHTML = '<i class="fas fa-sync me-2"></i> Sync dari Filesystem';
+            });
+        });
+    }
+});
+</script>
+@endpush 

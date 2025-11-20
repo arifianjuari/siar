@@ -41,12 +41,13 @@ class SyncModulesFromFilesystem extends Command
             return 1;
         }
 
-        $this->info("Found {count($filesystemModules)} modules in filesystem:");
+        $moduleCount = count($filesystemModules);
+        $this->info("Found {$moduleCount} modules in filesystem:");
         $this->table(
             ['Name', 'Slug', 'Has module.json', 'In DB'],
             collect($filesystemModules)->map(fn($m) => [
-                $m['name'],
-                $m['alias'] ?? Str::slug($m['name']),
+                $m['name'] ?? 'Unknown',
+                $m['alias'] ?? Str::slug($m['name'] ?? 'unknown'),
                 isset($m['metadata']) ? '✓' : '✗',
                 $m['exists_in_db'] ? '✓' : '✗',
             ])
