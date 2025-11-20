@@ -21,7 +21,8 @@ class ResetDatabaseProduction extends Command
      */
     protected $signature = 'db:reset-production 
                             {--force : Force reset without confirmation}
-                            {--keep-data : Keep existing data, only add missing}';
+                            {--keep-data : Keep existing data, only add missing}
+                            {--i-understand-this-will-delete-all-data : Extra safety flag for force mode}';
 
     /**
      * The console command description.
@@ -64,6 +65,24 @@ class ResetDatabaseProduction extends Command
                 $this->error('Reset cancelled by user.');
                 return 1;
             }
+        } else {
+            // Force mode requires extra safety flag
+            if (!$this->option('i-understand-this-will-delete-all-data')) {
+                $this->error('');
+                $this->error('⚠️  FORCE MODE DETECTED!');
+                $this->error('');
+                $this->error('For safety, you must also include:');
+                $this->error('--i-understand-this-will-delete-all-data');
+                $this->error('');
+                $this->error('Full command:');
+                $this->error('php artisan db:reset-production --force --i-understand-this-will-delete-all-data');
+                $this->error('');
+                return 1;
+            }
+            
+            $this->warn('');
+            $this->warn('🚨 FORCE MODE: Skipping all confirmations!');
+            $this->warn('');
         }
 
         try {
