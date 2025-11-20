@@ -38,11 +38,49 @@ class ModuleManagementController extends Controller
         $discovered = [];
         $modulesPath = base_path('modules');
 
+        // Log for debugging
+        \Illuminate\Support\Facades\Log::info('Discovering modules from filesystem', [
+            'path' => $modulesPath,
+            'exists' => is_dir($modulesPath),
+            'readable' => is_readable($modulesPath),
+        ]);
+
         if (!is_dir($modulesPath)) {
+            \Illuminate\Support\Facades\Log::warning('Modules directory does not exist', ['path' => $modulesPath]);
             return $discovered;
         }
 
-        $directories = array_filter(glob($modulesPath . '/*'), 'is_dir');
+        if (!is_readable($modulesPath)) {
+            \Illuminate\Support\Facades\Log::error('Modules directory is not readable', ['path' => $modulesPath]);
+            return $discovered;
+        }
+
+        // Try glob first, fallback to scandir if glob is disabled
+        try {
+            $directories = @glob($modulesPath . '/*', GLOB_ONLYDIR);
+            if ($directories === false) {
+                // glob failed, try scandir
+                $directories = [];
+                $items = scandir($modulesPath);
+                foreach ($items as $item) {
+                    if ($item === '.' || $item === '..') continue;
+                    $fullPath = $modulesPath . '/' . $item;
+                    if (is_dir($fullPath)) {
+                        $directories[] = $fullPath;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to scan modules directory', [
+                'error' => $e->getMessage()
+            ]);
+            return $discovered;
+        }
+
+        \Illuminate\Support\Facades\Log::info('Found directories', [
+            'count' => count($directories),
+            'directories' => array_map('basename', $directories)
+        ]);
 
         foreach ($directories as $dir) {
             $moduleName = basename($dir);
@@ -97,7 +135,17 @@ class ModuleManagementController extends Controller
         try {
             DB::beginTransaction();
             
+            \Illuminate\Support\Facades\Log::info('Starting module sync from filesystem');
+            
             $filesystemModules = $this->discoverModulesFromFilesystem();
+            
+            if (empty($filesystemModules)) {
+                DB::rollBack();
+                \Illuminate\Support\Facades\Log::warning('No modules found in filesystem');
+                return redirect()->route('superadmin.modules.index')
+                    ->with('warning', 'Tidak ada modul yang ditemukan di direktori modules/. Pastikan direktori modules/ exists dan readable.');
+            }
+            
             $created = 0;
             $updated = 0;
             $deleted = 0;
