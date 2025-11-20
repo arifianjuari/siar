@@ -49,7 +49,10 @@ php artisan db:seed --class=ModuleSeeder --force --no-interaction || true
 
 # Sync modules from filesystem to database
 echo "🔄 Syncing modules from filesystem..."
-php artisan modules:sync --no-interaction --force || true
+if ! php artisan modules:sync --no-interaction --force 2>/dev/null; then
+    echo "⚠️  Command sync failed, trying seeder fallback..."
+    php artisan db:seed --class=ModuleSyncSeeder --force --no-interaction || true
+fi
 
 # Clear and cache configuration
 echo "⚙️ Optimizing configuration..."
