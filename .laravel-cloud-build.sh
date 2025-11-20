@@ -26,6 +26,7 @@ touch storage/framework/testing/.gitkeep
 # Set permissions early
 echo "🔐 Setting initial permissions..."
 chmod -R 775 storage bootstrap/cache
+chmod -R 755 modules 2>/dev/null || true
 
 # Install dependencies
 echo "📦 Installing Composer dependencies..."
@@ -45,6 +46,10 @@ php artisan migrate --force --no-interaction || true
 # Seed essential data (only if needed)
 echo "🌱 Seeding essential data..."
 php artisan db:seed --class=ModuleSeeder --force --no-interaction || true
+
+# Sync modules from filesystem to database
+echo "🔄 Syncing modules from filesystem..."
+php artisan modules:sync --no-interaction --force || true
 
 # Clear and cache configuration
 echo "⚙️ Optimizing configuration..."
