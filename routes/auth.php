@@ -18,16 +18,14 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware(['web'])->group(function () {
-    Route::post('logout', function () {
-        Log::info('Mencoba logout');
-        return app(AuthenticatedSessionController::class)->destroy(request());
-    })->name('logout');
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
+        ->name('logout');
 
     Route::get('logout', function () {
-        Log::info('Mencoba logout dengan GET method');
+        Log::info('Logout via GET method - redirecting to POST');
         auth()->logout();
         request()->session()->invalidate();
         request()->session()->regenerateToken();
-        return redirect('/');
+        return redirect()->route('login')->with('status', 'Anda telah berhasil logout.');
     })->name('logout.get');
 });

@@ -182,6 +182,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Use FormData to send as form submission (not JSON)
             const formData = new FormData(syncForm);
             
+            // Add timeout to fetch
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+            
             fetch('{{ route("superadmin.modules.sync") }}', {
                 method: 'POST',
                 body: formData,
@@ -190,7 +194,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 credentials: 'same-origin',
-                redirect: 'follow'
+                redirect: 'follow',
+                signal: controller.signal
             })
             .then(async response => {
                 // Check if response is redirect
@@ -224,11 +229,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => window.location.reload(), 500);
             })
             .catch(error => {
+                clearTimeout(timeoutId);
                 console.error('Sync error:', error);
                 
                 // Show more detailed error
                 let errorMsg = 'Error saat sync modules.\n\n';
-                errorMsg += 'Detail: ' + error.message + '\n\n';
+                
+                if (error.name === 'AbortError') {
+                    errorMsg += 'Detail: Request timeout (>30 detik)\n\n';
+                    errorMsg += 'Server mungkin sedang memproses data besar.\n\n';
+                } else {
+                    errorMsg += 'Detail: ' + error.message + '\n\n';
+                }
+                
                 errorMsg += 'Solusi:\n';
                 errorMsg += '1. Refresh page dan coba lagi\n';
                 errorMsg += '2. Atau gunakan Console:\n';

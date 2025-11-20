@@ -61,6 +61,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        // Use named route with absolute URL to avoid 419 errors
+        return redirect()->route('login')->with('status', 'Anda telah berhasil logout.');
     }
 }
