@@ -59,7 +59,14 @@
                     </li>
                 @endforeach
             </ul>
-            <p class="mb-0">Klik tombol <strong>"Sync dari Filesystem"</strong> untuk menambahkan modul yang belum terdaftar ke database.</p>
+            <p class="mb-2">Klik tombol <strong>"Sync dari Filesystem"</strong> untuk menambahkan modul yang belum terdaftar ke database.</p>
+            <div class="alert alert-info mb-0 py-2">
+                <small>
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>Alternative:</strong> Gunakan Console command untuk sync yang lebih reliable:
+                    <code class="ms-2">php artisan modules:sync --no-interaction</code>
+                </small>
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
@@ -172,34 +179,63 @@ document.addEventListener('DOMContentLoaded', function() {
             syncIcon.classList.add('fa-spin');
             syncButton.innerHTML = '<i class="fas fa-sync fa-spin me-2"></i> Syncing...';
             
-            // Get fresh CSRF token
+            // Use FormData to send as form submission (not JSON)
+            const formData = new FormData(syncForm);
+            
             fetch('{{ route("superadmin.modules.sync") }}', {
                 method: 'POST',
+                body: formData,
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json'
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
-                credentials: 'same-origin'
+                credentials: 'same-origin',
+                redirect: 'follow'
             })
-            .then(response => {
+            .then(async response => {
+                // Check if response is redirect
                 if (response.redirected) {
                     window.location.href = response.url;
+                    return;
+                }
+                
+                // Check response status
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('Response error:', response.status, text);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                // Try to parse as JSON, fallback to text
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    // HTML response (redirect happened)
+                    window.location.reload();
                     return null;
                 }
-                return response.json();
             })
             .then(data => {
                 if (data) {
-                    // Handle JSON response if any
-                    console.log(data);
+                    console.log('Sync response:', data);
                 }
                 // Reload page to show results
-                window.location.reload();
+                setTimeout(() => window.location.reload(), 500);
             })
             .catch(error => {
                 console.error('Sync error:', error);
-                alert('Error saat sync modules. Silakan coba lagi atau gunakan command: php artisan modules:sync');
+                
+                // Show more detailed error
+                let errorMsg = 'Error saat sync modules.\n\n';
+                errorMsg += 'Detail: ' + error.message + '\n\n';
+                errorMsg += 'Solusi:\n';
+                errorMsg += '1. Refresh page dan coba lagi\n';
+                errorMsg += '2. Atau gunakan Console:\n';
+                errorMsg += '   php artisan modules:sync --no-interaction';
+                
+                alert(errorMsg);
+                
                 syncButton.disabled = false;
                 syncIcon.classList.remove('fa-spin');
                 syncButton.innerHTML = '<i class="fas fa-sync me-2"></i> Sync dari Filesystem';
