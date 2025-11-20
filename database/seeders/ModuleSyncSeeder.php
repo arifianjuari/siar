@@ -47,21 +47,53 @@ class ModuleSyncSeeder extends Seeder
                 $existingModule = Module::where('slug', $slug)->first();
 
                 if (!$existingModule) {
+                    // Check if code already exists (for safety)
+                    $codeExists = Module::where('code', $code)->exists();
+                    if ($codeExists) {
+                        // Generate unique code by appending number
+                        $counter = 1;
+                        $originalCode = $code;
+                        while (Module::where('code', $code)->exists()) {
+                            $code = $originalCode . '_' . $counter;
+                            $counter++;
+                        }
+                        $moduleData['code'] = $code;
+                        $this->command->warn("  ⚠ Code conflict detected, using: {$code}");
+                    }
+                    
                     Module::create($moduleData);
                     $this->command->info("  ✓ Created: {$fsModule['name']}");
                     $created++;
                 } else {
-                    // Update description and icon if changed
+                    // Update only safe fields (not code to avoid unique constraint)
+                    $updateData = [];
                     $updated_fields = [];
+                    
+                    if ($existingModule->name !== $moduleData['name']) {
+                        $updateData['name'] = $moduleData['name'];
+                        $updated_fields[] = 'name';
+                    }
                     if ($existingModule->description !== $moduleData['description']) {
+                        $updateData['description'] = $moduleData['description'];
                         $updated_fields[] = 'description';
                     }
                     if ($existingModule->icon !== $moduleData['icon']) {
+                        $updateData['icon'] = $moduleData['icon'];
                         $updated_fields[] = 'icon';
                     }
+                    // Only update slug if it's different and doesn't conflict
+                    if ($existingModule->slug !== $moduleData['slug']) {
+                        $slugExists = Module::where('slug', $moduleData['slug'])
+                            ->where('id', '!=', $existingModule->id)
+                            ->exists();
+                        if (!$slugExists) {
+                            $updateData['slug'] = $moduleData['slug'];
+                            $updated_fields[] = 'slug';
+                        }
+                    }
 
-                    if (!empty($updated_fields)) {
-                        $existingModule->update($moduleData);
+                    if (!empty($updateData)) {
+                        $existingModule->update($updateData);
                         $this->command->info("  ✓ Updated: {$fsModule['name']} (" . implode(', ', $updated_fields) . ")");
                         $updated++;
                     } else {

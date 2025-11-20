@@ -87,20 +87,46 @@ class SyncModulesFromFilesystem extends Command
                     'code' => $code,
                     'slug' => $slug,
                     'description' => $fsModule['description'] ?? 'Module ' . $fsModule['name'],
-                    'icon' => 'fa-cube',
+                    'icon' => $fsModule['icon'] ?? 'fa-cube',
                 ];
 
                 $existingModule = Module::where('slug', $slug)->first();
 
                 if (!$existingModule) {
+                    // Check if code already exists (avoid duplicate)
+                    $codeExists = Module::where('code', $code)->exists();
+                    if ($codeExists) {
+                        // Generate unique code by appending number
+                        $counter = 1;
+                        $originalCode = $code;
+                        while (Module::where('code', $code)->exists()) {
+                            $code = $originalCode . '_' . $counter;
+                            $counter++;
+                        }
+                        $moduleData['code'] = $code;
+                        $this->warn("⚠ Code conflict detected, using: {$code}");
+                    }
+                    
                     Module::create($moduleData);
                     $this->info("✓ Created: {$fsModule['name']}");
                     $created++;
                 } else {
-                    // Update description if changed
+                    // Update only safe fields (not code to avoid unique constraint)
+                    $updateData = [];
+                    $updated_fields = [];
+                    
                     if ($existingModule->description !== $moduleData['description']) {
-                        $existingModule->update(['description' => $moduleData['description']]);
-                        $this->info("✓ Updated: {$fsModule['name']}");
+                        $updateData['description'] = $moduleData['description'];
+                        $updated_fields[] = 'description';
+                    }
+                    if ($existingModule->icon !== $moduleData['icon']) {
+                        $updateData['icon'] = $moduleData['icon'];
+                        $updated_fields[] = 'icon';
+                    }
+
+                    if (!empty($updateData)) {
+                        $existingModule->update($updateData);
+                        $this->info("✓ Updated: {$fsModule['name']} (" . implode(', ', $updated_fields) . ")");
                         $updated++;
                     } else {
                         $this->line("- Unchanged: {$fsModule['name']}");
