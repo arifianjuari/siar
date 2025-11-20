@@ -112,6 +112,8 @@ class ResetDatabaseProduction extends Command
                     'slug' => 'system',
                     'code' => 'SYSTEM',
                     'type' => 'system',
+                    'domain' => 'system.local',
+                    'database' => config('database.connections.mysql.database'),
                     'is_active' => true,
                 ]
             );
