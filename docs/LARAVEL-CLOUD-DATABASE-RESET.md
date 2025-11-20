@@ -163,6 +163,16 @@ php artisan db:reset-production --force --i-understand-this-will-delete-all-data
 2. Wait for auto-deploy to finish
 3. Or trigger manual deploy
 
+### **Error: "PERINTAH BERBAHAYA DIBLOKIR!"**
+
+**Cause:** SafetyHookServiceProvider blocking migrate:fresh
+
+**Solution:**
+
+- ✅ **FIXED in commit 36ea0e2**
+- `db:reset-production` now whitelisted
+- Redeploy and try again
+
 ### **Error: "Database connection failed"**
 
 **Cause:** Database credentials salah
