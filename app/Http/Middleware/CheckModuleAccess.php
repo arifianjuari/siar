@@ -39,8 +39,8 @@ class CheckModuleAccess
             return redirect()->route('dashboard')->with('error', 'Parameter modul tidak valid');
         }
 
-        // Jika user adalah superadmin, bypass checking
-        if (auth()->check() && auth()->user()->role && auth()->user()->role->slug === 'superadmin') {
+        // Jika user adalah superadmin, bypass checking (with proper tenant validation)
+        if (auth()->check() && auth()->user()->isSuperadmin()) {
             Log::info('User adalah superadmin, bypass checking');
             return $next($request);
         }

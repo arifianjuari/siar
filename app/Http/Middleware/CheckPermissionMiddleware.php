@@ -28,8 +28,8 @@ class CheckPermissionMiddleware
 
         $user = auth()->user();
 
-        // Jika superadmin, bypass pemeriksaan
-        if ($user->role && $user->role->slug === 'superadmin') {
+        // Jika superadmin, bypass pemeriksaan (with proper tenant validation)
+        if ($user->isSuperadmin()) {
             return $next($request);
         }
 

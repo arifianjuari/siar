@@ -89,10 +89,8 @@ class TelescopeServiceProvider extends ServiceProvider
     protected function registerGate(): void
     {
         Gate::define('viewTelescope', function ($user) {
-            // Pastikan user memiliki role dan role-nya adalah superadmin
-            return $user &&
-                $user->role &&
-                $user->role->slug === 'superadmin';
+            // Pastikan user adalah superadmin (with proper tenant validation)
+            return $user && $user->isSuperadmin();
         });
     }
 }

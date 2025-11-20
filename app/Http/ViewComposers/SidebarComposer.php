@@ -34,9 +34,11 @@ class SidebarComposer
             $user = auth()->user();
             $tenant_id = session('tenant_id');
             
-            // Check roles
+            // Check roles with proper tenant validation
             if ($user->role) {
-                $isSuperAdmin = $user->role->slug === 'superadmin';
+                // Superadmin must have superadmin role AND be in System tenant
+                $isSystemTenant = $user->tenant && ($user->tenant->id === 1 || $user->tenant->name === 'System');
+                $isSuperAdmin = $user->role->slug === 'superadmin' && $isSystemTenant;
                 $isTenantAdmin = $user->role->slug === 'tenant-admin';
             }
             

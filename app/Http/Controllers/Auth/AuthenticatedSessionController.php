@@ -29,14 +29,14 @@ class AuthenticatedSessionController extends Controller
             // Load relationships secara explicit
             $user->load(['role', 'tenant']);
             
-            // Set tenant ke session jika user bukan superadmin
-            if ($user->role && $user->role->slug !== 'superadmin' && $user->tenant) {
+            // Set tenant ke session jika user bukan superadmin (with proper validation)
+            if (!$user->isSuperadmin() && $user->tenant) {
                 session(['tenant_id' => $user->tenant_id]);
                 view()->share('current_tenant', $user->tenant);
             }
 
-            // Determine redirect route based on role
-            if ($user->role && $user->role->slug === 'superadmin') {
+            // Determine redirect route based on role (with proper validation)
+            if ($user->isSuperadmin()) {
                 return redirect()->intended(route('superadmin.dashboard'));
             }
             

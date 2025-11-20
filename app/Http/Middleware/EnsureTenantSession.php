@@ -15,8 +15,8 @@ class EnsureTenantSession
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Jika user adalah superadmin, bypass checking tenant session
-        if (auth()->check() && auth()->user()->role && auth()->user()->role->slug === 'superadmin') {
+        // Jika user adalah superadmin, bypass checking tenant session (with proper tenant validation)
+        if (auth()->check() && auth()->user()->isSuperadmin()) {
             return $next($request);
         }
 

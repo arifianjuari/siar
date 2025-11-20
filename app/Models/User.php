@@ -124,13 +124,25 @@ class User extends Authenticatable
     /**
      * Cek apakah user adalah superadmin
      * 
+     * IMPORTANT: Superadmin must have BOTH:
+     * 1. Role slug = 'superadmin' 
+     * 2. Tenant ID = 1 OR Tenant name = 'System'
+     * 
      * @return bool
      */
     public function isSuperadmin(): bool
     {
-        return $this->role && 
-               (strtolower($this->role->name) === 'super admin' || 
-                strtolower($this->role->slug) === 'super-admin');
+        if (!$this->role || !$this->tenant) {
+            return false;
+        }
+        
+        // Check if role is superadmin
+        $hasCorrectRole = $this->role->slug === 'superadmin';
+        
+        // Check if user is in System tenant
+        $isSystemTenant = $this->tenant->id === 1 || $this->tenant->name === 'System';
+        
+        return $hasCorrectRole && $isSystemTenant;
     }
 
     /**
