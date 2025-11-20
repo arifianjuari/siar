@@ -6,7 +6,7 @@
 
 ## Problem
 
-The deployment was failing with two critical errors:
+The deployment was failing with three critical errors:
 
 ### 1. Missing bootstrap/cache Directory
 
@@ -25,6 +25,14 @@ does not comply with psr-4 autoloading standard
 ```
 
 **Root Cause:** Directory name was `Superadmin` but files were being detected in `SuperAdmin`, causing case-sensitivity issues.
+
+### 3. Invalid View Cache Path During Package Discovery
+
+```
+Please provide a valid cache path.
+```
+
+**Root Cause:** The `AppServiceProvider` was trying to register Blade directives during composer's package discovery phase, before the view cache directory existed.
 
 ## Solutions Implemented
 
@@ -84,6 +92,30 @@ use App\Http\Controllers\SuperAdmin\ModuleManagementController;
 use App\Http\Controllers\SuperAdmin\UserManagementController;
 ```
 
+### 3. Fixed AppServiceProvider Boot Sequence
+
+**Added conditional check for view cache path:**
+
+```php
+// Only register Blade directives and view-related operations if view cache path exists
+// This prevents errors during composer install/package discovery
+$viewCachePath = config('view.compiled');
+if ($viewCachePath && is_dir($viewCachePath)) {
+    $this->registerBladeDirectives();
+    $this->configureDebugMode();
+    $this->registerViewComposers();
+
+    // Set default pagination view to Bootstrap 5
+    \Illuminate\Pagination\Paginator::useBootstrap();
+}
+```
+
+**Key Changes:**
+
+- Check if `storage/framework/views` exists before registering Blade directives
+- Prevent Blade facade from being accessed during package discovery
+- Ensures view-related services only load when ready
+
 ## Files Modified
 
 ### Build Configuration
@@ -100,6 +132,10 @@ use App\Http\Controllers\SuperAdmin\UserManagementController;
 ### Routes
 
 - `routes/web.php` - Updated namespace imports
+
+### Service Providers
+
+- `app/Providers/AppServiceProvider.php` - Added view cache path check in boot method
 
 ## Deployment Process
 
@@ -131,9 +167,15 @@ After pushing these changes, Laravel Cloud should:
    - Bug fixes
 
 2. **Deployment fix** (607bfee):
+
    - Fix bootstrap/cache directory creation
    - Fix PSR-4 autoloading issues
    - Update namespaces and routes
+
+3. **View cache fix** (6ba091a):
+   - Add conditional check for view cache path
+   - Prevent Blade directive registration during package discovery
+   - Fix "invalid cache path" error
 
 ## Next Steps
 
