@@ -42,10 +42,10 @@ The `db:reset-production` command will:
 
 ## 🚀 Usage
 
-### **Method 1: Interactive (Recommended)**
+### **Method 1: Interactive (Local/SSH Only)**
 
 ```bash
-# Via Laravel Cloud Console or SSH
+# Via SSH or local terminal (NOT Laravel Cloud Console)
 php artisan db:reset-production
 ```
 
@@ -60,14 +60,22 @@ php artisan db:reset-production
 - Double confirmation required
 - Shows what will happen before executing
 
-### **Method 2: Force (No Confirmation)**
+⚠️ **NOTE:** Laravel Cloud Console does NOT support interactive input!
+
+### **Method 2: Force Mode (For Laravel Cloud Console)**
 
 ```bash
-# Use with EXTREME caution!
-php artisan db:reset-production --force
+# For non-interactive environments like Laravel Cloud Console
+php artisan db:reset-production --force --i-understand-this-will-delete-all-data
 ```
 
-⚠️ **WARNING:** This skips all confirmations!
+**Safety features:**
+
+- Requires TWO flags to execute
+- `--force` alone will NOT work
+- Must explicitly acknowledge data deletion
+
+⚠️ **WARNING:** This skips all confirmations but requires explicit safety flag!
 
 ### **Method 3: Keep Existing Data**
 
@@ -403,11 +411,11 @@ After successful reset:
 ## ⚡ Quick Reference
 
 ```bash
-# Full reset with confirmation
+# Interactive mode (SSH/Local only)
 php artisan db:reset-production
 
-# Force reset (no confirmation)
-php artisan db:reset-production --force
+# Force mode for Laravel Cloud Console (requires safety flag)
+php artisan db:reset-production --force --i-understand-this-will-delete-all-data
 
 # Keep data, only add missing
 php artisan db:reset-production --keep-data
