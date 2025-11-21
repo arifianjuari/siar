@@ -22,20 +22,11 @@ class AuthenticatedSessionController extends Controller
             // Authenticate user
             $request->authenticate();
             
-            // Get user ID BEFORE invalidating session
-            $userId = Auth::id();
-            
-            // CRITICAL: Clear all session data and regenerate to prevent session fixation
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-            
-            // Start new session
+            // IMPORTANT: Regenerate session ID to prevent session fixation
+            // But do NOT invalidate - that would clear the auth
             $request->session()->regenerate();
             
-            // Re-login user manually after session invalidation
-            Auth::loginUsingId($userId);
-            
-            // Force reload user with relationships to ensure fresh data
+            // Get authenticated user with relationships
             $user = Auth::user();
             $user->load(['role', 'tenant']);
             
@@ -54,13 +45,17 @@ class AuthenticatedSessionController extends Controller
                     'user_verified' => true,
                 ]);
                 
+                $redirectUrl = route('superadmin.dashboard');
+                
                 Log::info('Login: Superadmin authenticated', [
                     'user_id' => $user->id,
                     'email' => $user->email,
                     'tenant' => $user->tenant->name,
+                    'redirect_to' => $redirectUrl,
+                    'session_id' => session()->getId(),
                 ]);
                 
-                return redirect()->intended(route('superadmin.dashboard'));
+                return redirect()->intended($redirectUrl);
             } else {
                 // TENANT USER: Set tenant session
                 session([
@@ -71,14 +66,18 @@ class AuthenticatedSessionController extends Controller
                 
                 view()->share('current_tenant', $user->tenant);
                 
+                $redirectUrl = route('dashboard');
+                
                 Log::info('Login: Tenant user authenticated', [
                     'user_id' => $user->id,
                     'email' => $user->email,
                     'role' => $user->role->slug,
                     'tenant_id' => $user->tenant_id,
+                    'redirect_to' => $redirectUrl,
+                    'session_id' => session()->getId(),
                 ]);
                 
-                return redirect()->intended(route('dashboard'));
+                return redirect()->intended($redirectUrl);
             }
             
         } catch (\Exception $e) {
