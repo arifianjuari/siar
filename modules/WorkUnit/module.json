@@ -1,0 +1,19 @@
+{
+  "name": "Unit Kerja",
+  "alias": "work-unit",
+  "description": "Modul untuk mengelola unit kerja (struktur organisasi) dan dokumen SPO",
+  "version": "1.0.0",
+  "icon": "fa-sitemap",
+  "keywords": [
+    "work-unit",
+    "unit-kerja",
+    "organization",
+    "spo",
+    "standard-operating-procedure"
+  ],
+  "active": 1,
+  "order": 5,
+  "providers": ["Modules\\WorkUnit\\Providers\\WorkUnitServiceProvider"],
+  "aliases": {},
+  "files": []
+}

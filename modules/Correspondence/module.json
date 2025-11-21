@@ -1,0 +1,21 @@
+{
+  "name": "Surat Menyurat",
+  "alias": "correspondence",
+  "description": "Modul untuk mengelola surat masuk dan surat keluar",
+  "version": "1.0.0",
+  "icon": "fa-envelope-open-text",
+  "keywords": [
+    "correspondence",
+    "letter",
+    "surat-menyurat",
+    "document",
+    "report"
+  ],
+  "active": 1,
+  "order": 6,
+  "providers": [
+    "Modules\\Correspondence\\Providers\\CorrespondenceServiceProvider"
+  ],
+  "aliases": {},
+  "files": []
+}
