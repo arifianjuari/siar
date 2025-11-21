@@ -108,15 +108,46 @@ class ClearAllCaches extends Command
         // 9. Sessions (optional)
         if ($this->option('sessions')) {
             $this->info('Step 9/9: Clearing all sessions...');
+            
+            // Clear database sessions
             try {
                 if (Schema::hasTable('sessions')) {
+                    $count = DB::table('sessions')->count();
                     DB::table('sessions')->truncate();
-                    $this->line('✓ All sessions cleared from database');
-                } else {
-                    $this->warn('⚠ Sessions table not found');
+                    $this->line("✓ Cleared {$count} sessions from database");
                 }
             } catch (\Exception $e) {
-                $this->warn('⚠ Sessions: ' . $e->getMessage());
+                $this->warn('⚠ Database sessions: ' . $e->getMessage());
+            }
+            
+            // Clear file sessions
+            try {
+                $sessionPath = storage_path('framework/sessions');
+                if (is_dir($sessionPath)) {
+                    $files = glob($sessionPath . '/*');
+                    $count = 0;
+                    foreach ($files as $file) {
+                        if (is_file($file) && basename($file) !== '.gitignore') {
+                            unlink($file);
+                            $count++;
+                        }
+                    }
+                    $this->line("✓ Cleared {$count} session files from storage");
+                } else {
+                    $this->warn('⚠ Session directory not found');
+                }
+            } catch (\Exception $e) {
+                $this->warn('⚠ File sessions: ' . $e->getMessage());
+            }
+            
+            // Clear Redis sessions (if applicable)
+            try {
+                if (config('session.driver') === 'redis') {
+                    \Illuminate\Support\Facades\Redis::flushdb();
+                    $this->line('✓ Cleared Redis sessions');
+                }
+            } catch (\Exception $e) {
+                $this->warn('⚠ Redis sessions: ' . $e->getMessage());
             }
         } else {
             $this->info('Step 9/9: Skipping sessions (use --sessions to clear)');

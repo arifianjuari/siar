@@ -26,6 +26,16 @@ use Illuminate\Support\Str;
 
 Route::get('/', function () {
     if (Auth::check()) {
+        $user = Auth::user();
+        
+        // Load relationships
+        $user->load(['role', 'tenant']);
+        
+        // Redirect based on user role with proper tenant validation
+        if ($user->isSuperadmin()) {
+            return redirect()->route('superadmin.dashboard');
+        }
+        
         return redirect()->route('dashboard');
     }
     return redirect()->route('login');
