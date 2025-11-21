@@ -21,26 +21,61 @@ class AuthenticatedSessionController extends Controller
         try {
             // Authenticate user
             $request->authenticate();
-            // Regenerate session sesuai standar Laravel
+            
+            // CRITICAL: Clear all session data and regenerate to prevent session fixation
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
             $request->session()->regenerate();
 
             $user = Auth::user();
 
-            // Load relationships secara explicit
-            $user->load(['role', 'tenant']);
+            // Force reload user with relationships to ensure fresh data
+            $user = $user->fresh(['role', 'tenant']);
             
-            // Set tenant ke session jika user bukan superadmin (with proper validation)
-            if (!$user->isSuperadmin() && $user->tenant) {
-                session(['tenant_id' => $user->tenant_id]);
-                view()->share('current_tenant', $user->tenant);
+            if (!$user || !$user->role || !$user->tenant) {
+                Auth::logout();
+                return redirect()->route('login')
+                    ->with('error', 'User configuration invalid. Contact administrator.');
             }
-
-            // Determine redirect route based on role (with proper validation)
+            
+            // Clear any stale session data
+            session()->forget(['tenant_id', 'is_superadmin', 'auth_role']);
+            
+            // Set session based on role with proper validation
             if ($user->isSuperadmin()) {
+                // SUPERADMIN: Clear tenant, set superadmin flags
+                session([
+                    'is_superadmin' => true,
+                    'auth_role' => 'superadmin',
+                    'user_verified' => true,
+                ]);
+                
+                Log::info('Login: Superadmin authenticated', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'tenant' => $user->tenant->name,
+                ]);
+                
                 return redirect()->intended(route('superadmin.dashboard'));
+            } else {
+                // TENANT USER: Set tenant session
+                session([
+                    'tenant_id' => $user->tenant_id,
+                    'auth_role' => $user->role->slug,
+                    'user_verified' => true,
+                ]);
+                
+                view()->share('current_tenant', $user->tenant);
+                
+                Log::info('Login: Tenant user authenticated', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'role' => $user->role->slug,
+                    'tenant_id' => $user->tenant_id,
+                ]);
+                
+                return redirect()->intended(route('dashboard'));
             }
-            
-            return redirect()->intended(route('dashboard'));
             
         } catch (\Exception $e) {
             // Only log critical errors

@@ -65,8 +65,11 @@ class SuperadminMiddleware
             'is_system_tenant' => $isSystemTenant,
         ]);
 
-        // Jika bukan superadmin, redirect ke dashboard dengan pesan error
+        // Jika bukan superadmin, redirect ke dashboard regular (NOT superadmin.dashboard)
+        // Clear any superadmin-related session data
+        session()->forget(['superadmin_access', 'superadmin_verified']);
+        
         return redirect()->route('dashboard')
-            ->with('error', 'Anda tidak memiliki akses ke halaman ini.');
+            ->with('error', 'Anda tidak memiliki akses ke halaman ini. Hanya Superadmin yang dapat mengakses.');
     }
 }

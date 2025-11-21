@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Log;
 
 class EnsureTenantSession
 {
@@ -15,24 +16,60 @@ class EnsureTenantSession
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Jika user adalah superadmin, bypass checking tenant session (with proper tenant validation)
-        if (auth()->check() && auth()->user()->isSuperadmin()) {
-            return $next($request);
+        // Check if user is authenticated
+        if (!auth()->check()) {
+            return redirect()->route('login')
+                ->with('error', 'Please login to access this page.');
         }
 
-        // Jika tidak ada tenant_id di session, coba ambil dari user
-        if (!session()->has('tenant_id') && auth()->check() && auth()->user()->tenant_id) {
-            session(['tenant_id' => auth()->user()->tenant_id]);
+        $user = auth()->user();
+        
+        // Load relationships to ensure fresh data
+        $user->load(['role', 'tenant']);
+        
+        // CRITICAL: Block superadmin from tenant routes
+        if ($user->isSuperadmin()) {
+            Log::warning('EnsureTenantSession: Superadmin attempting to access tenant route', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'path' => $request->path(),
+            ]);
+            
+            // Clear any tenant session data
+            session()->forget('tenant_id');
+            
+            return redirect()->route('superadmin.dashboard')
+                ->with('error', 'Superadmin cannot access tenant pages. Use superadmin dashboard.');
         }
 
-        // Jika masih tidak ada tenant_id, redirect ke halaman error
-        if (!session()->has('tenant_id')) {
-            if ($request->ajax()) {
-                return response()->json(['error' => 'Tenant tidak ditemukan'], 403);
-            }
-
-            return redirect()->route('dashboard')->with('error', 'Tenant tidak ditemukan. Silakan hubungi administrator.');
+        // Ensure regular user has tenant
+        if (!$user->tenant_id || !$user->tenant) {
+            Log::error('EnsureTenantSession: User without tenant', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+            
+            auth()->logout();
+            return redirect()->route('login')
+                ->with('error', 'User configuration error. Contact administrator.');
         }
+
+        // Set or validate tenant session
+        $sessionTenantId = session('tenant_id');
+        
+        if (!$sessionTenantId || $sessionTenantId !== $user->tenant_id) {
+            // Set correct tenant in session
+            session(['tenant_id' => $user->tenant_id]);
+            
+            Log::info('EnsureTenantSession: Setting tenant session', [
+                'user_id' => $user->id,
+                'tenant_id' => $user->tenant_id,
+                'previous_session' => $sessionTenantId,
+            ]);
+        }
+        
+        // Share tenant info to views
+        view()->share('current_tenant', $user->tenant);
 
         return $next($request);
     }

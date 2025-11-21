@@ -79,6 +79,8 @@ class Kernel extends HttpKernel
         'check.permission' => \App\Http\Middleware\CheckPermissionMiddleware::class,
         'module.permission' => \App\Http\Middleware\CheckModulePermission::class,
         'disable.debug' => \App\Http\Middleware\DisableDebugInfo::class,
+        'auth.guard' => \App\Http\Middleware\AuthenticationGuard::class,
+        'ensure.tenant.session' => \App\Http\Middleware\EnsureTenantSession::class,
     ];
 
     /**

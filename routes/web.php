@@ -416,9 +416,9 @@ Route::get('/setup-superadmin', function () {
 
 // Dashboard utama - menggunakan DashboardController dari modul Dashboard
 // Route ini akan di-override oleh modul Dashboard jika modul tersebut aktif
-// Fallback jika modul Dashboard tidak tersedia
+// Tenant/Regular User Dashboard
 Route::get('/dashboard', [\Modules\Dashboard\Http\Controllers\DashboardController::class, 'index'])
-    ->middleware('auth')
+    ->middleware(['auth', 'ensure.tenant.session'])
     ->name('dashboard');
 
 // Profile routes
