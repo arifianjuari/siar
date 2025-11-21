@@ -22,24 +22,28 @@ class AuthenticatedSessionController extends Controller
             // Authenticate user
             $request->authenticate();
             
+            // Get user ID BEFORE invalidating session
+            $userId = Auth::id();
+            
             // CRITICAL: Clear all session data and regenerate to prevent session fixation
             $request->session()->invalidate();
             $request->session()->regenerateToken();
+            
+            // Start new session
             $request->session()->regenerate();
-
-            $user = Auth::user();
-
+            
+            // Re-login user manually after session invalidation
+            Auth::loginUsingId($userId);
+            
             // Force reload user with relationships to ensure fresh data
-            $user = $user->fresh(['role', 'tenant']);
+            $user = Auth::user();
+            $user->load(['role', 'tenant']);
             
             if (!$user || !$user->role || !$user->tenant) {
                 Auth::logout();
                 return redirect()->route('login')
                     ->with('error', 'User configuration invalid. Contact administrator.');
             }
-            
-            // Clear any stale session data
-            session()->forget(['tenant_id', 'is_superadmin', 'auth_role']);
             
             // Set session based on role with proper validation
             if ($user->isSuperadmin()) {
@@ -80,8 +84,9 @@ class AuthenticatedSessionController extends Controller
         } catch (\Exception $e) {
             // Only log critical errors
             Log::error('Login error', [
-                'email' => $request->email,
+                'email' => $request->email ?? 'unknown',
                 'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             throw $e;
