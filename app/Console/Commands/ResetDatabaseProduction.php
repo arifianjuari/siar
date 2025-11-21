@@ -174,11 +174,20 @@ class ResetDatabaseProduction extends Command
             $this->line("Modules synced: {$modules}");
             $this->line('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
+            // Clear all caches to prevent stale data
+            $this->newLine();
+            $this->info('🧹 Clearing all caches...');
+            Artisan::call('cache:nuclear --sessions');
+            $this->line('✓ All caches and sessions cleared');
+
             $this->newLine();
             $this->info('✅ Database reset completed successfully!');
             $this->newLine();
             
-            $this->warn('IMPORTANT: Change the default password after first login!');
+            $this->warn('IMPORTANT NEXT STEPS:');
+            $this->line('1. Change the default password after first login!');
+            $this->line('2. Clear your browser cache and cookies');
+            $this->line('3. Close all browser tabs and re-login');
             
             return 0;
 
