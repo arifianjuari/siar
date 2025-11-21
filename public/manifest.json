@@ -1,9 +1,0 @@
-// Manifest PWA dinonaktifkan untuk sementara
-// Untuk pengaktifan kembali, isi dengan manifest yang sesuai
-{
-    "disabled": true,
-    "name": "SIAR",
-    "short_name": "SIAR",
-    "start_url": "/",
-    "display": "none"
-}
