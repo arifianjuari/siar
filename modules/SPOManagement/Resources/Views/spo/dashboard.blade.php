@@ -110,10 +110,10 @@ $hideDefaultHeader = true;
             <p class="text-muted mb-0">Pantau dan kelola Standar Prosedur Operasional</p>
         </div>
         <div>
-            <a href="{{ route('work-units.spo.create') }}" class="btn btn-success me-2">
+            <a href="{{ route('spo.create') }}" class="btn btn-success me-2">
                 <i class="fas fa-plus-circle me-1"></i> Tambah SPO Baru
             </a>
-            <a href="{{ route('work-units.spo.index') }}" class="btn btn-primary">
+            <a href="{{ route('spo.index') }}" class="btn btn-primary">
                 <i class="fas fa-list me-1"></i> Daftar SPO
             </a>
         </div>
@@ -206,7 +206,7 @@ $hideDefaultHeader = true;
                         <ul class="list-group list-group-flush">
                             @foreach($latestSPOs as $spo)
                                 <li class="list-group-item px-0 py-2 border-bottom">
-                                    <a href="{{ route('work-units.spo.show', $spo->id) }}" class="d-flex justify-content-between align-items-center text-decoration-none">
+                                    <a href="{{ route('spo.show', $spo->id) }}" class="d-flex justify-content-between align-items-center text-decoration-none">
                                         <div class="d-flex align-items-center">
                                             <i class="fas fa-clipboard-list text-primary me-2"></i>
                                             <div>
@@ -277,7 +277,7 @@ $hideDefaultHeader = true;
                         <ul class="list-group list-group-flush">
                             @foreach($needReview as $spo)
                                 <li class="list-group-item px-0 py-2 border-bottom">
-                                    <a href="{{ route('work-units.spo.show', $spo->id) }}" class="d-flex justify-content-between align-items-center text-decoration-none">
+                                    <a href="{{ route('spo.show', $spo->id) }}" class="d-flex justify-content-between align-items-center text-decoration-none">
                                         <div class="d-flex align-items-center">
                                             <i class="fas fa-exclamation-circle text-warning me-2"></i>
                                             <div>

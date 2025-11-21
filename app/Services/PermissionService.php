@@ -42,6 +42,9 @@ class PermissionService
             return false;
         }
 
+        // Normalize potential legacy/alias module codes
+        $moduleCode = $this->normalizeModuleCode($moduleCode);
+
         // Use cached permissions if available
         $cacheKey = $this->getCacheKey($user, $moduleCode);
         $permissions = Cache::remember($cacheKey, self::CACHE_DURATION, function () use ($user, $moduleCode) {
@@ -65,21 +68,46 @@ class PermissionService
             return true;
         }
 
+        // Normalize potential legacy/alias module codes
+        $moduleCode = $this->normalizeModuleCode($moduleCode);
+
         // Get module by code or slug
         $module = Module::where('code', $moduleCode)
             ->orWhere('slug', $moduleCode)
             ->first();
         
         if (!$module) {
+            Log::warning('PermissionService: module not found', [
+                'module_code' => $moduleCode,
+            ]);
             return false;
         }
 
-        // Check if tenant has module activated (using module code)
-        if (!$user->tenant || !$user->tenant->hasModule($module->code)) {
+        // Check if tenant has module activated (use pivot by module_id to avoid code/slug mismatch)
+        if (!$user->tenant) {
+            Log::warning('PermissionService: user has no tenant when checking module access', [
+                'user_id' => $user->id,
+                'module_id' => $module->id,
+                'module_code' => $moduleCode,
+            ]);
             return false;
         }
 
-        return RoleModulePermission::where('role_id', $user->role_id)
+        $isModuleActiveForTenant = $user->tenant->modules()
+            ->where('modules.id', $module->id)
+            ->wherePivot('is_active', true)
+            ->exists();
+
+        if (!$isModuleActiveForTenant) {
+            Log::info('PermissionService: module inactive for tenant', [
+                'tenant_id' => $user->tenant_id,
+                'module_id' => $module->id,
+                'module_code' => $moduleCode,
+            ]);
+            return false;
+        }
+
+        $hasAnyPermission = RoleModulePermission::where('role_id', $user->role_id)
             ->where('module_id', $module->id)
             ->where(function($query) {
                 $query->where('can_view', true)
@@ -90,6 +118,16 @@ class PermissionService
                     ->orWhere('can_export', true);
             })
             ->exists();
+
+        if (!$hasAnyPermission) {
+            Log::info('PermissionService: role has no permissions for module', [
+                'role_id' => $user->role_id,
+                'module_id' => $module->id,
+                'module_code' => $moduleCode,
+            ]);
+        }
+
+        return $hasAnyPermission;
     }
 
     /**
@@ -232,6 +270,18 @@ class PermissionService
             $user->id,
             $moduleCode
         );
+    }
+
+    /**
+     * Normalize known legacy or alias module codes to current slugs
+     */
+    private function normalizeModuleCode(string $moduleCode): string
+    {
+        $map = [
+            'correspondence-management' => 'correspondence',
+            'work-units' => 'work-unit',
+        ];
+        return $map[$moduleCode] ?? $moduleCode;
     }
 
     /**

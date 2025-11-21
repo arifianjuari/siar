@@ -109,11 +109,6 @@
             @foreach($activeModules as $module)
                 @if($module && !empty($module->slug) && function_exists('hasModulePermission') && hasModulePermission($module->slug))
                     @php
-                        // Skip unit kerja, SPO, dan user-management modules here
-                        // user-management dipindahkan ke menu settings di navbar
-                        if (in_array($module->slug, ['work-units', 'work-unit', 'spo-management', 'user-management'])) {
-                            continue;
-                        }
                     @endphp
                     
                     @php
@@ -128,7 +123,7 @@
                                     $moduleUrl = url('risk-management/dashboard');
                                 } elseif ($module->slug == 'document-management') {
                                     $moduleUrl = url('document-management/dashboard');
-                                } elseif ($module->slug == 'correspondence-management') {
+                                } elseif ($module->slug == 'correspondence-management' || $module->slug == 'correspondence') {
                                     $moduleUrl = url('correspondence'); // URL ke dashboard korespondensi
                                 } elseif ($module->slug == 'work-units' || $module->slug == 'work-unit') {
                                     $moduleUrl = url('work-units-dashboard'); // URL ke dashboard unit kerja
@@ -136,6 +131,8 @@
                                     $moduleUrl = url('activity-management'); // URL ke dashboard pengelolaan kegiatan
                                 } elseif ($module->slug == 'performance-management') {
                                     $moduleUrl = url('performance-management'); // URL ke dashboard performance management
+                                } elseif ($module->slug == 'spo-management') {
+                                    $moduleUrl = url('spo/dashboard'); // URL ke dashboard SPO
                                 } else {
                                     $moduleUrl = url('modules/' . $module->slug);
                                 }
@@ -151,7 +148,7 @@
                                           && !request()->is('work-units/spo*');
                             } elseif ($module->slug == 'activity-management') {
                                 $isActive = request()->is('activity-management*');
-                            } elseif ($module->slug == 'correspondence-management') {
+                            } elseif ($module->slug == 'correspondence-management' || $module->slug == 'correspondence') {
                                 $isActive = request()->is('correspondence*');
                             } elseif ($module->slug == 'document-management') {
                                 $isActive = request()->is('document-management*');
@@ -166,7 +163,7 @@
                             } elseif ($module->slug == 'kendali-mutu-biaya') {
                                 $isActive = request()->is('kendali-mutu-biaya*');
                             } elseif ($module->slug == 'spo-management') {
-                                $isActive = request()->is('work-units/spo*');
+                                $isActive = request()->is('spo*');
                             }
                             
                             // Menentukan ikon yang lebih sesuai berdasarkan slug modul
@@ -223,9 +220,6 @@
                                    onclick="toggleUserManagementDropdown()" 
                                    style="border: none; background: none; cursor: pointer;">
                                 <div class="d-flex align-items-center">
-                                    <div class="icon-sidebar">
-                                        {!! $moduleIcon !!}
-                                    </div>
                                     <span class="menu-text">{{ $module->name }}</span>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down ms-auto" id="um-dropdown-icon"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                 </div>
@@ -234,18 +228,12 @@
                                 <a href="{{ url('user-management/users') }}" 
                                    class="nav-link {{ request()->is('*user-management/users*') ? 'active' : '' }} my-1">
                                     <div class="d-flex align-items-center">
-                                        <div class="icon-sidebar">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user-plus"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                                        </div>
                                         <span class="menu-text">Pengguna</span>
                                     </div>
                                 </a>
                                 <a href="{{ url('user-management/roles') }}" 
                                    class="nav-link {{ request()->is('*user-management/roles*') ? 'active' : '' }} my-1">
                                     <div class="d-flex align-items-center">
-                                        <div class="icon-sidebar">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-award"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
-                                        </div>
                                         <span class="menu-text">Role</span>
                                     </div>
                                 </a>
@@ -254,9 +242,6 @@
                     @else
                         <a href="{{ $moduleUrl }}" class="nav-link sidebar-link {{ $isActive ? 'active' : '' }} mb-2">
                             <div class="d-flex align-items-center">
-                                <div class="icon-sidebar">
-                                    {!! $moduleIcon !!}
-                                </div>
                                 <span class="menu-text">{{ $module->name }}</span>
                             </div>
                         </a>

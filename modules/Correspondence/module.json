@@ -1,8 +1,9 @@
 {
-  "name": "Correspondence",
+  "name": "Surat Menyurat",
   "alias": "correspondence",
-  "description": "Module for managing correspondence letters (incoming and outgoing)",
+  "description": "Modul untuk mengelola surat masuk dan surat keluar",
   "version": "1.0.0",
+  "icon": "fa-envelope-open-text",
   "keywords": [
     "correspondence",
     "letter",

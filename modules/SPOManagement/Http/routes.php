@@ -13,7 +13,7 @@ use Modules\SPOManagement\Http\Controllers\SPOController;
 |
 */
 
-Route::middleware(['check.permission:spo-management,can_view'])
+Route::middleware(['web', 'auth', 'tenant', 'module.permission:spo-management'])
     ->prefix('spo')
     ->name('spo.')
     ->group(function () {
@@ -26,21 +26,21 @@ Route::middleware(['check.permission:spo-management,can_view'])
         Route::get('/{spo}', [SPOController::class, 'show'])->name('show');
 
         // Create SPO
-        Route::middleware('check.permission:spo-management,can_create')
+        Route::middleware('module.permission:spo-management,can_create')
             ->group(function () {
                 Route::get('/create', [SPOController::class, 'create'])->name('create');
                 Route::post('/', [SPOController::class, 'store'])->name('store');
             });
 
         // Edit SPO
-        Route::middleware('check.permission:spo-management,can_edit')
+        Route::middleware('module.permission:spo-management,can_edit')
             ->group(function () {
                 Route::get('/{spo}/edit', [SPOController::class, 'edit'])->name('edit');
                 Route::put('/{spo}', [SPOController::class, 'update'])->name('update');
             });
 
         // Delete SPO
-        Route::middleware('check.permission:spo-management,can_delete')
+        Route::middleware('module.permission:spo-management,can_delete')
             ->group(function () {
                 Route::delete('/{spo}', [SPOController::class, 'destroy'])->name('destroy');
             });

@@ -15,7 +15,7 @@
             <h6 class="m-0 font-weight-bold text-primary">Filter dan Pencarian</h6>
         </div>
         <div class="card-body">
-            <form action="{{ route('work-units.spo.index') }}" method="GET" class="mb-0">
+            <form action="{{ route('spo.index') }}" method="GET" class="mb-0">
                 <div class="row g-3 align-items-end">
                     <div class="col-md-3">
                         <label for="work_unit_id" class="form-label">Unit Kerja</label>
@@ -62,7 +62,7 @@
                         <button type="submit" class="btn btn-primary me-2">
                             <i class="fas fa-search me-1"></i> Cari
                         </button>
-                        <a href="{{ route('work-units.spo.index') }}" class="btn btn-secondary">
+                        <a href="{{ route('spo.index') }}" class="btn btn-secondary">
                             <i class="fas fa-redo me-1"></i> Reset
                         </a>
                     </div>
@@ -76,7 +76,7 @@
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Daftar Standar Prosedur Operasional</h6>
             
-            <a href="{{ route('work-units.spo.create') }}" class="btn btn-sm btn-success">
+            <a href="{{ route('spo.create') }}" class="btn btn-sm btn-success">
                 <i class="fas fa-plus me-1"></i> Tambah SPO Baru
             </a>
         </div>
@@ -86,7 +86,7 @@
                     <i class="fas fa-file-alt fa-3x text-gray-300 mb-3"></i>
                     <p class="text-gray-500 mb-0">Belum ada dokumen SPO yang tersedia.</p>
                     
-                    <a href="{{ route('work-units.spo.create') }}" class="btn btn-primary mt-3">
+                    <a href="{{ route('spo.create') }}" class="btn btn-primary mt-3">
                         <i class="fas fa-plus me-1"></i> Tambah SPO Baru
                     </a>
                 </div>
@@ -145,7 +145,7 @@
                                     </td>
                                     <td>{{ $spo->updated_at->format('d/m/Y') }}</td>
                                     <td>
-                                        <a href="{{ route('work-units.spo.show', $spo) }}" class="btn btn-sm btn-info mb-1" title="Lihat Detail">
+                                        <a href="{{ route('spo.show', $spo) }}" class="btn btn-sm btn-info mb-1" title="Lihat Detail">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         
@@ -170,17 +170,17 @@
                                         </div>
                                         
                                         {{-- Edit button --}}
-                                        <a href="{{ route('work-units.spo.edit', $spo) }}" class="btn btn-sm btn-warning mb-1" title="Edit">
+                                        <a href="{{ route('spo.edit', $spo) }}" class="btn btn-sm btn-warning mb-1" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         
                                         {{-- Generate PDF button --}}
-                                        <a href="{{ route('work-units.spo.generate-pdf', $spo) }}" class="btn btn-sm btn-primary mb-1" title="Generate PDF">
+                                        <a href="{{ route('spo.generate-pdf', $spo) }}" class="btn btn-sm btn-primary mb-1" title="Generate PDF">
                                             <i class="fas fa-file-pdf"></i>
                                         </a>
                                         
                                         {{-- Delete button --}}
-                                        <form action="{{ route('work-units.spo.destroy', $spo) }}" method="POST" class="d-inline">
+                                        <form action="{{ route('spo.destroy', $spo) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-danger mb-1" onclick="return confirm('Apakah Anda yakin ingin menghapus dokumen ini?')" title="Hapus">

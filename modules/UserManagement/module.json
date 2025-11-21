@@ -1,9 +1,10 @@
 {
-  "name": "UserManagement",
+  "name": "Manajemen Pengguna",
   "alias": "user-management",
-  "description": "Module for managing users, roles and permissions",
+  "description": "Modul untuk mengelola pengguna, peran, dan hak akses",
   "version": "1.0.0",
-  "keywords": ["user", "role", "permission", "management"],
+  "icon": "fa-users-cog",
+  "keywords": ["user", "role", "permission", "management", "pengguna"],
   "active": 1,
   "order": 1,
   "providers": [

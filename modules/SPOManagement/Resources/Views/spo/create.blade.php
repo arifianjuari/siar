@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">Tambah Dokumen SPO Baru</h1>
         
-        <a href="{{ route('work-units.spo.index') }}" class="btn btn-secondary">
+        <a href="{{ route('spo.index') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left me-1"></i> Kembali
         </a>
     </div>
@@ -19,7 +19,7 @@
             <h6 class="m-0 font-weight-bold text-primary">Form SPO Baru</h6>
         </div>
         <div class="card-body">
-            <form action="{{ route('work-units.spo.store') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('spo.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 
                 <div class="row mb-4">
@@ -224,7 +224,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-1"></i> Simpan
                     </button>
-                    <a href="{{ route('work-units.spo.index') }}" class="btn btn-secondary ms-2">
+                    <a href="{{ route('spo.index') }}" class="btn btn-secondary ms-2">
                         <i class="fas fa-times me-1"></i> Batal
                     </a>
                 </div>

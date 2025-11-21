@@ -1,9 +1,17 @@
 {
-  "name": "ProductManagement",
+  "name": "Manajemen Produk",
   "alias": "product-management",
-  "description": "Module for managing products and inventory",
+  "description": "Modul untuk mengelola produk dan inventori",
   "version": "1.0.0",
-  "keywords": ["product", "inventory", "management", "stock"],
+  "icon": "fa-boxes",
+  "keywords": [
+    "product",
+    "inventory",
+    "management",
+    "stock",
+    "produk",
+    "inventori"
+  ],
   "active": 1,
   "order": 4,
   "providers": [

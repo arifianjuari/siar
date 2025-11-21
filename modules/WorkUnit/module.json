@@ -1,8 +1,9 @@
 {
-  "name": "WorkUnit",
+  "name": "Unit Kerja",
   "alias": "work-unit",
-  "description": "Module for managing work units (organizational structure) and SPO documents",
+  "description": "Modul untuk mengelola unit kerja (struktur organisasi) dan dokumen SPO",
   "version": "1.0.0",
+  "icon": "fa-sitemap",
   "keywords": [
     "work-unit",
     "unit-kerja",

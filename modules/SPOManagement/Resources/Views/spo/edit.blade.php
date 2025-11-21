@@ -10,7 +10,7 @@
         <h1 class="h3 mb-0 text-gray-800">Edit Dokumen SPO</h1>
         
         <div>
-            <a href="{{ route('work-units.spo.index') }}" class="btn btn-secondary">
+            <a href="{{ route('spo.index') }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left me-1"></i> Kembali
             </a>
             @if ($spo->file_path)
@@ -33,7 +33,7 @@
             </span>
         </div>
         <div class="card-body">
-            <form action="{{ route('work-units.spo.update', $spo) }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('spo.update', $spo) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 
@@ -265,7 +265,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-1"></i> Simpan Perubahan
                     </button>
-                    <a href="{{ route('work-units.spo.show', $spo) }}" class="btn btn-secondary ms-2">
+                    <a href="{{ route('spo.show', $spo) }}" class="btn btn-secondary ms-2">
                         <i class="fas fa-times me-1"></i> Batal
                     </a>
                 </div>

@@ -176,12 +176,18 @@ class ModuleManagementController extends Controller
                 // Generate code from slug (uppercase with underscores)
                 $code = strtoupper(str_replace('-', '_', $slug));
                 
+                // Get icon from module.json metadata or use default
+                $icon = 'fa-cube'; // Default icon
+                if (isset($fsModule['metadata']['icon'])) {
+                    $icon = $fsModule['metadata']['icon'];
+                }
+                
                 $moduleData = [
                     'name' => $fsModule['name'],
                     'code' => $code,
                     'slug' => $slug,
                     'description' => $fsModule['description'] ?? 'Module ' . $fsModule['name'],
-                    'icon' => 'fa-cube', // Default icon, can be customized later
+                    'icon' => $icon,
                 ];
 
                 $existingModule = Module::where('slug', $slug)->first();
@@ -190,9 +196,23 @@ class ModuleManagementController extends Controller
                     Module::create($moduleData);
                     $created++;
                 } else {
-                    // Update description if changed
+                    // Update name, description, and icon if changed
+                    $updateData = [];
+                    
+                    if ($existingModule->name !== $moduleData['name']) {
+                        $updateData['name'] = $moduleData['name'];
+                    }
+                    
                     if ($existingModule->description !== $moduleData['description']) {
-                        $existingModule->update(['description' => $moduleData['description']]);
+                        $updateData['description'] = $moduleData['description'];
+                    }
+                    
+                    if ($existingModule->icon !== $moduleData['icon']) {
+                        $updateData['icon'] = $moduleData['icon'];
+                    }
+                    
+                    if (!empty($updateData)) {
+                        $existingModule->update($updateData);
                         $updated++;
                     }
                 }
@@ -221,6 +241,9 @@ class ModuleManagementController extends Controller
             }
 
             DB::commit();
+            
+            // Clear sidebar cache for all tenants after module sync
+            $this->clearSidebarCache();
 
             $message = "Sinkronisasi selesai. Dibuat: {$created}, Diperbarui: {$updated}, Dihapus: {$deleted}";
             
@@ -553,6 +576,28 @@ class ModuleManagementController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Clear sidebar cache for all tenants
+     * Called after module sync to refresh menu
+     */
+    private function clearSidebarCache()
+    {
+        try {
+            // Get all tenant IDs
+            $tenantIds = Tenant::pluck('id');
+            
+            // Clear cache for each tenant
+            foreach ($tenantIds as $tenantId) {
+                $cacheKey = 'sidebar_modules_tenant_' . $tenantId;
+                \Illuminate\Support\Facades\Cache::forget($cacheKey);
+            }
+            
+            \Illuminate\Support\Facades\Log::info('Sidebar cache cleared for all tenants');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to clear sidebar cache: ' . $e->getMessage());
         }
     }
 }

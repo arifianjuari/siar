@@ -1,9 +1,10 @@
 {
-  "name": "ActivityManagement",
+  "name": "Manajemen Aktivitas",
   "alias": "activity-management",
-  "description": "Module for managing activities, tasks, and assignments",
+  "description": "Modul untuk mengelola aktivitas, tugas, dan penugasan",
   "version": "1.0.0",
-  "keywords": ["activity", "task", "management"],
+  "icon": "fa-tasks",
+  "keywords": ["activity", "task", "management", "aktivitas", "tugas"],
   "active": 1,
   "order": 1,
   "providers": [

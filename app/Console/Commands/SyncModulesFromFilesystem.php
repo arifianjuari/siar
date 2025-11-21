@@ -115,6 +115,10 @@ class SyncModulesFromFilesystem extends Command
                     $updateData = [];
                     $updated_fields = [];
                     
+                    if ($existingModule->name !== $moduleData['name']) {
+                        $updateData['name'] = $moduleData['name'];
+                        $updated_fields[] = 'name';
+                    }
                     if ($existingModule->description !== $moduleData['description']) {
                         $updateData['description'] = $moduleData['description'];
                         $updated_fields[] = 'description';
@@ -151,6 +155,9 @@ class SyncModulesFromFilesystem extends Command
             }
 
             DB::commit();
+            
+            // Clear sidebar cache for all tenants
+            $this->clearSidebarCache();
 
             $this->newLine();
             $this->info('Synchronization completed successfully!');
@@ -241,5 +248,24 @@ class SyncModulesFromFilesystem extends Command
         }
 
         return $discovered;
+    }
+    
+    /**
+     * Clear sidebar cache for all tenants
+     */
+    private function clearSidebarCache()
+    {
+        try {
+            $tenantIds = \App\Models\Tenant::pluck('id');
+            
+            foreach ($tenantIds as $tenantId) {
+                $cacheKey = 'sidebar_modules_tenant_' . $tenantId;
+                \Illuminate\Support\Facades\Cache::forget($cacheKey);
+            }
+            
+            $this->info('✓ Sidebar cache cleared for all tenants');
+        } catch (\Exception $e) {
+            $this->warn('⚠ Failed to clear sidebar cache: ' . $e->getMessage());
+        }
     }
 }

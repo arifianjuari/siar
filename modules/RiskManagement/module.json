@@ -1,9 +1,10 @@
 {
-  "name": "RiskManagement",
+  "name": "Manajemen Risiko",
   "alias": "risk-management",
-  "description": "Module for managing risk reports and analysis",
+  "description": "Modul untuk mengelola laporan dan analisis risiko",
   "version": "1.0.0",
-  "keywords": ["risk", "report", "analysis", "management"],
+  "icon": "fa-exclamation-triangle",
+  "keywords": ["risk", "report", "analysis", "management", "risiko"],
   "active": 1,
   "order": 2,
   "providers": [

@@ -98,7 +98,7 @@ class SPOController extends Controller
         $documentTypes = config('spo-management.document_types');
         $statusValidasi = config('spo-management.status_validasi');
 
-        return view('spo-management::index', compact('spos', 'workUnits', 'documentTypes', 'statusValidasi'));
+        return view('spo-management::spo.index', compact('spos', 'workUnits', 'documentTypes', 'statusValidasi'));
     }
 
     /**
@@ -128,7 +128,7 @@ class SPOController extends Controller
             ]
         );
 
-        return view('spo-management::create', compact(
+        return view('spo-management::spo.create', compact(
             'workUnits',
             'linkedUnits',
             'documentTypes',
@@ -242,7 +242,7 @@ class SPOController extends Controller
             $linkedUnits = WorkUnit::whereIn('id', $linkedUnitIds)->get();
         }
 
-        return view('spo-management::show', compact('spo', 'linkedUnits'));
+        return view('spo-management::spo.show', compact('spo', 'linkedUnits'));
     }
 
     /**
@@ -273,7 +273,7 @@ class SPOController extends Controller
         // Decode linked units untuk form
         $spoLinkedUnits = $spo->linked_unit ? json_decode($spo->linked_unit, true) : [];
 
-        return view('spo-management::edit', compact(
+        return view('spo-management::spo.edit', compact(
             'spo',
             'workUnits',
             'linkedUnits',
@@ -450,7 +450,7 @@ class SPOController extends Controller
         ];
 
         // Generate PDF using dompdf
-        $pdf = Pdf::loadView('spo-management::pdf', $data);
+        $pdf = Pdf::loadView('spo-management::spo.pdf', $data);
 
         // Set paper size to A4
         $pdf->setPaper('a4', 'portrait');
@@ -539,7 +539,7 @@ class SPOController extends Controller
             ->limit(5)
             ->get();
 
-        return view('spo-management::dashboard', compact(
+        return view('spo-management::spo.dashboard', compact(
             'stats',
             'confidentialityStats',
             'typeStats',

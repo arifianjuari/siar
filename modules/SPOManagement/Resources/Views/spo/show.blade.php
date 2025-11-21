@@ -9,12 +9,12 @@
         <h1 class="h3 mb-0 text-gray-800">Detail Dokumen SPO</h1>
         
         <div>
-            <a href="{{ route('work-units.spo.index') }}" class="btn btn-secondary">
+            <a href="{{ route('spo.index') }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left me-1"></i> Kembali
             </a>
             
             @can('update', $spo)
-            <a href="{{ route('work-units.spo.edit', $spo) }}" class="btn btn-primary ms-2">
+            <a href="{{ route('spo.edit', $spo) }}" class="btn btn-primary ms-2">
                 <i class="fas fa-edit me-1"></i> Edit
             </a>
             @endcan
