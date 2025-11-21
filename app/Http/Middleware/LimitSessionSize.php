@@ -72,11 +72,18 @@ class LimitSessionSize
 
                     $allowed = [];
                     foreach ($current as $key => $value) {
+                        // CRITICAL: Preserve authentication keys
                         if ($key === '_token' || $key === 'tenant_id' || $key === 'url' || $key === '_previous') {
                             $allowed[$key] = $value;
                             continue;
                         }
+                        // CRITICAL: Preserve Laravel auth keys
                         if (Str::startsWith($key, ['login_web_', 'password_hash_'])) {
+                            $allowed[$key] = $value;
+                            continue;
+                        }
+                        // CRITICAL: Preserve SIAR authentication keys
+                        if (in_array($key, ['is_superadmin', 'auth_role', 'user_verified', 'current_tenant'])) {
                             $allowed[$key] = $value;
                             continue;
                         }
