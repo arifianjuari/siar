@@ -11,10 +11,72 @@ use Illuminate\Support\Str;
 class LimitSessionSize
 {
     /**
+     * Keys yang TIDAK BOLEH dihapus (critical untuk auth)
+     * 
+     * @var array
+     */
+    protected $criticalKeys = [
+        '_token',
+        'tenant_id', 
+        'url',
+        '_previous',
+        'is_superadmin',
+        'auth_role',
+        'user_verified',
+        'current_tenant',
+    ];
+
+    /**
+     * Prefix keys yang TIDAK BOLEH dihapus
+     * 
+     * @var array
+     */
+    protected $criticalPrefixes = [
+        'login_web_',
+        'password_hash_',
+        'auth_',
+    ];
+
+    /**
+     * Keys yang AMAN untuk dihapus
+     * 
+     * @var array
+     */
+    protected $safeToDeleteKeys = [
+        '_old_input',
+        'errors',
+        '_flash',
+        'flash_notification',
+        'report_params',
+        'form_data',
+        'wizard_data',
+        'export_data',
+        'import_data',
+    ];
+
+    /**
+     * Prefix keys yang AMAN untuk dihapus
+     * 
+     * @var array
+     */
+    protected $safeToDeletePrefixes = [
+        'debug_',
+        'debug-test',
+        'debug_test',
+        'temp_',
+        'cache_',
+        'preview_',
+    ];
+
+    /**
      * Handle an incoming request.
      *
      * Middleware ini mencegah session cookie menjadi terlalu besar
      * dengan membersihkan data yang tidak diperlukan.
+     * 
+     * PENTING: Middleware ini TIDAK akan menghapus data authentication.
+     * Jika session masih terlalu besar setelah cleanup, akan log warning
+     * tapi TIDAK akan flush session.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
@@ -23,90 +85,107 @@ class LimitSessionSize
         $response = $next($request);
 
         // Hanya jalankan untuk cookie driver
-        if (config('session.driver') === 'cookie') {
-            // Hitung ukuran session saat ini
-            $sessionData = $request->session()->all();
-            $sessionSize = strlen(serialize($sessionData));
+        if (config('session.driver') !== 'cookie') {
+            return $response;
+        }
 
-            // Jika mendekati batas cookie (~4KB), hapus data yang cenderung besar
-            if ($sessionSize > 3000) { // threshold lebih konservatif
-                $keysBefore = array_keys($sessionData);
-
-                // Key yang jelas tidak penting / berpotensi besar
-                $hardDeleteKeys = [
-                    '_old_input',
-                    'errors',
-                    '_flash',
-                    'flash_notification',
-                    'report_params',
-                ];
-
-                foreach ($hardDeleteKeys as $key) {
-                    if ($request->session()->has($key)) {
-                        $request->session()->forget($key);
-                    }
-                }
-
-                // Hapus key debug yang bisa menumpuk
-                foreach ($request->session()->all() as $key => $value) {
-                    if (Str::startsWith($key, ['debug_', 'debug-test', 'debug_test'])) {
-                        $request->session()->forget($key);
-                    }
-                }
-
-
-                // Recalculate dan log setelah trimming
-                $sessionData = $request->session()->all();
-                $sessionSizeAfter = strlen(serialize($sessionData));
-                Log::warning('Trimmed session to avoid cookie too large', [
-                    'size_bytes_before' => $sessionSize,
-                    'size_bytes_after' => $sessionSizeAfter,
-                    'session_keys_before' => $keysBefore,
-                    'session_keys_after' => array_keys($sessionData),
-                    'user_id' => auth()->id(),
-                ]);
-
-                // Jika masih terlalu besar, lakukan hard-trim dengan whitelist key esensial saja
-                if ($sessionSizeAfter > 3500) {
-                    $current = $request->session()->all();
-
-                    $allowed = [];
-                    foreach ($current as $key => $value) {
-                        // CRITICAL: Preserve authentication keys
-                        if ($key === '_token' || $key === 'tenant_id' || $key === 'url' || $key === '_previous') {
-                            $allowed[$key] = $value;
-                            continue;
-                        }
-                        // CRITICAL: Preserve Laravel auth keys
-                        if (Str::startsWith($key, ['login_web_', 'password_hash_'])) {
-                            $allowed[$key] = $value;
-                            continue;
-                        }
-                        // CRITICAL: Preserve SIAR authentication keys
-                        if (in_array($key, ['is_superadmin', 'auth_role', 'user_verified', 'current_tenant'])) {
-                            $allowed[$key] = $value;
-                            continue;
-                        }
-                    }
-
-                    // Flush lalu restore hanya key yang diizinkan
-                    $request->session()->flush();
-                    foreach ($allowed as $k => $v) {
-                        $request->session()->put($k, $v);
-                    }
-
-                    $finalData = $request->session()->all();
-                    $finalSize = strlen(serialize($finalData));
-                    Log::warning('Applied hard-trim whitelist to session', [
-                        'size_bytes_before' => $sessionSizeAfter,
-                        'size_bytes_after' => $finalSize,
-                        'kept_keys' => array_keys($finalData),
-                        'user_id' => auth()->id(),
-                    ]);
-                }
-            }
+        try {
+            $this->trimSessionIfNeeded($request);
+        } catch (\Exception $e) {
+            // Jangan biarkan error di middleware ini mengganggu response
+            Log::error('LimitSessionSize middleware error', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
         }
 
         return $response;
+    }
+
+    /**
+     * Trim session jika diperlukan
+     */
+    protected function trimSessionIfNeeded(Request $request): void
+    {
+        $sessionData = $request->session()->all();
+        $sessionSize = strlen(serialize($sessionData));
+
+        // Threshold: 3KB untuk mulai cleanup (cookie max ~4KB)
+        if ($sessionSize <= 3000) {
+            return;
+        }
+
+        $keysBefore = array_keys($sessionData);
+        $deletedKeys = [];
+
+        // LANGKAH 1: Hapus key yang AMAN untuk dihapus
+        foreach ($this->safeToDeleteKeys as $key) {
+            if ($request->session()->has($key)) {
+                $request->session()->forget($key);
+                $deletedKeys[] = $key;
+            }
+        }
+
+        // LANGKAH 2: Hapus key dengan prefix yang AMAN
+        foreach ($request->session()->all() as $key => $value) {
+            if ($this->hasAnyPrefix($key, $this->safeToDeletePrefixes)) {
+                $request->session()->forget($key);
+                $deletedKeys[] = $key;
+            }
+        }
+
+        // Recalculate size
+        $sessionData = $request->session()->all();
+        $sessionSizeAfter = strlen(serialize($sessionData));
+
+        // Log cleanup
+        if (count($deletedKeys) > 0) {
+            Log::info('LimitSessionSize: Cleaned up session', [
+                'size_before' => $sessionSize,
+                'size_after' => $sessionSizeAfter,
+                'deleted_keys' => $deletedKeys,
+                'remaining_keys' => array_keys($sessionData),
+                'user_id' => auth()->id(),
+            ]);
+        }
+
+        // LANGKAH 3: Jika masih terlalu besar, LOG WARNING tapi JANGAN flush
+        // Ini mencegah user logout karena session terlalu besar
+        if ($sessionSizeAfter > 3800) {
+            Log::warning('LimitSessionSize: Session still large after cleanup - consider using database session driver', [
+                'size_bytes' => $sessionSizeAfter,
+                'remaining_keys' => array_keys($sessionData),
+                'user_id' => auth()->id(),
+                'recommendation' => 'Set SESSION_DRIVER=database in environment',
+            ]);
+            
+            // TIDAK melakukan flush() - ini akan menyebabkan logout
+            // Biarkan Laravel handle, mungkin akan truncate tapi auth tetap ada
+        }
+    }
+
+    /**
+     * Check if key is critical and should not be deleted
+     */
+    protected function isCriticalKey(string $key): bool
+    {
+        if (in_array($key, $this->criticalKeys)) {
+            return true;
+        }
+
+        return $this->hasAnyPrefix($key, $this->criticalPrefixes);
+    }
+
+    /**
+     * Check if key starts with any of the given prefixes
+     */
+    protected function hasAnyPrefix(string $key, array $prefixes): bool
+    {
+        foreach ($prefixes as $prefix) {
+            if (Str::startsWith($key, $prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
