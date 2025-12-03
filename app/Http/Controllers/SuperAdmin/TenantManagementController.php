@@ -486,7 +486,7 @@ class TenantManagementController extends Controller
 
         // Cek apakah role adalah tenant-admin
         if ($role->slug === 'tenant-admin') {
-            return redirect()->back()
+            return redirect()->route('superadmin.tenants.show', $tenant)
                 ->with('error', 'Role Admin Tenant tidak dapat diubah.');
         }
 
@@ -601,7 +601,7 @@ class TenantManagementController extends Controller
 
         // Cek apakah role adalah tenant-admin
         if ($role->slug === 'tenant-admin') {
-            return redirect()->back()
+            return redirect()->route('superadmin.tenants.show', $tenant)
                 ->with('error', 'Role Admin Tenant tidak dapat diubah hak aksesnya.');
         }
 

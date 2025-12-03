@@ -258,18 +258,23 @@
                                         <td><span class="badge bg-info">{{ $role->users->count() }}</span></td>
                                         <td class="text-center">
                                             <div class="btn-group" role="group">
-                                                <a href="{{ route('superadmin.tenants.roles.edit', [$tenant, $role]) }}" class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                
-                                                <a href="{{ route('superadmin.tenants.roles.permissions.edit', [$tenant, $role]) }}" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Atur Hak Akses">
-                                                    <i class="fas fa-key"></i>
-                                                </a>
-                                                
                                                 @if($role->slug !== 'tenant-admin')
+                                                    <a href="{{ route('superadmin.tenants.roles.edit', [$tenant, $role]) }}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    
+                                                    <a href="{{ route('superadmin.tenants.roles.permissions.edit', [$tenant, $role]) }}" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Atur Hak Akses">
+                                                        <i class="fas fa-key"></i>
+                                                    </a>
+                                                    
                                                     <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteRoleModal{{ $role->id }}">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
+                                                @else
+                                                    <span class="badge bg-secondary" data-bs-toggle="tooltip" title="Role Admin Tenant tidak dapat diubah">
+                                                        <i class="fas fa-lock me-1"></i>Protected
+                                                    </span>
+                                                @endif
                                                     
                                                     <!-- Modal Konfirmasi Hapus Role -->
                                                     <div class="modal fade" id="deleteRoleModal{{ $role->id }}" tabindex="-1" aria-labelledby="deleteRoleModalLabel{{ $role->id }}" aria-hidden="true">

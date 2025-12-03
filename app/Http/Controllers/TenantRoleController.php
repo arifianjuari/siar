@@ -119,7 +119,7 @@ class TenantRoleController extends Controller
 
         // Cek apakah role adalah tenant-admin
         if ($role->slug === 'tenant-admin') {
-            return redirect()->back()
+            return redirect()->route('superadmin.tenants.show', $tenant)
                 ->with('error', 'Role Admin Tenant tidak dapat diubah.');
         }
 
@@ -143,7 +143,7 @@ class TenantRoleController extends Controller
                         'message' => 'Role Admin Tenant tidak dapat diubah.'
                     ], 403);
                 }
-                return redirect()->back()
+                return redirect()->route('superadmin.tenants.show', $tenant)
                     ->with('error', 'Role Admin Tenant tidak dapat diubah.');
             }
 
@@ -263,6 +263,12 @@ class TenantRoleController extends Controller
             ->with('permissions')
             ->firstOrFail();
 
+        // Cek apakah role adalah tenant-admin
+        if ($role->slug === 'tenant-admin') {
+            return redirect()->route('superadmin.tenants.show', $tenant)
+                ->with('error', 'Role Admin Tenant tidak dapat diubah hak aksesnya.');
+        }
+
         $modules = $tenant->modules;
         $permissions = $role->permissions;
 
@@ -283,6 +289,18 @@ class TenantRoleController extends Controller
                 ->where('id', $roleId)
                 ->where('tenant_id', $tenant->id)
                 ->firstOrFail();
+
+            // Cek apakah role adalah tenant-admin
+            if ($role->slug === 'tenant-admin') {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Role Admin Tenant tidak dapat diubah hak aksesnya.'
+                    ], 403);
+                }
+                return redirect()->route('superadmin.tenants.show', $tenant)
+                    ->with('error', 'Role Admin Tenant tidak dapat diubah hak aksesnya.');
+            }
 
             $validated = $request->validate([
                 'permissions' => 'array'
